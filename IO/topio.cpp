@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define UNWRAP
 #ifdef UNWRAP
 # define safe_fopen fopen
 # define safe_fgets fgets
@@ -25,9 +24,10 @@
 int countRowsInTOP(FILE* topFile);
 TOPAtom readAtomLineFromTOP(FILE* topFile);
 TOPPair readPairLineFromTOP(FILE* topFile);
-void savePair(FILE* topFile, TOPPair pair);
+TOPAngle readAngleLineFromTOP(FILE* topFile);
+TOPDihedral readDihedralLineFromTOP(FILE* topFile);
 
-int readTOP(const char* filename, TOPData* topData){
+int readTOP(char* filename, TOPData* topData){
 	printf("Reading topology from '%s'.\n", filename);
 	FILE* topFile = safe_fopen(filename, "r");
 	char buffer[BUF_SIZE];
@@ -59,8 +59,6 @@ int readTOP(const char* filename, TOPData* topData){
 				printf("%d found.\n", topData->dihedralCount);
 			}
 		}
-		topData->angleCount = 0;
-		topData->dihedralCount = 0;
 		topData->atoms = (TOPAtom*)calloc(topData->atomCount, sizeof(TOPAtom));
 		topData->bonds = (TOPPair*)calloc(topData->bondCount, sizeof(TOPPair));
 		topData->pairs = (TOPPair*)calloc(topData->pairsCount, sizeof(TOPPair));
@@ -74,7 +72,6 @@ int readTOP(const char* filename, TOPData* topData){
 	int count = 0;
 	while(safe_fgets(buffer, BUF_SIZE, topFile) != NULL){
 		if(strstr(buffer, "[ atoms ]") != 0){
-			printf("Reading atoms...\n");
 			count = 0;
 			while(count < topData->atomCount){
 				topData->atoms[count] = readAtomLineFromTOP(topFile);
@@ -84,7 +81,6 @@ int readTOP(const char* filename, TOPData* topData){
 			}
 		}
 		if(strstr(buffer, "[ bonds ]") != 0){
-			printf("Reading bonds...\n");
 			count = 0;
 			while(count < topData->bondCount){
 				topData->bonds[count] = readPairLineFromTOP(topFile);
@@ -94,7 +90,6 @@ int readTOP(const char* filename, TOPData* topData){
 			}
 		}
 		if(strstr(buffer, "[ pairs ]") != 0){
-			printf("Reading pairs...\n");
 			count = 0;
 			while(count < topData->pairsCount){
 				topData->pairs[count] = readPairLineFromTOP(topFile);
@@ -104,10 +99,25 @@ int readTOP(const char* filename, TOPData* topData){
 			}
 		}
 		if(strstr(buffer, "[ angles ]") != 0){
-//TODO
+			printf("Reading angles...\n");
+			count = 0;
+			while(count < topData->angleCount){
+				topData->angles[count] = readAngleLineFromTOP(topFile);
+				if(topData->angles[count].i != -1){
+					count++;
+				}
+			}
 		}
 		if(strstr(buffer, "[ dihedrals ]") != 0){
-//TODO
+			printf("Reading dihedrals...\n");
+			count = 0;
+			while(count < topData->dihedralCount){
+				topData->dihedrals[count] = readDihedralLineFromTOP(topFile);
+				if(topData->dihedrals[count].i != -1){
+					count++;
+				}
+			}
+
 		}
 	}
 
@@ -116,21 +126,21 @@ int readTOP(const char* filename, TOPData* topData){
 	return count;
 }
 
-void writeTOP(const char* filename, TOPData* topData){
+/*void saveTOP(char* filename){
 	int i;
 	FILE* topFile = safe_fopen(filename, "w");
 	fprintf(topFile, "; Created by topio.c utility\n\n");
 	fprintf(topFile, "[ atoms ]\n");
 	fprintf(topFile, ";   nr       type  resnr residue  atom   cgnr     charge       mass\n");
-	for(i = 0; i < topData->atomCount; i++){
+	for(i = 0; i < sop.aminoCount; i++){
 		fprintf(topFile, "%6d", i);
-		fprintf(topFile, "%11s", topData->atoms[i].type);
-		fprintf(topFile, "%7d", topData->atoms[i].resid);
-		fprintf(topFile, "%7s", topData->atoms[i].resName);
-		fprintf(topFile, "%7s", topData->atoms[i].name);
-		fprintf(topFile, "%7c", topData->atoms[i].chain);
-		fprintf(topFile, "%11.2f", topData->atoms[i].charge);
-		fprintf(topFile, "%11.3f", topData->atoms[i].mass);
+		fprintf(topFile, "%11s", sop.aminos[i].name);
+		fprintf(topFile, "%7d", sop.aminos[i].resid);
+		fprintf(topFile, "%7s", sop.aminos[i].resName);
+		fprintf(topFile, "%7s", sop.aminos[i].name);
+		fprintf(topFile, "%7c", sop.aminos[i].chain);
+		fprintf(topFile, "%11.2f", sop.aminos[i].occupancy);
+		fprintf(topFile, "%11.3f", sop.aminos[i].beta);
 		fprintf(topFile, "\n");
 	}
 
@@ -138,34 +148,51 @@ void writeTOP(const char* filename, TOPData* topData){
 
 	fprintf(topFile, "[ bonds ]\n");
 	fprintf(topFile, ";  ai    aj funct            c0            c1            c2            c3\n");
-	for(i = 0; i < topData->bondCount; i++){
-		savePair(topFile, topData->bonds[i]);
+	for(i = 0; i < sop.bondCount; i++){
+		TOPPair pair;
+		pair.i = sop.bonds[i].i;
+		pair.j = sop.bonds[i].j;
+		pair.func = 1;
+		pair.c0 = sop.bonds[i].r0;
+		pair.c1 = 0.0f;
+		savePair(topFile, pair);
 	}
 
 	fprintf(topFile, "\n");
 
 	fprintf(topFile, "[ native ]\n");
 	fprintf(topFile, ";  ai    aj funct            c0            c1            c2            c3\n");
-	for(i = 0; i < topData->nativesCount; i++){
-		savePair(topFile, topData->natives[i]);
+	for(i = 0; i < sop.nativeCount; i++){
+		TOPPair pair;
+		pair.i = sop.natives[i].i;
+		pair.j = sop.natives[i].j;
+		pair.func = 1;
+		pair.c0 = sop.natives[i].r0;
+		pair.c1 = sop.natives[i].eh;
+		pair.c2 = 0.0f;
+		savePair(topFile, pair);
 	}
 
 	fprintf(topFile, "\n");
 
 	fprintf(topFile, "[ pairs ]\n");
 	fprintf(topFile, ";  ai    aj funct            c0            c1            c2            c3\n");
-	for(i = 0; i < topData->pairsCount; i++){
-		savePair(topFile, topData->pairs[i]);
+	for(i = 0; i < sop.pairCount; i++){
+		TOPPair pair;
+		pair.i = sop.pairs[i].i;
+		pair.j = sop.pairs[i].j;
+		pair.func = 1;
+		pair.c0 = 0.0f;
+		savePair(topFile, pair);
 	}
 
-	fprintf(topFile, "\n");
 
 	fclose(topFile);
 
-}
+}*/
 
 
-void savePair(FILE* topFile, TOPPair pair){
+/*void savePair(FILE* topFile, TOPPair pair){
 	fprintf(topFile, "%5d", pair.i);
 	fprintf(topFile, " ");
 	fprintf(topFile, "%5d", pair.j);
@@ -188,7 +215,7 @@ void savePair(FILE* topFile, TOPPair pair){
 		}
 	}
 	fprintf(topFile, "\n");
-}
+}*/
 
 
 int countRowsInTOP(FILE* topFile){
@@ -232,8 +259,8 @@ TOPAtom readAtomLineFromTOP(FILE* topFile){
 		pch = strtok(NULL, " ");
 		strcpy(atom.name, pch);
 
-		//pch = strtok(NULL, " ");
-		//atom.chain = pch[0];
+		pch = strtok(NULL, " ");
+		atom.chain = pch[0];
 
 		pch = strtok(NULL, " ");
 		atom.charge = atof(pch);
@@ -290,5 +317,102 @@ TOPPair readPairLineFromTOP(FILE* topFile){
 		pair.i = -1;
 	}
 	return pair;
+}
+
+TOPAngle readAngleLineFromTOP(FILE* topFile){
+	TOPAngle angle;
+	char buffer[BUF_SIZE];
+	char* pch;
+	safe_fgets(buffer, BUF_SIZE, topFile);
+	if(strncmp(buffer, ";", 1) != 0){
+		pch = strtok(buffer, " ");
+		angle.i = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		angle.j = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		angle.k = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		angle.func = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return angle;
+		}
+		angle.c0 = atof(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return angle;
+		}
+		angle.c1 = atof(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return angle;
+		}
+		angle.c2 = atof(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return angle;
+		}
+		angle.c3 = atof(pch);
+	} else {
+		angle.i = -1;
+	}
+	return angle;
+}
+
+TOPDihedral readDihedralLineFromTOP(FILE* topFile){
+	TOPDihedral dihedral;
+	char buffer[BUF_SIZE];
+	char* pch;
+	safe_fgets(buffer, BUF_SIZE, topFile);
+	if(strncmp(buffer, ";", 1) != 0){
+		pch = strtok(buffer, " ");
+		dihedral.i = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		dihedral.j = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		dihedral.k = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		dihedral.l = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		dihedral.func = atoi(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return dihedral;
+		}
+		dihedral.c0 = atof(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return dihedral;
+		}
+		dihedral.c1 = atof(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return dihedral;
+		}
+		dihedral.c2 = atof(pch);
+
+		pch = strtok(NULL, " ");
+		if(pch == NULL){
+			return dihedral;
+		}
+		dihedral.c3 = atof(pch);
+	} else {
+		dihedral.i = -1;
+	}
+	return dihedral;
 }
 
