@@ -1,0 +1,407 @@
+#Last updated: 6/26/12
+
+# 3d protein simulation
+
+units real
+
+timestep 5
+
+dimension       3
+
+#boundary s s s
+boundary p p p
+
+dielectric      80.0
+
+neighbor        10 bin
+neigh_modify    delay 5
+
+atom_modify sort 0 0.0
+
+special_bonds coul 1 1 1
+
+kspace_style pppm 0.00001
+kspace_modify order 5
+
+atom_style      peptide
+
+bond_style	class2
+
+angle_style class2
+
+pair_style hybrid/overlay coul/long 40.0 ex/gauss/coul/cut 20.0 
+
+read_data data.dna
+
+mass		1*1	330.0
+mass		2	23.0
+mass		3	35.4
+
+pair_coeff * * ex/gauss/coul/cut ion.par 20.0
+pair_coeff * * coul/long
+
+pair_coeff 1 2	none
+pair_coeff 101 102	none
+pair_coeff 1 101	none
+pair_coeff 2 3	none
+pair_coeff 102 103	none
+pair_coeff 2 102	none
+pair_coeff 3 4	none
+pair_coeff 103 104	none
+pair_coeff 3 103	none
+pair_coeff 4 5	none
+pair_coeff 104 105	none
+pair_coeff 4 104	none
+pair_coeff 5 6	none
+pair_coeff 105 106	none
+pair_coeff 5 105	none
+pair_coeff 6 7	none
+pair_coeff 106 107	none
+pair_coeff 6 106	none
+pair_coeff 7 8	none
+pair_coeff 107 108	none
+pair_coeff 7 107	none
+pair_coeff 8 9	none
+pair_coeff 108 109	none
+pair_coeff 8 108	none
+pair_coeff 9 10	none
+pair_coeff 109 110	none
+pair_coeff 9 109	none
+pair_coeff 10 11	none
+pair_coeff 110 111	none
+pair_coeff 10 110	none
+pair_coeff 11 12	none
+pair_coeff 111 112	none
+pair_coeff 11 111	none
+pair_coeff 12 13	none
+pair_coeff 112 113	none
+pair_coeff 12 112	none
+pair_coeff 13 14	none
+pair_coeff 113 114	none
+pair_coeff 13 113	none
+pair_coeff 14 15	none
+pair_coeff 114 115	none
+pair_coeff 14 114	none
+pair_coeff 15 16	none
+pair_coeff 115 116	none
+pair_coeff 15 115	none
+pair_coeff 16 17	none
+pair_coeff 116 117	none
+pair_coeff 16 116	none
+pair_coeff 17 18	none
+pair_coeff 117 118	none
+pair_coeff 17 117	none
+pair_coeff 18 19	none
+pair_coeff 118 119	none
+pair_coeff 18 118	none
+pair_coeff 19 20	none
+pair_coeff 119 120	none
+pair_coeff 19 119	none
+pair_coeff 20 21	none
+pair_coeff 120 121	none
+pair_coeff 20 120	none
+pair_coeff 21 22	none
+pair_coeff 121 122	none
+pair_coeff 21 121	none
+pair_coeff 22 23	none
+pair_coeff 122 123	none
+pair_coeff 22 122	none
+pair_coeff 23 24	none
+pair_coeff 123 124	none
+pair_coeff 23 123	none
+pair_coeff 24 25	none
+pair_coeff 124 125	none
+pair_coeff 24 124	none
+pair_coeff 25 26	none
+pair_coeff 125 126	none
+pair_coeff 25 125	none
+pair_coeff 26 27	none
+pair_coeff 126 127	none
+pair_coeff 26 126	none
+pair_coeff 27 28	none
+pair_coeff 127 128	none
+pair_coeff 27 127	none
+pair_coeff 28 29	none
+pair_coeff 128 129	none
+pair_coeff 28 128	none
+pair_coeff 29 30	none
+pair_coeff 129 130	none
+pair_coeff 29 129	none
+pair_coeff 30 31	none
+pair_coeff 130 131	none
+pair_coeff 30 130	none
+pair_coeff 31 32	none
+pair_coeff 131 132	none
+pair_coeff 31 131	none
+pair_coeff 32 33	none
+pair_coeff 132 133	none
+pair_coeff 32 132	none
+pair_coeff 33 34	none
+pair_coeff 133 134	none
+pair_coeff 33 133	none
+pair_coeff 34 35	none
+pair_coeff 134 135	none
+pair_coeff 34 134	none
+pair_coeff 35 36	none
+pair_coeff 135 136	none
+pair_coeff 35 135	none
+pair_coeff 36 37	none
+pair_coeff 136 137	none
+pair_coeff 36 136	none
+pair_coeff 37 38	none
+pair_coeff 137 138	none
+pair_coeff 37 137	none
+pair_coeff 38 39	none
+pair_coeff 138 139	none
+pair_coeff 38 138	none
+pair_coeff 39 40	none
+pair_coeff 139 140	none
+pair_coeff 39 139	none
+pair_coeff 40 41	none
+pair_coeff 140 141	none
+pair_coeff 40 140	none
+pair_coeff 41 42	none
+pair_coeff 141 142	none
+pair_coeff 41 141	none
+pair_coeff 42 43	none
+pair_coeff 142 143	none
+pair_coeff 42 142	none
+pair_coeff 43 44	none
+pair_coeff 143 144	none
+pair_coeff 43 143	none
+pair_coeff 44 45	none
+pair_coeff 144 145	none
+pair_coeff 44 144	none
+pair_coeff 45 46	none
+pair_coeff 145 146	none
+pair_coeff 45 145	none
+pair_coeff 46 47	none
+pair_coeff 146 147	none
+pair_coeff 46 146	none
+pair_coeff 47 48	none
+pair_coeff 147 148	none
+pair_coeff 47 147	none
+pair_coeff 48 49	none
+pair_coeff 148 149	none
+pair_coeff 48 148	none
+pair_coeff 49 50	none
+pair_coeff 149 150	none
+pair_coeff 49 149	none
+pair_coeff 50 51	none
+pair_coeff 150 151	none
+pair_coeff 50 150	none
+pair_coeff 51 52	none
+pair_coeff 151 152	none
+pair_coeff 51 151	none
+pair_coeff 52 53	none
+pair_coeff 152 153	none
+pair_coeff 52 152	none
+pair_coeff 53 54	none
+pair_coeff 153 154	none
+pair_coeff 53 153	none
+pair_coeff 54 55	none
+pair_coeff 154 155	none
+pair_coeff 54 154	none
+pair_coeff 55 56	none
+pair_coeff 155 156	none
+pair_coeff 55 155	none
+pair_coeff 56 57	none
+pair_coeff 156 157	none
+pair_coeff 56 156	none
+pair_coeff 57 58	none
+pair_coeff 157 158	none
+pair_coeff 57 157	none
+pair_coeff 58 59	none
+pair_coeff 158 159	none
+pair_coeff 58 158	none
+pair_coeff 59 60	none
+pair_coeff 159 160	none
+pair_coeff 59 159	none
+pair_coeff 60 61	none
+pair_coeff 160 161	none
+pair_coeff 60 160	none
+pair_coeff 61 62	none
+pair_coeff 161 162	none
+pair_coeff 61 161	none
+pair_coeff 62 63	none
+pair_coeff 162 163	none
+pair_coeff 62 162	none
+pair_coeff 63 64	none
+pair_coeff 163 164	none
+pair_coeff 63 163	none
+pair_coeff 64 65	none
+pair_coeff 164 165	none
+pair_coeff 64 164	none
+pair_coeff 65 66	none
+pair_coeff 165 166	none
+pair_coeff 65 165	none
+pair_coeff 66 67	none
+pair_coeff 166 167	none
+pair_coeff 66 166	none
+pair_coeff 67 68	none
+pair_coeff 167 168	none
+pair_coeff 67 167	none
+pair_coeff 68 69	none
+pair_coeff 168 169	none
+pair_coeff 68 168	none
+pair_coeff 69 70	none
+pair_coeff 169 170	none
+pair_coeff 69 169	none
+pair_coeff 70 71	none
+pair_coeff 170 171	none
+pair_coeff 70 170	none
+pair_coeff 71 72	none
+pair_coeff 171 172	none
+pair_coeff 71 171	none
+pair_coeff 72 73	none
+pair_coeff 172 173	none
+pair_coeff 72 172	none
+pair_coeff 73 74	none
+pair_coeff 173 174	none
+pair_coeff 73 173	none
+pair_coeff 74 75	none
+pair_coeff 174 175	none
+pair_coeff 74 174	none
+pair_coeff 75 76	none
+pair_coeff 175 176	none
+pair_coeff 75 175	none
+pair_coeff 76 77	none
+pair_coeff 176 177	none
+pair_coeff 76 176	none
+pair_coeff 77 78	none
+pair_coeff 177 178	none
+pair_coeff 77 177	none
+pair_coeff 78 79	none
+pair_coeff 178 179	none
+pair_coeff 78 178	none
+pair_coeff 79 80	none
+pair_coeff 179 180	none
+pair_coeff 79 179	none
+pair_coeff 80 81	none
+pair_coeff 180 181	none
+pair_coeff 80 180	none
+pair_coeff 81 82	none
+pair_coeff 181 182	none
+pair_coeff 81 181	none
+pair_coeff 82 83	none
+pair_coeff 182 183	none
+pair_coeff 82 182	none
+pair_coeff 83 84	none
+pair_coeff 183 184	none
+pair_coeff 83 183	none
+pair_coeff 84 85	none
+pair_coeff 184 185	none
+pair_coeff 84 184	none
+pair_coeff 85 86	none
+pair_coeff 185 186	none
+pair_coeff 85 185	none
+pair_coeff 86 87	none
+pair_coeff 186 187	none
+pair_coeff 86 186	none
+pair_coeff 87 88	none
+pair_coeff 187 188	none
+pair_coeff 87 187	none
+pair_coeff 88 89	none
+pair_coeff 188 189	none
+pair_coeff 88 188	none
+pair_coeff 89 90	none
+pair_coeff 189 190	none
+pair_coeff 89 189	none
+pair_coeff 90 91	none
+pair_coeff 190 191	none
+pair_coeff 90 190	none
+pair_coeff 91 92	none
+pair_coeff 191 192	none
+pair_coeff 91 191	none
+pair_coeff 92 93	none
+pair_coeff 192 193	none
+pair_coeff 92 192	none
+pair_coeff 93 94	none
+pair_coeff 193 194	none
+pair_coeff 93 193	none
+pair_coeff 94 95	none
+pair_coeff 194 195	none
+pair_coeff 94 194	none
+pair_coeff 95 96	none
+pair_coeff 195 196	none
+pair_coeff 95 195	none
+pair_coeff 96 97	none
+pair_coeff 196 197	none
+pair_coeff 96 196	none
+pair_coeff 97 98	none
+pair_coeff 197 198	none
+pair_coeff 97 197	none
+pair_coeff 98 99	none
+pair_coeff 198 199	none
+pair_coeff 98 198	none
+pair_coeff 99 100	none
+pair_coeff 199 200	none
+pair_coeff 99 199	none
+pair_coeff 100 200	none
+
+
+#Savelyev's Chemically Accurate CG ds-DNA
+#bond_coeff	1	4.96	2.625		-0.226		0.0149
+#bond_coeff	2	9.9	0.115		-0.041		0.058
+#bond_coeff	3	12.3	0.040		-0.010		0.0008
+#bond_coeff	4	9.2	0.0955		-0.0459		0.00502
+#bond_coeff	5	13.45	0.123		-0.040		0.0037
+#bond_coeff	6	10.2	0.1378		-0.0527		0.005
+##bond_coeff	7	14.7	0.085		-0.0444		0.005
+#bond_coeff	8	12.5	0.1386		-0.0568		0.005
+#bond_coeff	9	16.35	1.324e-06	-0.0122		0.00185
+#bond_coeff	10	16.9	0.3626		-0.077		0.005
+#bond_coeff	11	17.1	0.0467		0.0021		0.000146
+#bond_coeff	12	11.3	2.92		0.41		0.072
+#angle_coeff	*	156	9.22312		4.16223		1.07826
+
+#bond_coeff      1       4.9     2.62572 	-0.226309       0.0149927
+#bond_coeff      2       9.6     0.11508		-0.04131        0.0058
+#bond_coeff      3       13      0.04062 	-0.01052        0.000833333
+#bond_coeff      4       8.9     0.09546 	-0.04589        0.00502
+#bond_coeff      5       14.5    0.123105        -0.039945       0.00375
+#bond_coeff      6       10.4    0.13779 	-0.05267        0.005
+#bond_coeff      7       15.6    0.08504 	-0.04443        0.005
+#bond_coeff      8       13.85   0.13857 	-0.05683        0.005
+#bond_coeff      9       16.5    1.324e-06       -0.0122 	0.001854
+#bond_coeff      10      17.5    0.36266 	-0.07683        0.005
+#bond_coeff      11      17.7    0.0466962       0.00211317      0.000145585
+#bond_coeff      12      11.3    2.92349 	0.41427		 0.07197
+#angle_coeff     *       156     9.22312 	4.16223	 	1.07826
+
+bond_coeff      1       4.9     2.62572         -0.226309       0.0149927
+bond_coeff      2       9.9     0.080556        -0.028917       0.00406
+bond_coeff      3       12.3    0.028434        -0.007364       0.000583333
+bond_coeff      4       9.2     0.066822        -0.032123       0.003514
+bond_coeff      5       13.45   0.0861735       -0.0279615      0.002625
+bond_coeff      6       10.2    0.096453        -0.036869       0.0035
+bond_coeff      7       14.4    0.059528        -0.031101       0.0035
+bond_coeff      8       11.9    0.096999        -0.039781       0.0035
+bond_coeff      9       15.95   9.268e-07       -0.00854        0.0012978
+bond_coeff      10      16.9    0.253862        -0.053781       0.0035
+bond_coeff      11      15.9    0.0326874       0.00147922      0.000101909
+bond_coeff      12      11.0    2.92349         0.41427         0.07197
+angle_coeff	1	156	9.22312		4.16223		1.07826
+
+velocity	all create 300.0 415451
+
+fix		1 all nvt temp 300.0 300.0 100.0
+fix_modify	1 energy yes
+
+thermo_style	custom step temp epair ebond eangle emol pe ke etotal 
+
+thermo 1000
+
+variable e equal etotal
+
+fix 2 all print 1000 "$e" file etotal.txt screen no
+
+dump		1 all atom 1000 dump.lammpstrj
+#dump		2 all dcd 1000 dump.dcd
+
+dump_modify     1 sort id
+
+reset_timestep  0
+minimize 0.001 0.01 1000 1000000
+run             10000
+
