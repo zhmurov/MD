@@ -33,28 +33,101 @@
 #include "Integrators/VelocityVerlet.cu"
 #include "Integrators/LeapFrogNoseHoover.cu"
 
+void dumpPSF(char* filename, ReadTopology &top){
+	PSF psf;
+	psf.natoms = top.atomCount;
+	psf.ntheta = 0;
+	psf.nphi = 0;
+	psf.nimphi = 0;
+	psf.nnb = 0;
+	psf.ncmap = 0;
+	psf.atoms = (PSFAtom*)calloc(psf.natom, sizeof(PSFAtom));
+
+	int i, j;
+	for(i = 0; i < top.atomCount; i++){
+		psf.atoms[i].id = top.atoms[i].id;
+		psf.atoms[i].m = top.masses[j].mass;
+
+		sprintf(psf.atoms[i].name, "C");
+		sprintf(psf.atoms[i].type, "%d", top.atoms[i].type);
+		psf.atoms[i].q = top.atoms[i].charge;
+		if(top.atoms[i].resid == 0){
+			sprintf(psf.atoms[i].resName, "ION");
+		} else {
+			sprintf(psf.atoms[i].resName, "DNA");
+		}
+		psf.atoms[i].resid = top.atoms[i].resid;
+		sprintf(psf.atoms[i].segment, "%d", top.atoms[i].id);
+	}
+
+	psf.bondCount = 0;
+	for(i = 0; i < top.bondCount; i++){
+		if(top.bonds[i].func == 1){
+			psf.nbond ++;
+		}
+	}
+	psf.bonds = (PSFBond*)calloc(psf.nbond, sizeof(PSFBond));
+	int currentBond = 0;
+	for(i = 0; i < top.bondCount; i++){
+		if(top.bonds[i].func == 1){
+			psf.bonds[currentBond].i = top.bonds[i].i;
+			psf.bonds[currentBond].j = top.bonds[i].j;
+			currentBond++;
+		}
+	}
+
+	writePSF(filename, &psf);
+	free(psf.atoms);
+	free(psf.bonds);
+}
+
+void readCoordinatesFromFile(char* filename){
+	XYZ xyz;
+	readXYZ(filename, &xyz);
+	int i;
+	for(i = 0; i < xyz.atomCount; i++){
+		mdd.h_coord[i].x = xyz.atoms[i].x;
+		mdd.h_coord[i].y = xyz.atoms[i].y;
+		mdd.h_coord[i].z = xyz.atoms[i].z;
+	}
+}
 
 
 
-void MDGPU::init(ReadTopology &top, ReadParameters &par)
+void MDGPU::init()
 {
+	parseParametersFile(argv[1], argc, argv);
+
+	TOPData top;
+	PARAMData par;
+
+	char filename[FILENAME_LENGTH];
+	getMaskedParameter(filename, PARAMETER_TOPOLOGY_FILENAME);
+	readTOP(filename, &top);
+
+	getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
+	ReadParameters par(filename, &par);
+
+	getMaskedParameter(filename, PARAMETER_PSF_OUTPUT_FILENAME);
+	dumpPSF(filename, top);
+
 	cudaSetDevice(getIntegerParameter(PARAMETER_GPU_DEVICE));
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
-	mdd.N = top.natoms;
+	mdd.N = top.atomCount;
 	mdd.widthTot = ((mdd.N-1)/DEFAULT_DATA_ALLIGN + 1)*DEFAULT_DATA_ALLIGN;
 	mdd.dt = getFloatParameter(PARAMETER_TIMESTEP);
 	mdd.numsteps = getIntegerParameter(PARAMETER_NUMSTEPS);
 
 	mdd.ftm2v = FTM2V;
 
-	mdd.bc.rlo.x = top.box.xlo;
-	mdd.bc.rlo.y = top.box.ylo;
-	mdd.bc.rlo.z = top.box.zlo;
+	mdd.bc.rlo.x = getFloatParameter("pbc_xlo", 0, 0);
+	mdd.bc.rlo.y = getFloatParameter("pbc_ylo", 0, 0);
+	mdd.bc.rlo.z = getFloatParameter("pbc_zlo", 0, 0);
 
-	mdd.bc.rhi.x = top.box.xhi;
-	mdd.bc.rhi.y = top.box.yhi;
-	mdd.bc.rhi.z = top.box.zhi;
+	mdd.bc.rhi.x = getFloatParameter("pbc_xhi", 0, 0);
+	mdd.bc.rhi.y = getFloatParameter("pbc_yhi", 0, 0);
+	mdd.bc.rhi.z = getFloatParameter("pbc_zhi", 0, 0);
 
 	mdd.bc.len.x = mdd.bc.rhi.x - mdd.bc.rlo.x;
 	mdd.bc.len.y = mdd.bc.rhi.y - mdd.bc.rlo.y;
@@ -68,6 +141,12 @@ void MDGPU::init(ReadTopology &top, ReadParameters &par)
 	mdd.h_atomTypes = (int*)calloc(mdd.N, sizeof(int));
 	mdd.h_boxids = (int4*)calloc(mdd.N, sizeof(int4));
 
+	getMaskedParameter(filename, PARAMETER_COORDINATES_FILENAME, "NONE");
+
+	if(strncmp(filename, "NONE", 4) != 0){
+		readCoordinatesFromFile(filename);
+	}
+
 	cudaMalloc((void**)&mdd.d_coord, mdd.N*sizeof(float4));
 	cudaMalloc((void**)&mdd.d_vel, mdd.N*sizeof(float4));
 	cudaMalloc((void**)&mdd.d_force, mdd.N*sizeof(float4));
@@ -79,17 +158,14 @@ void MDGPU::init(ReadTopology &top, ReadParameters &par)
 
 	int i, j;
 	for(i = 0; i < mdd.N; i++){
-		mdd.h_coord[i].x = top.atoms[i].x;
-		mdd.h_coord[i].y = top.atoms[i].y;
-		mdd.h_coord[i].z = top.atoms[i].z;
 		mdd.h_charge[i] = top.atoms[i].charge;
 		mdd.h_atomTypes[i] = top.atoms[i].type - 1;
 	}
 
 	for(i = 0; i < mdd.N; i++){
-		for(j = 0; j < top.natom_types; j++){
-			if(top.atoms[i].type == top.masses[j].id){
-				mdd.h_mass[i] = top.masses[j].mass;
+		for(j = 0; j < top.atomCount; j++){
+			if(top.atoms[i].type == top.atoms[j].type){
+				mdd.h_mass[i] = top.atoms[j].mass;
 			}
 		}
 	}
@@ -116,6 +192,29 @@ void MDGPU::init(ReadTopology &top, ReadParameters &par)
 	cudaBindTexture(0, t_charges, mdd.d_charge, mdd.N*sizeof(float));
 	cudaBindTexture(0, t_atomTypes, mdd.d_atomTypes, mdd.N*sizeof(int));
 
+	char integ_str[PARAMETER_MAX_LENGTH];
+	getMaskedParameter(integ_str, PARAMETER_INTEGRATOR);
+	if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG) == 0) {
+		integrator = new LeapFrog(&mdd);
+	} else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0) {
+		integrator = new VelocityVerlet(&mdd);
+	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0) {
+		integrator = new LeapFrogNoseHoover(&mdd);
+	} else {
+		DIE("Integrator was set incorrectly!");
+	}
+
+	if(getYesNoParameter(PARAMETER_LANGEVIN, DEFAULT_LANGEVIN)){
+		float damping = getFloatParameter(PARAMETER_DAMPING);
+		int seed = getIntegerParameter(PARAMETER_LANGEVIN_SEED);
+		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
+		potentials.push_back(new Langevin(&mdd, damping, seed, temperature));
+	}
+
+
+/*
+
+
 	// Computational arrays
 	ComputationalArrays ca(&top, &par);
 
@@ -125,26 +224,14 @@ void MDGPU::init(ReadTopology &top, ReadParameters &par)
 
 	// Add potentials, updaters and integrators
 
-	char integ_str[PARAMETER_MAX_LENGTH];
-	getMaskedParameter(integ_str, PARAMETER_INTEGRATOR);
-	if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG)==0) {
-		integrator = new LeapFrog(&mdd);
-	} else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET)==0) {
-		integrator = new VelocityVerlet(&mdd);
-	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER)==0) {
-		integrator = new LeapFrogNoseHoover(&mdd);
-	} else {
-		DIE("Integrator was set incorrectly!");
-	}
+	
 
 	ca.GetBondList(string(BOND_CLASS2_STRING), &bonds, &bond_coeffs);
 //	potentials.push_back(new BondsClass2Atom(&mdd, bonds, bond_coeffs));
 	potentials.push_back(new BondsClass2Pair(&mdd, bonds, bond_coeffs));
 
 	potentials.push_back(new AngleClass2(&mdd, top, par));
-	if(getYesNoParameter(PARAMETER_LANGEVIN, DEFAULT_LANGEVIN)){
-		potentials.push_back(new Langevin(&mdd, top, par));
-	}
+	
 
 	// Init pair lists
 
@@ -185,7 +272,7 @@ void MDGPU::init(ReadTopology &top, ReadParameters &par)
 	
 	if(getYesNoParameter(PARAMETER_FIX_MOMENTUM, DEFAULT_FIX_MOMENTUM)){
 		updaters.push_back(new FixMomentum(&mdd, getIntegerParameter(PARAMETER_FIX_MOMENTUM_FREQUENCE)));
-	}
+	}*/
 }
 
 void MDGPU::generateVelocities(float T, int * rseed){
@@ -240,7 +327,7 @@ exit(0);
 	}
 }
 
-void MDGPU::compute(ReadTopology &top, ReadParameters &par)
+void MDGPU::compute()
 {
 	mdd.step = 0;
 	int numsteps = mdd.numsteps;
@@ -316,8 +403,8 @@ MDGPU::~MDGPU()
 void compute(ReadTopology &top, ReadParameters &par){
 
 	MDGPU mdgpu;
-	mdgpu.init(top, par);
-	mdgpu.compute(top, par);
+	mdgpu.init();
+	mdgpu.compute();
 	cudaDeviceReset();
 }
 

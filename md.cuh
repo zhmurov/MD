@@ -14,8 +14,10 @@
 #include "parameters.h"
 #include "IO/configreader.h"
 #include "Common/interfaces.h"
-#include "IO/read_topology.h"
-#include "IO/read_parameters.h"
+#include "IO/topio.h"
+#include "IO/paramio.h"
+#include "IO/psfio.h"
+#include "IO/xyzio.h"
 #include "Util/wrapper.h"
 #include "Util/ran2.h"
 #include "cuda.h"
@@ -26,9 +28,9 @@ class MDGPU
 public:
 	MDGPU() {};
 	~MDGPU();
-	void init(ReadTopology &top, ReadParameters &par);
+	void init();
 	void generateVelocities(float T, int * rseed);
-	void compute(ReadTopology &top, ReadParameters &par);
+	void compute();
 
 private:
 	MDData mdd;

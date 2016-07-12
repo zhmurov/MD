@@ -9,7 +9,7 @@
 
 class Langevin : public IPotential {
 public:
-	Langevin(MDData *mdd);
+	Langevin(MDData *mdd, float damping, int seed, float temperature);
 	~Langevin();
 	void compute(MDData *mdd);
 	int get_energy_count() {return 0;}

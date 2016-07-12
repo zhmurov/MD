@@ -9,14 +9,12 @@
 #include "../Util/HybridTaus.cu"
 #include "../md.cuh"
 
-Langevin::Langevin(MDData *mdd){
+Langevin::Langevin(MDData *mdd, float damping, int seed, float temperature){
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->mdd = mdd;
-	gamma = 1.0f/getFloatParameter(PARAMETER_DAMPING);
-	int seed = getIntegerParameter(PARAMETER_LANGEVIN_SEED);
+	float gamma = 1.0f/damping;
 	initRand(seed, mdd->N);
-	float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
 	var = sqrtf(2.0f*gamma*BOLTZMANN_CONSTANT*temperature/mdd->dt)/mdd->ftm2v;
 	gamma /= mdd->ftm2v;
 }
