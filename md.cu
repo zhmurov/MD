@@ -13,40 +13,41 @@
 
 // Potentials
 #include "Potentials/BondsClass2Atom.cu"
-#include "Potentials/BondsClass2Pair.cu"
+/*#include "Potentials/BondsClass2Pair.cu"
 #include "Potentials/AngleClass2.cu"
-#include "Potentials/GaussExcluded.cu"
+#include "Potentials/GaussExcluded.cu"*/
 #include "Potentials/Langevin.cu"
-#include "Potentials/PPPM.cu"
-#include "Potentials/Coulomb.cu"
+/*#include "Potentials/PPPM.cu"
+#include "Potentials/Coulomb.cu"*/
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
 #include "Updaters/EnergyOutput.cu"
-#include "Updaters/PairlistUpdater.cu"
+/*#include "Updaters/PairlistUpdater.cu"
 #include "Updaters/PairListL1.cu"
 #include "Updaters/PairListL2.cu"
-#include "Updaters/FixMomentum.cu"
+#include "Updaters/FixMomentum.cu"*/
 
 // Integrators
 #include "Integrators/LeapFrog.cu"
 #include "Integrators/VelocityVerlet.cu"
 #include "Integrators/LeapFrogNoseHoover.cu"
 
-void dumpPSF(char* filename, ReadTopology &top){
+void dumpPSF(char* filename, TOPData &top){
+	printf("Creating psf...\n");
 	PSF psf;
-	psf.natoms = top.atomCount;
+	psf.natom = top.atomCount;
 	psf.ntheta = 0;
 	psf.nphi = 0;
 	psf.nimphi = 0;
 	psf.nnb = 0;
 	psf.ncmap = 0;
 	psf.atoms = (PSFAtom*)calloc(psf.natom, sizeof(PSFAtom));
+	int i;
 
-	int i, j;
 	for(i = 0; i < top.atomCount; i++){
 		psf.atoms[i].id = top.atoms[i].id;
-		psf.atoms[i].m = top.masses[j].mass;
+		psf.atoms[i].m = top.atoms[i].mass;
 
 		sprintf(psf.atoms[i].name, "C");
 		sprintf(psf.atoms[i].type, "%d", top.atoms[i].type);
@@ -60,7 +61,7 @@ void dumpPSF(char* filename, ReadTopology &top){
 		sprintf(psf.atoms[i].segment, "%d", top.atoms[i].id);
 	}
 
-	psf.bondCount = 0;
+	psf.nbond = 0;
 	for(i = 0; i < top.bondCount; i++){
 		if(top.bonds[i].func == 1){
 			psf.nbond ++;
@@ -81,7 +82,7 @@ void dumpPSF(char* filename, ReadTopology &top){
 	free(psf.bonds);
 }
 
-void readCoordinatesFromFile(char* filename){
+void readCoordinatesFromFile(char* filename, MDData mdd){
 	XYZ xyz;
 	readXYZ(filename, &xyz);
 	int i;
@@ -96,8 +97,6 @@ void readCoordinatesFromFile(char* filename){
 
 void MDGPU::init()
 {
-	parseParametersFile(argv[1], argc, argv);
-
 	TOPData top;
 	PARAMData par;
 
@@ -106,7 +105,7 @@ void MDGPU::init()
 	readTOP(filename, &top);
 
 	getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
-	ReadParameters par(filename, &par);
+	readPARAM(filename, &par);
 
 	getMaskedParameter(filename, PARAMETER_PSF_OUTPUT_FILENAME);
 	dumpPSF(filename, top);
@@ -115,6 +114,7 @@ void MDGPU::init()
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
 	mdd.N = top.atomCount;
+	printf("mdd.N\t%d\n", mdd.N);
 	mdd.widthTot = ((mdd.N-1)/DEFAULT_DATA_ALLIGN + 1)*DEFAULT_DATA_ALLIGN;
 	mdd.dt = getFloatParameter(PARAMETER_TIMESTEP);
 	mdd.numsteps = getIntegerParameter(PARAMETER_NUMSTEPS);
@@ -144,7 +144,7 @@ void MDGPU::init()
 	getMaskedParameter(filename, PARAMETER_COORDINATES_FILENAME, "NONE");
 
 	if(strncmp(filename, "NONE", 4) != 0){
-		readCoordinatesFromFile(filename);
+		readCoordinatesFromFile(filename, mdd);
 	}
 
 	cudaMalloc((void**)&mdd.d_coord, mdd.N*sizeof(float4));
@@ -159,7 +159,7 @@ void MDGPU::init()
 	int i, j;
 	for(i = 0; i < mdd.N; i++){
 		mdd.h_charge[i] = top.atoms[i].charge;
-		mdd.h_atomTypes[i] = top.atoms[i].type - 1;
+		mdd.h_atomTypes[i] = top.atoms[i].id - 1;
 	}
 
 	for(i = 0; i < mdd.N; i++){
@@ -199,7 +199,9 @@ void MDGPU::init()
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0) {
 		integrator = new VelocityVerlet(&mdd);
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0) {
-		integrator = new LeapFrogNoseHoover(&mdd);
+		float tau = getFloatParameter(PARAMETER_NOSE_HOOVER_TAU);
+		float T0 = getFloatParameter(PARAMETER_NOSE_HOOVER_T0);
+		integrator = new LeapFrogNoseHoover(&mdd, tau, T0);
 	} else {
 		DIE("Integrator was set incorrectly!");
 	}
@@ -210,7 +212,30 @@ void MDGPU::init()
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
 		potentials.push_back(new Langevin(&mdd, damping, seed, temperature));
 	}
+	
+	//BondsClass2Atom
+	int bondCountsPar = par.countBonds;
+	int bondCountsTop = top.bondCount;
+	printf("bondCountsPar = %d\tbondCountsTop = %d\n", bondCountsPar, bondCountsTop);
+	int4* pair;
+	pair = (int4*)calloc(bondCountsPar, sizeof(int4));
 
+	float4* bondCoeffs;
+	bondCoeffs = (float4*)calloc(bondCountsTop, sizeof(float4));
+
+	for(int i = 0; i < bondCountsPar; i++){
+		bondCoeffs[i].x = par.bondCoeff[i].l0;
+		bondCoeffs[i].y = par.bondCoeff[i].k2;
+		bondCoeffs[i].z = par.bondCoeff[i].k3;
+		bondCoeffs[i].w = par.bondCoeff[i].k4;
+	}
+	
+	for(int i = 0; i < bondCountsTop; i++){
+		pair[i].x = top.pairs[i].i;
+		pair[i].y = top.pairs[i].j;
+		pair[i].z = top.pairs[i].func;
+	}
+	potentials.push_back(new BondsClass2Atom(&mdd, bondCountsPar, bondCountsTop, pair, bondCoeffs));
 
 /*
 
@@ -400,7 +425,7 @@ MDGPU::~MDGPU()
 	cudaFree(mdd.d_atomTypes);
 }
 
-void compute(ReadTopology &top, ReadParameters &par){
+void compute(){
 
 	MDGPU mdgpu;
 	mdgpu.init();

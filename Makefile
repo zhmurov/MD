@@ -16,20 +16,19 @@ CC					:= g++
 LINKER				:= g++ -fPIC
 # files
 CPP_SOURCES			:= \
-  main2.cpp \
+  main.cpp \
   ComputationalArrays.cpp \
-  IO/read_topology.cpp \
-  IO/topio.cpp \
-  IO/read_parameters.cpp \
+  IO/paramio.cpp \
   IO/configreader.cpp \
   IO/dcdio.cpp \
   IO/psfio.cpp \
   IO/pdbio.cpp \
   IO/xyzio.cpp \
+  IO/topio.cpp \
   Util/wrapper.cpp \
   Util/mystl.cpp
 CU_SOURCES			:= \
-  md2.cu
+  md.cu
   # Util/ReductionAlgorithms.cu \
   # Integrators/LeapFrogLangevin.cu
 CPP_OBJS				:= $(patsubst %.cpp, $(OBJDIR)/%.cpp.o, $(CPP_SOURCES))

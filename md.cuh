@@ -44,4 +44,4 @@ texture<float4, 1, cudaReadModeElementType> t_coord;
 texture<int, 1, cudaReadModeElementType> t_atomTypes;
 texture<float, 1, cudaReadModeElementType> t_charges;
 
-void initGPU(ReadTopology &top, ReadParameters &par);
+void initGPU();
