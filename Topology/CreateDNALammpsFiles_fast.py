@@ -456,7 +456,7 @@ for ib in bonds:
 	o.write(str(ib.atomid2)+"\n")
 
 top.write("\n")
-top.write("[ angels ]"+"\n")
+top.write("[ angles ]"+"\n")
 top.write(";"+"\t"+"ai"+"\t"+"aj"+"\t"+"ak"+"\t"+"func"+"\t"+"c0"+"\t"+"c1"+"\t"+"c2"+"\t"+"c3"+"\n")
 for ic in angles:
 	top.write("\t"+str(ic.atomid1)+"\t")
