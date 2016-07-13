@@ -10,6 +10,7 @@
 #include "../md.cuh"
 
 Langevin::Langevin(MDData *mdd, float damping, int seed, float temperature){
+	printf("Initializing langevin potential\n");
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->mdd = mdd;
@@ -17,6 +18,7 @@ Langevin::Langevin(MDData *mdd, float damping, int seed, float temperature){
 	initRand(seed, mdd->N);
 	var = sqrtf(2.0f*gamma*BOLTZMANN_CONSTANT*temperature/mdd->dt)/mdd->ftm2v;
 	gamma /= mdd->ftm2v;
+	printf("Done initializing langevin potential\n");
 }
 
 Langevin::~Langevin(){
