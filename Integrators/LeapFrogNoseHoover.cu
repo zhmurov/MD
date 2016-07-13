@@ -8,7 +8,7 @@
 #include "LeapFrogNoseHoover.cuh"
 #include "../md.cuh"
 
-LeapFrogNoseHoover::LeapFrogNoseHoover(MDData *mdd){
+LeapFrogNoseHoover::LeapFrogNoseHoover(MDData *mdd, float tau, float T0){
 	this->mdd = mdd;
 	this->dt = mdd->dt;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
@@ -16,8 +16,9 @@ LeapFrogNoseHoover::LeapFrogNoseHoover(MDData *mdd){
 	h_T = (float*)calloc(mdd->N, sizeof(float));
 	cudaMalloc((void**)&d_T, mdd->N*sizeof(float));
 	gamma = 0.0f;
-	tau = getFloatParameter(PARAMETER_NOSE_HOOVER_TAU);
-	T0 = getFloatParameter(PARAMETER_NOSE_HOOVER_T0);
+	this->tau = tau;
+	this->T0 = T0;
+	printf("mdd->N = %d\n", mdd->N);
 	reduction = new Reduction(mdd->N);
 }
 
