@@ -54,3 +54,5 @@ typedef struct {
 	GaussCoeff* gaussCoeff;
 	LJ_RepulsiveCoeff* lj_RepulsiveCoeff;
 } PARAMData;
+
+extern int readPARAM(char* filename, PARAMData* paramData);

@@ -28,7 +28,7 @@ GaussCoeff readGaussCoeffLineFromPARAM(FILE* paramFile);
 LJ_RepulsiveCoeff readLJCoeffLineFromPARAM(FILE* paramFile);
 int countRowsInPARAM(FILE* paramFile);
 
-void readPARAM(char* filename, PARAMData* paramData){
+int readPARAM(char* filename, PARAMData* paramData){
 	printf("Reading parameters from '%s'.\n", filename);
 	FILE* paramFile = safe_fopen(filename, "r");
 	char buffer[BUF_SIZE];
@@ -127,6 +127,10 @@ void readPARAM(char* filename, PARAMData* paramData){
 			printf("Done reading LJ coeffs.\n");
 		}
 	}
+
+	fclose(paramFile);
+	printf("Done reading the parameters section.\n");
+	return count;
 
 }
 

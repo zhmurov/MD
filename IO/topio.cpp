@@ -27,7 +27,7 @@ TOPPair readPairLineFromTOP(FILE* topFile);
 TOPAngle readAngleLineFromTOP(FILE* topFile);
 TOPDihedral readDihedralLineFromTOP(FILE* topFile);
 
-int readTOP(char* filename, TOPData* topData){
+int readTOP(const char* filename, TOPData* topData){
 	printf("Reading topology from '%s'.\n", filename);
 	FILE* topFile = safe_fopen(filename, "r");
 	char buffer[BUF_SIZE];
@@ -226,7 +226,7 @@ int countRowsInTOP(FILE* topFile){
 	char* eof;
 	do{
 		eof = safe_fgets(buffer, BUF_SIZE, topFile);
-		pch = strtok(buffer, " ");
+		pch = strtok(buffer, " \t");
 		//printf("'%s'\n", pch);
 		if(strcmp(pch, ";") != 0){
 			result ++;
@@ -245,27 +245,27 @@ TOPAtom readAtomLineFromTOP(FILE* topFile){
 	safe_fgets(buffer, BUF_SIZE, topFile);
 
 	if(strncmp(buffer, ";", 1) != 0){
-		pch = strtok(buffer, " ");
+		pch = strtok(buffer, " \t");
 		atom.id = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		atom.resid = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		strcpy(atom.resName, pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		strcpy(atom.name, pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		atom.chain = pch[0];
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		atom.charge = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		atom.mass = atof(pch);
 	} else {
 		atom.id = -1;
@@ -281,34 +281,34 @@ TOPPair readPairLineFromTOP(FILE* topFile){
 	char* pch;
 	safe_fgets(buffer, BUF_SIZE, topFile);
 	if(strncmp(buffer, ";", 1) != 0){
-		pch = strtok(buffer, " ");
+		pch = strtok(buffer, " \t");
 		pair.i = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		pair.j = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		pair.func = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return pair;
 		}
 		pair.c0 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return pair;
 		}
 		pair.c1 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return pair;
 		}
 		pair.c2 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return pair;
 		}
@@ -325,37 +325,37 @@ TOPAngle readAngleLineFromTOP(FILE* topFile){
 	char* pch;
 	safe_fgets(buffer, BUF_SIZE, topFile);
 	if(strncmp(buffer, ";", 1) != 0){
-		pch = strtok(buffer, " ");
+		pch = strtok(buffer, " \t");
 		angle.i = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		angle.j = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		angle.k = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		angle.func = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return angle;
 		}
 		angle.c0 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return angle;
 		}
 		angle.c1 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return angle;
 		}
 		angle.c2 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return angle;
 		}
@@ -372,40 +372,40 @@ TOPDihedral readDihedralLineFromTOP(FILE* topFile){
 	char* pch;
 	safe_fgets(buffer, BUF_SIZE, topFile);
 	if(strncmp(buffer, ";", 1) != 0){
-		pch = strtok(buffer, " ");
+		pch = strtok(buffer, " \t");
 		dihedral.i = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		dihedral.j = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		dihedral.k = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		dihedral.l = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		dihedral.func = atoi(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return dihedral;
 		}
 		dihedral.c0 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return dihedral;
 		}
 		dihedral.c1 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return dihedral;
 		}
 		dihedral.c2 = atof(pch);
 
-		pch = strtok(NULL, " ");
+		pch = strtok(NULL, " \t");
 		if(pch == NULL){
 			return dihedral;
 		}
