@@ -3,22 +3,25 @@
  *
  *  Created on: 24.08.2012
  *      Author: zhmurov
+ *  Changes: 16.08.2016
+ *	Author: kir_min
  */
 #include "GaussExcluded.cuh"
 
 
-GaussExcluded::GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par, PairlistUpdater *pl){
+GaussExcluded::GaussExcluded(MDData *mdd, float cutoffCONF, int typeCount, GaussExCoeff* gauss, PairlistUpdater *pl){
+	printf("Initializing GaussExcluded potential\n");
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->mdd = mdd;
 
 	plist = pl;
-
-	cutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
+	
+	cutoff = cutoffCONF;
 
 	lastStepEnergyComputed = -1;
 
-	atomTypesCount = top.natom_types;
+	atomTypesCount = typeCount;
 
 	h_ged.exclPar = (float2*)calloc(atomTypesCount*atomTypesCount, sizeof(float2));
 	cudaMalloc((void**)&d_ged.exclPar, atomTypesCount*atomTypesCount*sizeof(float2));
@@ -27,13 +30,13 @@ GaussExcluded::GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par
 
 	maxGaussCount = 0;
 	int i, j, k;
-	for(i = 0; i < top.natom_types; i++){
-		for(j = 0; j < top.natom_types; j++){
-			h_ged.exclPar[i*atomTypesCount + j].x = par.ex_gauss_coeffs[i][j].l;
-			h_ged.exclPar[i*atomTypesCount + j].y = par.ex_gauss_coeffs[i][j].A;
-			h_ged.gaussCount[i*atomTypesCount + j] = par.ex_gauss_coeffs[i][j].ng;
-			if(par.ex_gauss_coeffs[i][j].ng > maxGaussCount){
-				maxGaussCount = par.ex_gauss_coeffs[i][j].ng;
+	for(i = 0; i < atomTypesCount; i++){
+		for(j = 0; j < atomTypesCount; j++){
+			h_ged.exclPar[i*atomTypesCount + j].x = (float)gauss[i+j*atomTypesCount].l;
+			h_ged.exclPar[i*atomTypesCount + j].y = gauss[i+j*atomTypesCount].A;
+			h_ged.gaussCount[i*atomTypesCount + j] = gauss[i+j*atomTypesCount].numberGaussians;
+			if(gauss[i+j*atomTypesCount].numberGaussians > maxGaussCount){
+				maxGaussCount = gauss[i+j*atomTypesCount].numberGaussians;
 			}
 		}
 	}
@@ -43,27 +46,27 @@ GaussExcluded::GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par
 
 	pdisp = atomTypesCount*atomTypesCount;
 
-	for(i = 0; i < top.natom_types; i++){
-		for(j = 0; j < top.natom_types; j++){
-			for(k = 0; k < par.ex_gauss_coeffs[i][j].ng; k++){
-				h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].x = par.ex_gauss_coeffs[i][j].B[k];
-				h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].y = par.ex_gauss_coeffs[i][j].C[k];
-				h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].z = par.ex_gauss_coeffs[i][j].R[k];
+	for(i = 0; i < atomTypesCount; i++){
+		for(j = 0; j < atomTypesCount; j++){
+			for(k = 0; k < gauss[i+j*atomTypesCount].numberGaussians; k++){
+				h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].x = gauss[i+j*atomTypesCount].B[k];
+				h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].y = gauss[i+j*atomTypesCount].C[k];
+				h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].z = gauss[i+j*atomTypesCount].R[k];
 			}
 		}
 	}
 
 /*	printf("Excluded volume parameters:\n");
-	for(i = 0; i < top.natom_types; i++){
-		for(j = 0; j < top.natom_types; j++){
+	for(i = 0; i < atomTypesCount; i++){
+		for(j = 0; j < atomTypesCount; j++){
 			printf("(%5.4e, %5.4e)\t", h_ged.exclPar[i*atomTypesCount + j].x, h_ged.exclPar[i*atomTypesCount + j].y);
 		}
 		printf("\n");
 	}
 
 	printf("Gauss count:\n");
-	for(i = 0; i < top.natom_types; i++){
-		for(j = 0; j < top.natom_types; j++){
+	for(i = 0; i < atomTypesCount; i++){
+		for(j = 0; j < atomTypesCount; j++){
 			printf("%d\t", h_ged.gaussCount[i*atomTypesCount + j]);
 		}
 		printf("\n");
@@ -73,8 +76,8 @@ GaussExcluded::GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par
 	printf("===\nB:\n");
 	for(k = 0; k < maxGaussCount; k++){
 		printf("k = %d:\n", k+1);
-		for(i = 0; i < top.natom_types; i++){
-			for(j = 0; j < top.natom_types; j++){
+		for(i = 0; i < atomTypesCount; i++){
+			for(j = 0; j < atomTypesCount; j++){
 				printf("%8.6f\t",
 						h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].x);
 			}
@@ -84,8 +87,8 @@ GaussExcluded::GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par
 	printf("===\nC:\n");
 	for(k = 0; k < maxGaussCount; k++){
 		printf("k = %d:\n", k+1);
-		for(i = 0; i < top.natom_types; i++){
-			for(j = 0; j < top.natom_types; j++){
+		for(i = 0; i < atomTypesCount; i++){
+			for(j = 0; j < atomTypesCount; j++){
 				printf("%8.6f\t",
 						h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].y);
 			}
@@ -95,14 +98,15 @@ GaussExcluded::GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par
 	printf("===\nR:\n");
 	for(k = 0; k < maxGaussCount; k++){
 		printf("k = %d:\n", k+1);
-		for(i = 0; i < top.natom_types; i++){
-			for(j = 0; j < top.natom_types; j++){
+		for(i = 0; i < atomTypesCount; i++){
+			for(j = 0; j < atomTypesCount; j++){
 				printf("%8.6f\t",
 						h_ged.gaussPar[k*pdisp + i*atomTypesCount + j].z);
 			}
 			printf("\n");
 		}
-	}*/
+	}
+	exit(0);*/
 	h_ged.energies = (float2*)calloc(mdd->N, sizeof(float2));
 	cudaMalloc((void**)&d_ged.energies, mdd->N*sizeof(float2));
 
@@ -110,6 +114,7 @@ GaussExcluded::GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par
 	cudaMemcpy(d_ged.gaussCount, h_ged.gaussCount, atomTypesCount*atomTypesCount*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_ged.gaussPar, h_ged.gaussPar, atomTypesCount*atomTypesCount*maxGaussCount*sizeof(float3), cudaMemcpyHostToDevice);
 
+	printf("Done initializing GaussExcluded potential\n");
 }
 
 GaussExcluded::~GaussExcluded(){

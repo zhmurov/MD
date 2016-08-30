@@ -3,6 +3,8 @@
  *
  *  Created on: 21.08.2012
  *      Author: zhmurov
+ *  Changes: 16.08.2016
+ *	Author: kir_min
  */
 
 #pragma once
@@ -24,7 +26,7 @@ typedef struct {
 
 class AngleClass2 : public IPotential {
 public:
-	AngleClass2(MDData *mdd, ReadTopology &top, ReadParameters &par);
+	AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4* angle, float4* angleCoeffs);
 	~AngleClass2();
 	void compute(MDData *mdd);
 	int get_energy_count() {return 1;}

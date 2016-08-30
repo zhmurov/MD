@@ -17,7 +17,7 @@
 PPPM::PPPM(MDData *mdd, float dielectric, float cutoff)
 {
 	// Initialize parameters
-
+	printf("Initializing PPPM potential\n");
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->mdd = mdd;
@@ -26,7 +26,7 @@ PPPM::PPPM(MDData *mdd, float dielectric, float cutoff)
 
 	pb = mdd->bc.len;
 
-	printf("\nInitializing PPPM...\n");
+	//printf("\nInitializing PPPM...\n");
 
 	order = getIntegerParameter(PARAMETER_PPPM_ORDER, DEFAULT_PPPM_ORDER);
 	accuracy = getFloatParameter(PARAMETER_PPPM_ACCURACY);
@@ -110,6 +110,8 @@ PPPM::PPPM(MDData *mdd, float dielectric, float cutoff)
 
 	cufftPlan3d(&plan, mesh_size.x, mesh_size.y, mesh_size.z, CUFFT_C2C);
 
+	printf("Done initializing PPPM potential\n");
+
 }
 
 PPPM::~PPPM()
@@ -147,7 +149,7 @@ PPPM::~PPPM()
 
 void PPPM::compute(MDData *mdd)
 {
-	cudaMemset(d_mesh, 0, sizeof(cufftComplex)*mesh_dim);
+	/*cudaMemset(d_mesh, 0, sizeof(cufftComplex)*mesh_dim);
 
 	// Spread charges on the mesh
 	assign_charges_to_grid_kernel<<<blockCount, blockSize>>>(d_mesh, d_rho_coeff, order, mesh_size);
@@ -176,7 +178,7 @@ void PPPM::compute(MDData *mdd)
 
 	// Force calculation
 	compute_PPPM_forces_kernel<<<blockCount, blockSize>>>(d_El, d_rho_coeff, order, mesh_size, q_factor);
-
+*/
 	/*int i;
 	cudaThreadSynchronize();
 	cudaMemcpy(mdd->h_force, mdd->d_force, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);

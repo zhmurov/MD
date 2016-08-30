@@ -3,6 +3,8 @@
  *
  *  Created on: 21.08.2012
  *      Author: zhmurov
+ *  Changes: 15.08.2016
+ *	Author: kir_min
  */
 
 #include "BondsClass2Atom.cuh"
@@ -17,31 +19,31 @@ bondCoeffs[i].w = k4;
 int4* pair; //from topFile
 pair[i].x = i;
 pair[i].y = j;
-pair[i].z = func;
+pair[i].z = c0;
 */
 
 BondsClass2Atom::BondsClass2Atom(MDData *mdd, int bondCountPar, int bondCountTop, int4* pair, float4* bondCoeffs){
 	printf("Initializing BondsClass2Atom potential\n");
 	this->mdd = mdd;
 	int i;
-	h_bd.bondPar = (float4*)calloc(bondCount, sizeof(float4));
-	cudaMalloc((void**)&d_bd.bondPar, bondCount*sizeof(float4));
-	for(i = 0; i < bondCount; i++){
+	h_bd.bondPar = (float4*)calloc(bondCountPar, sizeof(float4));
+	cudaMalloc((void**)&d_bd.bondPar, bondCountPar*sizeof(float4));
+	for(i = 0; i < bondCountPar; i++){
 		h_bd.bondPar[i].x = bondCoeffs[i].x;
 		h_bd.bondPar[i].y = 2.0f*bondCoeffs[i].y;
 		h_bd.bondPar[i].z = 3.0f*bondCoeffs[i].z;
 		h_bd.bondPar[i].w = 4.0f*bondCoeffs[i].w;
 	}
 
-	cudaMemcpy(d_bd.bondPar, h_bd.bondPar, bondCount*sizeof(float4), cudaMemcpyHostToDevice);
-	cudaBindTexture(0, t_bondPar, d_bd.bondPar, bondCount*sizeof(float4));
+	cudaMemcpy(d_bd.bondPar, h_bd.bondPar, bondCountPar*sizeof(float4), cudaMemcpyHostToDevice);
+	cudaBindTexture(0, t_bondPar, d_bd.bondPar, bondCountPar*sizeof(float4));
 
 	// Count bonds per atom
 
 	h_bd.bondCount = (int*)calloc(mdd->N, sizeof(int));
 	cudaMalloc((void**)&d_bd.bondCount, mdd->N*sizeof(int));
 
-	for (i=0; i < bondCount; i++) {
+	for (i = 0; i < bondCountTop; i++) {
 		h_bd.bondCount[pair[i].x]++;
 		h_bd.bondCount[pair[i].y]++;
 	}
@@ -72,7 +74,7 @@ BondsClass2Atom::BondsClass2Atom(MDData *mdd, int bondCountPar, int bondCountTop
 		h_bd.bondCount[i] = 0;
 	}
 	int a1, a2, type;
-	for (i = 0; i < bondCount; i++) {
+	for (i = 0; i < bondCountTop; i++) {
 		a1 = pair[i].x;
 		a2 = pair[i].y;
 		type = pair[i].z;
@@ -83,92 +85,18 @@ BondsClass2Atom::BondsClass2Atom(MDData *mdd, int bondCountPar, int bondCountTop
 		h_bd.bondCount[a1]++;
 		h_bd.bondCount[a2]++;
 	}
-
 	h_bd.energies = (float*)calloc(bondedCount, sizeof(float));
 	cudaMalloc((void**)&d_bd.energies, bondedCount*sizeof(float));
 
 	cudaMemcpy(d_bd.bondCount, h_bd.bondCount, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_bd.bonds, h_bd.bonds, widthTot*maxBonds*sizeof(int2), cudaMemcpyHostToDevice);
+	printf("Done initializing BondsClass2Atom potential\n");
+/*
+	FILE* file = fopen("bond_forces.dat", "w");
+	fclose(file);
+	step = 0;
+*/
 }
-
-
-
-
-/*BondsClass2Atom::BondsClass2Atom(MDData *mdd, std::vector<int3> &bonds, std::vector<Coeffs> &parameters)
-{
-	this->mdd = mdd;
-
-	int i;
-
-	// Coefficents
-
-	int btCount = parameters.size();
-	h_bd.bondPar = (float4*)calloc(btCount, sizeof(float4));
-	cudaMalloc((void**)&d_bd.bondPar, btCount*sizeof(float4));
-	for (i=0;i!=parameters.size();i++) {
-		Coeffs& coeffs = parameters[i];
-		h_bd.bondPar[i].x = atof(coeffs.coeffs.at(0).c_str()); // l0
-		h_bd.bondPar[i].y = 2.0f*atof(coeffs.coeffs.at(1).c_str()); // 2*k2
-		h_bd.bondPar[i].z = 3.0f*atof(coeffs.coeffs.at(2).c_str()); // 3*k3
-		h_bd.bondPar[i].w = 4.0f*atof(coeffs.coeffs.at(3).c_str()); // 4*k4
-	}
-
-	cudaMemcpy(d_bd.bondPar, h_bd.bondPar, btCount*sizeof(float4), cudaMemcpyHostToDevice);
-	cudaBindTexture(0, t_bondPar, d_bd.bondPar, btCount*sizeof(float4));
-
-	// Count bonds per atom
-
-	h_bd.bondCount = (int*)calloc(mdd->N, sizeof(int));
-	cudaMalloc((void**)&d_bd.bondCount, mdd->N*sizeof(int));
-	for (i=0;i!=bonds.size();i++) {
-		h_bd.bondCount[bonds[i].x]++;
-		h_bd.bondCount[bonds[i].y]++;
-	}
-
-	// Calculate maxBond and lastBonded
-
-	int maxBonds = 0;
-	int lastBonded = 0;
-	for(i = 0; i < mdd->N; i++){
-		if(h_bd.bondCount[i] > 0){
-			lastBonded = i;
-		}
-		if(maxBonds < h_bd.bondCount[i]){
-			maxBonds = h_bd.bondCount[i];
-		}
-	}
-
-	bondedCount = lastBonded + 1;
-	this->blockCount = (bondedCount-1)/DEFAULT_BLOCK_SIZE + 1;
-	this->blockSize = DEFAULT_BLOCK_SIZE;
-	widthTot = ((bondedCount-1)/DEFAULT_DATA_ALLIGN + 1)*DEFAULT_DATA_ALLIGN;
-	h_bd.bonds = (int2*)calloc(widthTot*maxBonds, sizeof(int2));
-	cudaMalloc((void**)&d_bd.bonds, widthTot*maxBonds*sizeof(int2));
-
-	// Fill list of bonded neighbours for each atom
-
-	for(i = 0; i < mdd->N; i++){
-		h_bd.bondCount[i] = 0;
-	}
-	int a1, a2, type;
-	for (i=0;i!=bonds.size();i++) {
-		a1 = bonds[i].x;
-		a2 = bonds[i].y;
-		type = bonds[i].z;
-		h_bd.bonds[h_bd.bondCount[a1]*widthTot + a1].x = a2;
-		h_bd.bonds[h_bd.bondCount[a2]*widthTot + a2].x = a1;
-		h_bd.bonds[h_bd.bondCount[a1]*widthTot + a1].y = type;
-		h_bd.bonds[h_bd.bondCount[a2]*widthTot + a2].y = type;
-		h_bd.bondCount[a1]++;
-		h_bd.bondCount[a2]++;
-	}
-
-	h_bd.energies = (float*)calloc(bondedCount, sizeof(float));
-	cudaMalloc((void**)&d_bd.energies, bondedCount*sizeof(float));
-
-	cudaMemcpy(d_bd.bondCount, h_bd.bondCount, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_bd.bonds, h_bd.bonds, widthTot*maxBonds*sizeof(int2), cudaMemcpyHostToDevice);
-}*/
 
 BondsClass2Atom::~BondsClass2Atom(){
 	free(h_bd.bondCount);
@@ -229,14 +157,17 @@ __global__ void bondClass2_kernel(int* d_bondCount, int2* d_bonds, int widthTot,
 
 void BondsClass2Atom::compute(MDData *mdd){
 	bondClass2_kernel<<<this->blockCount, this->blockSize>>>(d_bd.bondCount, d_bd.bonds, widthTot, bondedCount);
-	/*int i;
+/*
+	int i;
 	cudaMemcpy(mdd->h_force, mdd->d_force, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);
-	FILE* file = fopen("bond_forces.dat", "w");
+	FILE* file = fopen("bond_forces.dat", "a");
 	for(i = 0; i < mdd->N; i++){
-		fprintf(file, "%f %f %f\n", mdd->h_force[i].x, mdd->h_force[i].y, mdd->h_force[i].z);
+		fprintf(file, "%d: %d %f %f %f\n", step, i, mdd->h_force[i].x, mdd->h_force[i].y, mdd->h_force[i].z);
 	}
 	fclose(file);
-	exit(0);*/
+	if(step == 1000) exit(0);
+	step ++;
+*/
 }
 
 __global__ void bondClass2Energy_kernel(int* d_bondCount, int2* d_bonds, float* d_energies, int widthTot, int bondedCount){
@@ -276,7 +207,7 @@ float BondsClass2Atom::get_energies(int energy_id, int timestep){
 	//cudaThreadSynchronize();
 	cudaMemcpy(h_bd.energies, d_bd.energies, bondedCount*sizeof(float), cudaMemcpyDeviceToHost);
 	int i;
-	float energy = 0.0f;
+	double energy = 0.0f;
 	for(i = 0; i < bondedCount; i++){
 		energy += h_bd.energies[i];
 	}

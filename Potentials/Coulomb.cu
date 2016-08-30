@@ -8,6 +8,7 @@
 #include "Coulomb.cuh"
 
 Coulomb::Coulomb(MDData *mdd, PairlistUpdater *pl, float alpha, float dielectric, float cutoff){
+	printf("Initializing Coulomb potential\n");
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 
@@ -25,6 +26,7 @@ Coulomb::Coulomb(MDData *mdd, PairlistUpdater *pl, float alpha, float dielectric
 
 	h_energy = (float*)calloc(mdd->N, sizeof(float));
 	cudaMalloc((void**)&d_energy, mdd->N*sizeof(float));
+	printf("Done initializing Coulomb potential\n");
 }
 
 Coulomb::~Coulomb(){

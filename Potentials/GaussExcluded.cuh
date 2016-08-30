@@ -3,6 +3,8 @@
  *
  *  Created on: 24.08.2012
  *      Author: zhmurov
+ *  Changes: 16.08.2016
+ *	Author: kir_min
  */
 
 #pragma once
@@ -15,9 +17,18 @@ typedef struct {
 	float2* energies;
 } GEData;
 
+typedef struct {
+	float A;
+	int l;
+	int numberGaussians;
+	float* B;
+	float* C;
+	float* R;
+} GaussExCoeff;
+
 class GaussExcluded : public IPotential {
 public:
-	GaussExcluded(MDData *mdd, ReadTopology &top, ReadParameters &par, PairlistUpdater *pl);
+	GaussExcluded(MDData *mdd, float cutoffCONF, int typeCount, GaussExCoeff* gauss, PairlistUpdater *pl);
 	~GaussExcluded();
 	void compute(MDData *mdd);
 	int get_energy_count() {return 2;}

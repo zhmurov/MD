@@ -3,6 +3,8 @@
  *
  *  Created on: 23.08.2012
  *      Author: zhmurov
+ *  Changes: 12.07.2016
+ *	Author: kir_min
  */
 
 #include "Langevin.cuh"

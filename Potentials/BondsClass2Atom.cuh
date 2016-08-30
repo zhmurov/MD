@@ -3,6 +3,8 @@
  *
  *  Created on: 21.08.2012
  *      Author: zhmurov
+ *  Changes: 15.08.2016
+ *	Author: kir_min
  */
 
 #pragma once
@@ -32,6 +34,7 @@ private:
 	int bondedCount;
 	int widthTot;
 	int maxBonds;
+	//int step;
 };
 
 texture<float4, 1, cudaReadModeElementType> t_bondPar;

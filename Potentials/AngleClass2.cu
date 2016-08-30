@@ -3,93 +3,71 @@
  *
  *  Created on: 21.08.2012
  *      Author: zhmurov
+ *  Changes: 16.08.2016
+ *	Author: kir_min
  */
 
 #include "AngleClass2.cuh"
 
-AngleClass2::AngleClass2(MDData *mdd, ReadTopology &top, ReadParameters &par){
-
+AngleClass2::AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4* angle, float4* angleCoeffs){
+	printf("Initializing AngleClass2 potential\n");
 	this->mdd = mdd;
+	
+	angleCount = angleCountTop;
+	int atCount = angleCountPar;
 
 	// Angle types
 
-	int i, j;
-	int atCount = 0;
-	int* atMap = (int*)calloc(par.nangle_types, sizeof(int));
-	for(i = 0; i < par.nangle_types; i++){
-		Coeffs& coeffs = par.angle_coeffs[i];
-		if(coeffs.name == string(ANGLE_CLASS2_STRING)){
-			atMap[i] = atCount;
-			atCount ++;
-		} else {
-			atMap[i] = -1;
-		}
-	}
+	int i;
+
 	h_ad.pars = (float4*)calloc(atCount, sizeof(float4));
 	cudaMalloc((void**)&d_ad.pars, atCount*sizeof(float4));
-	atCount = 0;
-	for(i = 0; i < par.nangle_types; i++){
-		Coeffs& coeffs = par.angle_coeffs[i];
-		if(coeffs.name == string(ANGLE_CLASS2_STRING)){
-			h_ad.pars[atCount].x = atof(coeffs.coeffs.at(0).c_str())*M_PI/180.0f; // theta0
-			h_ad.pars[atCount].y = 2.0f*atof(coeffs.coeffs.at(1).c_str()); // 2*k2
-			h_ad.pars[atCount].z = 3.0f*atof(coeffs.coeffs.at(2).c_str()); // 3*k3
-			h_ad.pars[atCount].w = 4.0f*atof(coeffs.coeffs.at(3).c_str()); // 4*k4
-			atCount ++;
-		}
+	for(i = 0; i < atCount; i++){
+		h_ad.pars[i].x = angleCoeffs[i].x*M_PI/180.0f; // theta0
+		h_ad.pars[i].y = 2.0f*angleCoeffs[i].y; // 2*k2
+		h_ad.pars[i].z = 3.0f*angleCoeffs[i].z; // 3*k3
+		h_ad.pars[i].w = 4.0f*angleCoeffs[i].w; // 4*k4
 	}
 
 	// Angles
-	angleCount = 0;
+
 	lastAngled = 0;
-	int* angleTypes = (int*)calloc(top.nangles, sizeof(int));
-	for(i = 0; i < top.nangles; i++){
-		angleTypes[i] = -1;
-		for(j = 0; j < par.nangle_types; j++){
-			if(top.angles[i].type == par.angle_coeffs[j].id && par.angle_coeffs->name == string(ANGLE_CLASS2_STRING)){
-				angleTypes[i] = atMap[j];
-			}
+	int* angleTypes = (int*)calloc(angleCount, sizeof(int));
+	for(i = 0; i < angleCount; i++){
+		int a1 = angle[i].x;
+		int a2 = angle[i].y;
+		int a3 = angle[i].z;
+		if(a1 > lastAngled){
+			lastAngled = a1;
 		}
-		if(angleTypes[i] != -1){
-			angleCount ++;
-			int a1 = top.angles[i].atom1-1;
-			int a2 = top.angles[i].atom2-1;
-			int a3 = top.angles[i].atom3-1;
-			if(a1 > lastAngled){
-				lastAngled = a1;
-			}
-			if(a2 > lastAngled){
-				lastAngled = a2;
-			}
-			if(a3 > lastAngled){
-				lastAngled = a3;
-			}
+		if(a2 > lastAngled){
+			lastAngled = a2;
+		}
+		if(a3 > lastAngled){
+			lastAngled = a3;
 		}
 	}
+
 	h_ad.angles = (int4*)calloc(angleCount, sizeof(int4));
 	cudaMalloc((void**)&d_ad.angles, angleCount*sizeof(int4));
 	h_ad.refs = (int4*)calloc(angleCount, sizeof(int4));
 	cudaMalloc((void**)&d_ad.refs, angleCount*sizeof(int4));
 	h_ad.count = (int*)calloc(lastAngled + 1, sizeof(int));
 	cudaMalloc((void**)&d_ad.count, (lastAngled + 1)*sizeof(int));
-	angleCount = 0;
-	for(i = 0; i < top.nangles; i++){
-		if(angleTypes[i] != -1){
-			int a1 = top.angles[i].atom1-1;
-			int a2 = top.angles[i].atom2-1;
-			int a3 = top.angles[i].atom3-1;
-			h_ad.angles[angleCount].x = a1;
-			h_ad.angles[angleCount].y = a2;
-			h_ad.angles[angleCount].z = a3;
-			h_ad.angles[angleCount].w = angleTypes[i];
-			h_ad.refs[angleCount].x = h_ad.count[a1];
-			h_ad.refs[angleCount].y = h_ad.count[a2];
-			h_ad.refs[angleCount].z = h_ad.count[a3];
-			h_ad.count[a1]++;
-			h_ad.count[a2]++;
-			h_ad.count[a3]++;
-			angleCount ++;
-		}
+	for(i = 0; i < angleCount; i++){
+		int a1 = angle[i].x;
+		int a2 = angle[i].y;
+		int a3 = angle[i].z;
+		h_ad.angles[i].x = a1;
+		h_ad.angles[i].y = a2;
+		h_ad.angles[i].z = a3;
+		h_ad.angles[i].w = angle[i].w;
+		h_ad.refs[i].x = h_ad.count[a1];
+		h_ad.refs[i].y = h_ad.count[a2];
+		h_ad.refs[i].z = h_ad.count[a3];
+		h_ad.count[a1]++;
+		h_ad.count[a2]++;
+		h_ad.count[a3]++;
 	}
 
 	blockCount = (angleCount - 1)/DEFAULT_BLOCK_SIZE + 1;
@@ -120,6 +98,8 @@ AngleClass2::AngleClass2(MDData *mdd, ReadTopology &top, ReadParameters &par){
 	cudaMemcpy(d_ad.pars, h_ad.pars, atCount*sizeof(float4), cudaMemcpyHostToDevice);
 
 	cudaBindTexture(0, t_anglePar, d_ad.pars, atCount*sizeof(float4));
+	
+	printf("Done initializing AngleClass2 potential\n");
 }
 
 AngleClass2::~AngleClass2(){
