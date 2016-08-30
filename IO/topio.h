@@ -3,6 +3,8 @@
  *
  *  Created on: May 24, 2009
  *      Author: zhmurov
+ *  Changes: 16.08.2016
+ *	Author: kir_min
  */
 
 #pragma once
@@ -61,18 +63,25 @@ typedef struct {
 } TOPDihedral;
 
 typedef struct {
+	int i;
+	int j;
+} TOPExclusion;
+
+typedef struct {
 	int atomCount;
 	int bondCount;
 	int pairsCount;
 	int nativesCount;
 	int angleCount;
 	int dihedralCount;
+	int exclusionCount;
 	TOPAtom* atoms;
 	TOPPair* bonds;
 	TOPPair* natives;
 	TOPPair* pairs;
 	TOPAngle* angles;
 	TOPDihedral* dihedrals;
+	TOPExclusion* exclusions;
 } TOPData;
 
 extern int readTOP(const char* filename, TOPData* topData);

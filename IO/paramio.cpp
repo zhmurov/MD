@@ -32,23 +32,23 @@ int readPARAM(char* filename, PARAMData* paramData){
 	printf("Reading parameters from '%s'.\n", filename);
 	FILE* paramFile = safe_fopen(filename, "r");
 	char buffer[BUF_SIZE];
-	paramData->countBonds = 0;
-	paramData->countAngles = 0;
-	paramData->countGauss = 0;
-	paramData->countLJ = 0;
+	paramData->bondCount = 0;
+	paramData->angleCount = 0;
+	paramData->gaussCount = 0;
+	paramData->ljCount = 0;
 
 	if (paramFile != NULL ){
 		while(safe_fgets(buffer, BUF_SIZE, paramFile) != NULL){
 			if(strstr(buffer, "Bond Coeffs") != 0){
 				printf("Counting bonds...\n");
-				paramData->countBonds = countRowsInPARAM(paramFile);
-				printf("%d bonds\n", paramData->countBonds);
+				paramData->bondCount = countRowsInPARAM(paramFile);
+				printf("%d bonds\n", paramData->bondCount);
 			}
 
 			if(strstr(buffer, "Angle Coeffs") != 0){
 				printf("Counting angles...\n");
-				paramData->countAngles = countRowsInPARAM(paramFile);
-				printf("%d angles\n", paramData->countAngles);
+				paramData->angleCount = countRowsInPARAM(paramFile);
+				printf("%d angles\n", paramData->angleCount);
 			}
 
 			if(strstr(buffer, "Gauss Coeffs") != 0){
@@ -56,10 +56,10 @@ int readPARAM(char* filename, PARAMData* paramData){
 				safe_fgets(buffer, BUF_SIZE, paramFile);//pass an empty string
 				while(safe_fgets(buffer, BUF_SIZE, paramFile) != NULL && strlen(buffer) != 0 && buffer[0] != '\n' && buffer[0] != '\r'){
 					if (strncmp(buffer, "#", 1) == 0){
-						paramData->countGauss++;
+						paramData->gaussCount++;
 					}
 				}
-				printf("%d Gauss coeffs\n", paramData->countGauss);
+				printf("%d Gauss coeffs\n", paramData->gaussCount);
 			}
 
 			if(strstr(buffer, "LJ_Repulsive Coeffs") != 0){
@@ -67,17 +67,17 @@ int readPARAM(char* filename, PARAMData* paramData){
 				safe_fgets(buffer, BUF_SIZE, paramFile);//pass an empty string
 				while(safe_fgets(buffer, BUF_SIZE, paramFile) != NULL && strlen(buffer) != 0 && buffer[0] != '\n' && buffer[0] != '\r'){
 					if (strncmp(buffer, "#", 1) == 0){
-						paramData->countLJ++;
+						paramData->ljCount++;
 					}
 				}
-				printf("%d LJ coeffs\n", paramData->countLJ);
+				printf("%d LJ coeffs\n", paramData->ljCount);
 			}
 			
 		}
-		paramData->bondCoeff = (BondCoeff*)calloc(paramData->countBonds, sizeof(BondCoeff));
-		paramData->angleCoeff = (AngleCoeff*)calloc(paramData->countAngles, sizeof(AngleCoeff));
-		paramData->gaussCoeff = (GaussCoeff*)calloc(paramData->countGauss, sizeof(GaussCoeff));
-		paramData->lj_RepulsiveCoeff = (LJ_RepulsiveCoeff*)calloc(paramData->countLJ, sizeof(LJ_RepulsiveCoeff));
+		paramData->bondCoeff = (BondCoeff*)calloc(paramData->bondCount, sizeof(BondCoeff));
+		paramData->angleCoeff = (AngleCoeff*)calloc(paramData->angleCount, sizeof(AngleCoeff));
+		paramData->gaussCoeff = (GaussCoeff*)calloc(paramData->gaussCount, sizeof(GaussCoeff));
+		paramData->lj_RepulsiveCoeff = (LJ_RepulsiveCoeff*)calloc(paramData->ljCount, sizeof(LJ_RepulsiveCoeff));
 		
 	} else {
 		DIE("ERROR: cant find parameters file '%s'.", filename);
@@ -90,7 +90,7 @@ int readPARAM(char* filename, PARAMData* paramData){
 			printf("Reading bonds coeffs.\n");
 			count = 0;
 			safe_fgets(buffer, BUF_SIZE, paramFile);//pass name string
-			while(count < paramData->countBonds){
+			while(count < paramData->bondCount){
 				paramData->bondCoeff[count] = readBondCoeffLineFromPARAM(paramFile);
 				count++;
 			}
@@ -100,7 +100,7 @@ int readPARAM(char* filename, PARAMData* paramData){
 			printf("Reading angles coeffs.\n");
 			count = 0;
 			safe_fgets(buffer, BUF_SIZE, paramFile);//pass name string
-			while(count < paramData->countAngles){
+			while(count < paramData->angleCount){
 				paramData->angleCoeff[count] = readAngleCoeffLineFromPARAM(paramFile);
 				count++;
 			}
@@ -110,7 +110,7 @@ int readPARAM(char* filename, PARAMData* paramData){
 			printf("Reading gauss coeffs.\n");
 			count = 0;
 			safe_fgets(buffer, BUF_SIZE, paramFile);//pass an empty string
-			while(count < paramData->countGauss){
+			while(count < paramData->gaussCount){
 				paramData->gaussCoeff[count] = readGaussCoeffLineFromPARAM(paramFile);
 				count++;
 			}
@@ -120,7 +120,7 @@ int readPARAM(char* filename, PARAMData* paramData){
 			printf("Reading LJ coeffs.\n");
 			count = 0;
 			safe_fgets(buffer, BUF_SIZE, paramFile);//pass an empty string
-			while(count < paramData->countLJ){
+			while(count < paramData->ljCount){
 				paramData->lj_RepulsiveCoeff[count] = readLJCoeffLineFromPARAM(paramFile);
 				count++;
 			}
@@ -282,7 +282,7 @@ LJ_RepulsiveCoeff readLJCoeffLineFromPARAM(FILE* paramFile){
 		ljr.A = atof(pch);
 
 		pch = strtok(NULL, " \t");
-		ljr.L = atoi(pch);
+		ljr.l = atoi(pch);
 
 		//printf("LJ %d\t%d\t%f\t%d\n", ljr.i, ljr.j, ljr.A, ljr.L);
 

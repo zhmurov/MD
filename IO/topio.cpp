@@ -3,6 +3,8 @@
  *
  *  Created on: May 24, 2009
  *      Author: zhmurov
+ *  Changes: 16.08.2016
+ *	Author: kir_min
  */
 
 #include <stdio.h>
@@ -26,6 +28,7 @@ TOPAtom readAtomLineFromTOP(FILE* topFile);
 TOPPair readPairLineFromTOP(FILE* topFile);
 TOPAngle readAngleLineFromTOP(FILE* topFile);
 TOPDihedral readDihedralLineFromTOP(FILE* topFile);
+TOPExclusion readExclusionLineFromTOP(FILE* topFile);
 
 int readTOP(const char* filename, TOPData* topData){
 	printf("Reading topology from '%s'.\n", filename);
@@ -58,12 +61,18 @@ int readTOP(const char* filename, TOPData* topData){
 				topData->dihedralCount = countRowsInTOP(topFile);
 				printf("%d found.\n", topData->dihedralCount);
 			}
+			if(strstr(buffer, "[ exclusions ]") != 0){
+				printf("Counting exclusions...\n");
+				topData->exclusionCount = countRowsInTOP(topFile);
+				printf("%d found.\n", topData->exclusionCount);
+			}
 		}
 		topData->atoms = (TOPAtom*)calloc(topData->atomCount, sizeof(TOPAtom));
 		topData->bonds = (TOPPair*)calloc(topData->bondCount, sizeof(TOPPair));
 		topData->pairs = (TOPPair*)calloc(topData->pairsCount, sizeof(TOPPair));
 		topData->angles = (TOPAngle*)calloc(topData->angleCount, sizeof(TOPAngle));
 		topData->dihedrals = (TOPDihedral*)calloc(topData->dihedralCount, sizeof(TOPDihedral));
+		topData->exclusions = (TOPExclusion*)calloc(topData->exclusionCount, sizeof(TOPExclusion));
 	} else {
 		DIE("ERROR: cant find topology file '%s'.", filename);
 	}
@@ -117,7 +126,16 @@ int readTOP(const char* filename, TOPData* topData){
 					count++;
 				}
 			}
-
+		}
+		if(strstr(buffer, "[ exclusions ]") != 0){
+			printf("Reading exclusions...\n");
+			count = 0;
+			while(count < topData->exclusionCount){
+				topData->exclusions[count] = readExclusionLineFromTOP(topFile);
+				if(topData->exclusions[count].i != -1){
+					count++;
+				}
+			}
 		}
 	}
 
@@ -249,6 +267,7 @@ TOPAtom readAtomLineFromTOP(FILE* topFile){
 		atom.id = atoi(pch);
 
 		pch = strtok(NULL, " \t");
+		strcpy(atom.type, pch);
 
 		pch = strtok(NULL, " \t");
 		atom.resid = atoi(pch);
@@ -414,5 +433,24 @@ TOPDihedral readDihedralLineFromTOP(FILE* topFile){
 		dihedral.i = -1;
 	}
 	return dihedral;
+}
+
+TOPExclusion readExclusionLineFromTOP(FILE* topFile){
+	char buffer[BUF_SIZE];
+	char* pch;
+	TOPExclusion exclusion;
+	safe_fgets(buffer, BUF_SIZE, topFile);
+
+	if(strncmp(buffer, ";", 1) != 0){
+		pch = strtok(buffer, " \t");
+		exclusion.i = atoi(pch);
+
+		pch = strtok(NULL, " \t");
+		exclusion.j = atoi(pch);
+	} else {
+		exclusion.i = -1;
+	}
+
+	return exclusion;
 }
 

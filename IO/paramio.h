@@ -41,14 +41,14 @@ typedef struct {
 	int i;
 	int j;
 	float A;
-	int L;
+	int l;
 } LJ_RepulsiveCoeff;
 
 typedef struct {
-	int countBonds;
-	int countAngles;
-	int countGauss;
-	int countLJ;
+	int bondCount;
+	int angleCount;
+	int gaussCount;
+	int ljCount;
 	BondCoeff* bondCoeff;
 	AngleCoeff* angleCoeff;
 	GaussCoeff* gaussCoeff;
