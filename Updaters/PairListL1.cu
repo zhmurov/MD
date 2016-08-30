@@ -69,7 +69,6 @@ PairListL1::PairListL1(MDData *mdd, std::vector<int2> exclusions, float cutoff, 
 		h_excl.count[a1] ++;
 		h_excl.count[a2] ++;
 	}
-
 	/*for(i = 0; i < mdd->N; i++){
 		printf("%d (%d): ", i, h_excl.count[i]);
 		for(j = 0; j < h_excl.count[i]; j++){
@@ -88,7 +87,7 @@ PairListL1::PairListL1(MDData *mdd, std::vector<int2> exclusions, float cutoff, 
 
 	cudaMemcpy(h_pairs.count, d_pairs.count, mdd->N*sizeof(int), cudaMemcpyDeviceToHost);
 
-	int maxPairsPerAtom = 0;
+	maxPairsPerAtom = 0;
 	for(i = 0; i < mdd->N; i++){
 		if(maxPairsPerAtom < h_pairs.count[i]){
 			maxPairsPerAtom = h_pairs.count[i];

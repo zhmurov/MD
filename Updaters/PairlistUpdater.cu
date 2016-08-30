@@ -202,3 +202,15 @@ float PairlistUpdater::rmax_displacement(float4* d_r1, float4* d_r2, int N)
 
 	return reduction->rmax(d_drsq);
 }
+
+void PairlistUpdater::printPairlist(){
+	cudaMemcpy(h_pairs.count, d_pairs.count, mdd->N*sizeof(int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_pairs.list, d_pairs.list, mdd->N*sizeof(int)*maxPairsPerAtom, cudaMemcpyDeviceToHost);
+	for(int i = 0; i < mdd->N; i ++){
+		printf("%d: %d\t", i, h_pairs.count[i]);
+		for(int j = 0; j < h_pairs.count[i]; j++){
+			printf("%d\t", h_pairs.list[j*mdd->widthTot + i]);
+		}
+		printf("\n");
+	}
+}

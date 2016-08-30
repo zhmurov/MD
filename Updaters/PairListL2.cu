@@ -27,7 +27,7 @@ PairListL2::PairListL2(MDData *mdd, PairlistData d_pairsL1, float cutoff, float 
 
 	cudaMemcpy(h_pairs.count, d_pairs.count, mdd->N*sizeof(int), cudaMemcpyDeviceToHost);
 
-	int maxPairsPerAtom = 0;
+	maxPairsPerAtom = 0;
 	for(int i = 0; i < mdd->N; i++){
 		if(maxPairsPerAtom < h_pairs.count[i]){
 			maxPairsPerAtom = h_pairs.count[i];

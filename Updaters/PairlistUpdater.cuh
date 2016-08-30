@@ -19,6 +19,7 @@ public:
 	PairlistUpdater(MDData *mdd);
 	~PairlistUpdater();
 	void update(MDData *mdd);
+	void printPairlist();
 	virtual inline void doUpdate(MDData *mdd) {};
 	PairlistData h_pairs;
 	PairlistData d_pairs;
@@ -31,6 +32,7 @@ protected:
 	float4 *d_old_coord;
 	int timesUpdated;
 	char *pl_name;
+	int maxPairsPerAtom;
 
 	float rmax_displacement(float4* d_r1, float4* d_r2, int N);
 };
