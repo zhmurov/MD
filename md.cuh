@@ -3,6 +3,8 @@
  *
  *  Created on: 15.08.2012
  *      Author: zhmurov
+ *  Changes: 16.08.2016
+ *	Author: kir_min
  */
 
 #pragma once
@@ -21,6 +23,17 @@
 #include "Util/wrapper.h"
 #include "Util/ran2.h"
 #include "cuda.h"
+
+bool int2_comparatorEx(int2 i, int2 j){
+	if(i.x < j.x){
+		return true;
+	} else
+	if(i.x == j.x){
+		return i.y < j.y;
+	} else {
+		return false;
+	}
+}
 
 class MDGPU
 {
