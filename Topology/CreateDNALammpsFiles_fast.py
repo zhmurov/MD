@@ -69,9 +69,9 @@ def grmxmass(i):
 	if i == 1:
 		return 330.0
 	if i == 2:
-		return 23.0
+		return 22.989769
 	if i == 3:
-		return 35.4
+		return 35.453
 
 def box_number(x):
 	global Lx, Ly, Lz
@@ -432,7 +432,7 @@ top.write("[ atoms ]"+"\n")
 top.write(";"+"\t"+"nr"+"\t"+"type"+"\t"+"resnr"+"\t"+"residue"+"\t"+"atom"+"\t"+"cgnr"+"\t"+"charge"+"\t"+"mass"+"\n")
 for ia in atoms:
 	top.write("\t"+str(ia.index)+"\t")
-	top.write(grmxtype(ia.type)+"\t")
+	top.write(str(ia.type)+"\t")
 	top.write(str(ia.res_no)+"\t")
 	top.write(grmxresname(ia.type)+"\t")
 	top.write(grmxtype(ia.type)+"\t")
@@ -446,6 +446,7 @@ top.write(";"+"\t"+"ai"+"\t"+"aj"+"\t"+"funct"+"\t"+"c0"+"\t"+"c1"+"\t"+"c2"+"\t
 for ib in bonds:
 	top.write("\t"+str(ib.atomid1)+"\t")
 	top.write(str(ib.atomid2)+"\t")
+	top.write(str(10)+"\t")
 	top.write(str(ib.type)+"\n")
 
 o.write("\nBonds\n\n")
@@ -462,7 +463,16 @@ for ic in angles:
 	top.write("\t"+str(ic.atomid1)+"\t")
 	top.write(str(ic.atomid2)+"\t")
 	top.write(str(ic.atomid3)+"\t")
+	top.write(str(10)+"\t")
 	top.write(str(ic.type)+"\n")
+
+top.write("\n")
+top.write("[ exclusions ]"+"\n")
+top.write(";"+"\t"+"ai"+"\t"+"aj"+"\n")
+for ib in bonds:
+	if ib.type == 1 or ib.type == 12:
+		top.write("\t"+str(ib.atomid1)+"\t")
+		top.write(str(ib.atomid2)+"\n")	
 
 top.close()
 
