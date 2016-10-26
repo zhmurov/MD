@@ -92,7 +92,7 @@ __global__ void integrateVelocityVerlet_step_one_kernel(float dt){
 }
 
 
-void VelocityVerlet::integrate_step_one (MDData *mdd){
+void VelocityVerlet::integrate_step_one (){
 	integrateVelocityVerlet_step_one_kernel<<<this->blockCount, this->blockSize>>>(dt);
 }
 
@@ -117,7 +117,7 @@ __global__ void integrateVelocityVerlet_step_two_kernel(float dt){
 	}
 }
 
-void VelocityVerlet::integrate_step_two (MDData *c_mdd){
+void VelocityVerlet::integrate_step_two (){
 	integrateVelocityVerlet_step_two_kernel<<<this->blockCount, this->blockSize>>>(dt);
 }
 

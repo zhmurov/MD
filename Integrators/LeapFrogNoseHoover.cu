@@ -26,7 +26,7 @@ LeapFrogNoseHoover::~LeapFrogNoseHoover(){
 
 }
 
-void LeapFrogNoseHoover::integrate_step_one (MDData *c_mdd){
+void LeapFrogNoseHoover::integrate_step_one (){
 	// Do nothing
 }
 
@@ -105,7 +105,7 @@ __global__ void integrateLeapFrogNoseHoover_step_two_kernel(float gamma, float* 
 	}
 }
 
-void LeapFrogNoseHoover::integrate_step_two (MDData *c_mdd){
+void LeapFrogNoseHoover::integrate_step_two (){
 	integrateLeapFrogNoseHoover_step_two_kernel<<<this->blockCount, this->blockSize>>>(gamma, d_T);
 	/*cudaMemcpy(h_T, d_T, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float temp = 0.0f;

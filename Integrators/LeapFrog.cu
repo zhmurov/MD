@@ -19,7 +19,7 @@ LeapFrog::~LeapFrog(){
 
 }
 
-void LeapFrog::integrate_step_one (MDData *c_mdd){
+void LeapFrog::integrate_step_one (){
 	// Do nothing
 }
 
@@ -96,7 +96,7 @@ __global__ void integrateLeapFrog_step_two_kernel(){
 	}
 }
 
-void LeapFrog::integrate_step_two (MDData *c_mdd){
+void LeapFrog::integrate_step_two (){
 	integrateLeapFrog_step_two_kernel<<<this->blockCount, this->blockSize>>>();
 }
 
