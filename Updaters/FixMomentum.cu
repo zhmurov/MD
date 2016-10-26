@@ -134,7 +134,7 @@ __global__ void fixMomentum_kernel(float4 xcm, float4 vcm, float4 omega, int N){
 	}
 }
 
-inline void FixMomentum::update(MDData *mdd){
+inline void FixMomentum::update(){
 	precomputeCM_kernel<<<this->blockCount, this->blockSize>>>(d_muwcoord, d_mvel, mdd->N);
 	float4 xcm = reduction4->rsum(d_muwcoord);
 	xcm.x /= mdd->M;

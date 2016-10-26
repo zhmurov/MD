@@ -14,11 +14,13 @@
 #define ENERGY_OUTPUT_TEMPERATURE	"Temperature"
 #define ENERGY_OUTPUT_TOTAL			"Total"
 
+#define ENERGY_OUTPUT_VELOCITY_WARNING	10.0
+
 class EnergyOutput : public IUpdater {
 public:
 	EnergyOutput(MDData *mdd, std::vector<IPotential*>* potentials);
 	~EnergyOutput();
-	void update(MDData *mdd);
+	void update();
 private:
 	std::vector<IPotential*>* potentials;
 	char filename[FILENAME_LENGTH];

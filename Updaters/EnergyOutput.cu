@@ -20,32 +20,37 @@ EnergyOutput::~EnergyOutput(){
 
 }
 
-void EnergyOutput::update(MDData *mdd){
+void EnergyOutput::update(){
 	int p, i;
 	FILE* file = fopen(filename, "a");
-
-	//if(mdd->step%(this->frequence*10) == 0){
-		printf("%*s%*s",
-				ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_STEP,
-				ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TEMPERATURE);
-		for(p = 0; p != (*potentials).size(); p++){
-			for(i = 0; i < (*potentials)[p]->get_energy_count(); i++){
-				printf("%*s", ENERGY_OUTPUT_WIDTH, (*potentials)[p]->get_energy_name(i).c_str());
-			}
-		}
-		printf("%*s\n", ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TOTAL);
-	//}
 
 
 	double temp = 0.0f;
 	cudaMemcpy(mdd->h_vel, mdd->d_vel, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);
+	double velThresholdSq = ENERGY_OUTPUT_VELOCITY_WARNING*(float)this->frequence;
+	velThresholdSq = velThresholdSq*velThresholdSq;
 	for(i = 0; i < mdd->N; i++){
 		temp += mdd->h_vel[i].w*mdd->h_mass[i];
+		if(mdd->h_vel[i].w > velThresholdSq){
+			printf("WARNING: Velocity of the particle %d is larger than %f nm/ps\n", i, ENERGY_OUTPUT_VELOCITY_WARNING);
+		}
 		mdd->h_vel[i].w = 0.0f;
 	}
 	cudaMemcpy(mdd->d_vel, mdd->h_vel, mdd->N*sizeof(float4), cudaMemcpyHostToDevice);
 	temp /= ((float)mdd->N)*((float)this->frequence)*3.0f*BOLTZMANN_CONSTANT;
 //	temp /= ((float)mdd->N)*3.0f*BOLTZMANN_CONSTANT;
+
+//if(mdd->step%(this->frequence*10) == 0){
+	printf("%*s%*s",
+			ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_STEP,
+			ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TEMPERATURE);
+	for(p = 0; p != (*potentials).size(); p++){
+		for(i = 0; i < (*potentials)[p]->get_energy_count(); i++){
+			printf("%*s", ENERGY_OUTPUT_WIDTH, (*potentials)[p]->get_energy_name(i).c_str());
+		}
+	}
+	printf("%*s\n", ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TOTAL);
+//}
 
 	printf("%*d%*f",
 			ENERGY_OUTPUT_WIDTH, mdd->step,

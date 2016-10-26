@@ -18,7 +18,7 @@ class PairlistUpdater : public IUpdater {
 public:
 	PairlistUpdater(MDData *mdd);
 	~PairlistUpdater();
-	void update(MDData *mdd);
+	void update();
 	void printPairlist();
 	virtual inline void doUpdate(MDData *mdd) {};
 	PairlistData h_pairs;

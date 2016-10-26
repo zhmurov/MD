@@ -13,7 +13,7 @@ class CoordinatesOutputDCD : public IUpdater {
 public:
 	CoordinatesOutputDCD(MDData *mdd);
 	~CoordinatesOutputDCD();
-	void update(MDData *mdd);
+	void update();
 private:
 	DCD dcd;
 };

@@ -53,4 +53,5 @@ PairListL2::~PairListL2(){
 inline void PairListL2::doUpdate(MDData *mdd) {
 	updateL2Pairlist_kernel<<<this->blockCount, this->blockSize>>>(d_pairsL1.count, d_pairsL1.list, d_pairs.count, d_pairs.list,
 						d_old_coord, cutoffSq, mdd->N);
+	//printPairlist();
 }

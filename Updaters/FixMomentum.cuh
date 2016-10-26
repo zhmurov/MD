@@ -13,7 +13,7 @@ class FixMomentum : public IUpdater {
 public:
 	FixMomentum(MDData *mdd, int frequence);
 	~FixMomentum();
-	inline void update(MDData *mdd);
+	inline void update();
 private:
 	Reduction* reduction;
 	ReductionFloat4* reduction4;

@@ -165,7 +165,7 @@ PairlistUpdater::~PairlistUpdater(){
 	cudaFree(d_old_coord);
 }
 
-void PairlistUpdater::update(MDData *mdd){
+void PairlistUpdater::update(){
 	float drsq_max = rmax_displacement(d_old_coord, mdd->d_coord, mdd->N);
 	if(drsq_max > drsq_up){
 		if(drsq_max > 4.0f*drsq_up){
@@ -208,9 +208,9 @@ void PairlistUpdater::printPairlist(){
 	cudaMemcpy(h_pairs.list, d_pairs.list, mdd->N*sizeof(int)*maxPairsPerAtom, cudaMemcpyDeviceToHost);
 	for(int i = 0; i < mdd->N; i ++){
 		printf("%d: %d\t", i, h_pairs.count[i]);
-		for(int j = 0; j < h_pairs.count[i]; j++){
+		/*for(int j = 0; j < h_pairs.count[i]; j++){
 			printf("%d\t", h_pairs.list[j*mdd->widthTot + i]);
-		}
+		}*/
 		printf("\n");
 	}
 }

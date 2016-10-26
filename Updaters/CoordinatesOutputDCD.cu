@@ -23,15 +23,13 @@ CoordinatesOutputDCD::~CoordinatesOutputDCD(){
 	destroyDCD(&dcd);
 }
 
-void CoordinatesOutputDCD::update(MDData *mdd){
+void CoordinatesOutputDCD::update(){
 	cudaMemcpy(mdd->h_coord, mdd->d_coord, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);
-	//if(mdd->step > 619000 && mdd->step < 620000){
 	int i;
 	for(i = 0; i < mdd->N; i++){
-		dcd.frame.X[i] = mdd->h_coord[i].x;
-		dcd.frame.Y[i] = mdd->h_coord[i].y;
-		dcd.frame.Z[i] = mdd->h_coord[i].z;
+		dcd.frame.X[i] = mdd->h_coord[i].x*10.0;	// [nm] -> [angstr]
+		dcd.frame.Y[i] = mdd->h_coord[i].y*10.0;	// [nm] -> [angstr]
+		dcd.frame.Z[i] = mdd->h_coord[i].z*10.0;	// [nm] -> [angstr]
 	}
 	dcdWriteFrame(dcd);
-	//}
 }
