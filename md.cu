@@ -21,6 +21,10 @@
 #include "Potentials/Langevin.cu"
 #include "Potentials/PPPM.cu"
 #include "Potentials/Coulomb.cu"
+#include "Potentials/FENE.cu"
+#include "Potentials/LJP.cu"
+#include "Potentials/Repulsive.cu"
+#include "Potentials/PushingSphere.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
@@ -34,6 +38,9 @@
 #include "Integrators/LeapFrog.cu"
 #include "Integrators/VelocityVerlet.cu"
 #include "Integrators/LeapFrogNoseHoover.cu"
+
+#include "Integrators/LeapFrog_new.cu"
+#include "Integrators/LeapFrog_overdumped.cu"
 
 void dumpPSF(char* filename, TOPData &top){
 	printf("Creating psf...\n");
@@ -54,25 +61,21 @@ void dumpPSF(char* filename, TOPData &top){
 		sprintf(psf.atoms[i].name, "C");
 		sprintf(psf.atoms[i].type, "%s", top.atoms[i].type);
 		psf.atoms[i].q = top.atoms[i].charge;
-		if(top.atoms[i].resid == 0){
-			sprintf(psf.atoms[i].resName, "ION");
-		} else {
-			sprintf(psf.atoms[i].resName, "DNA");
-		}
+		sprintf(psf.atoms[i].resName, "%s", top.atoms[i].resName);
 		psf.atoms[i].resid = top.atoms[i].resid;
 		sprintf(psf.atoms[i].segment, "%d", top.atoms[i].id);
 	}
 
 	psf.nbond = 0;
 	for(i = 0; i < top.bondCount; i++){
-		if(top.bonds[i].c0 == 1){
+		if(top.bonds[i].c0 == 1 || top.bonds[i].func == 40){
 			psf.nbond ++;
 		}
 	}
 	psf.bonds = (PSFBond*)calloc(psf.nbond, sizeof(PSFBond));
 	int currentBond = 0;
 	for(i = 0; i < top.bondCount; i++){
-		if(top.bonds[i].c0 == 1){
+		if(top.bonds[i].c0 == 1 || top.bonds[i].func == 40){
 			psf.bonds[currentBond].i = top.bonds[i].i;
 			psf.bonds[currentBond].j = top.bonds[i].j;
 			currentBond++;
@@ -89,9 +92,9 @@ void readCoordinatesFromFile(char* filename, MDData mdd){
 	readXYZ(filename, &xyz);
 	int i;
 	for(i = 0; i < xyz.atomCount; i++){
-		mdd.h_coord[i].x = xyz.atoms[i].x;
-		mdd.h_coord[i].y = xyz.atoms[i].y;
-		mdd.h_coord[i].z = xyz.atoms[i].z;
+		mdd.h_coord[i].x = xyz.atoms[i].x/10.0;		// [angstr] -> [nm]
+		mdd.h_coord[i].y = xyz.atoms[i].y/10.0;		// [angstr] -> [nm]
+		mdd.h_coord[i].z = xyz.atoms[i].z/10.0;		// [angstr] -> [nm]		
 	}
 }
 
@@ -197,8 +200,17 @@ void MDGPU::init()
 
 	char integ_str[PARAMETER_MAX_LENGTH];
 	getMaskedParameter(integ_str, PARAMETER_INTEGRATOR);
+
 	if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG) == 0) {
 		integrator = new LeapFrog(&mdd);
+	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NEW) == 0) { //TODO CHANGE NEW, add to parameters.h
+		int seed = getIntegerParameter(PARAMETER_RSEED);
+		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
+		integrator = new LeapFrog_new(&mdd, temperature, seed);
+	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED) == 0) { //add to parameters.h
+		int seed = getIntegerParameter(PARAMETER_RSEED);
+		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
+		integrator = new LeapFrog_overdumped(&mdd, temperature, seed); // TODO add random force
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0) {
 		integrator = new VelocityVerlet(&mdd);
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0) {
@@ -215,59 +227,138 @@ void MDGPU::init()
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
 		potentials.push_back(new Langevin(&mdd, damping, seed, temperature));
 	}
-	
+
+//DNA	
 	//BondsClass2Atom
-	//add top.func = 10
+
 	int bondCountsPar = par.bondCount;
-	int bondCountsTop = top.bondCount;
+	int bondCountsTop = 0;
+	for(i = 0; i < top.bondCount; i++){
+		if(top.bonds[i].func == 10){
+			bondCountsTop++;
+		}
+	}
 
 	int4* pair;
 	pair = (int4*)calloc(bondCountsTop, sizeof(int4));
 
-	for(int i = 0; i < bondCountsTop; i++){
-		pair[i].x = top.bonds[i].i - 1;
-		pair[i].y = top.bonds[i].j - 1;
-		pair[i].z = top.bonds[i].c0 - 1;
+	bondCountsTop = 0;
+	for(i = 0; i < top.bondCount; i++){
+		if(top.bonds[i].func == 10){
+			pair[bondCountsTop].x = top.bonds[i].i - 1;
+			pair[bondCountsTop].y = top.bonds[i].j - 1;
+			pair[bondCountsTop].z = (int)top.bonds[i].c0 - 1;
+			bondCountsTop++;
+		}
 	}
 
 	float4* bondCoeffs;
 	bondCoeffs = (float4*)calloc(bondCountsPar, sizeof(float4));
 
 	for(int i = 0; i < bondCountsPar; i++){
-		bondCoeffs[i].x = par.bondCoeff[i].l0;
-		bondCoeffs[i].y = par.bondCoeff[i].k2;
-		bondCoeffs[i].z = par.bondCoeff[i].k3;
-		bondCoeffs[i].w = par.bondCoeff[i].k4;
+		bondCoeffs[i].x = par.bondCoeff[i].l0/10.0;		// [angstr] -> [nm]
+		bondCoeffs[i].y = par.bondCoeff[i].k2*4.184*100.0;	// [kcal/(mol*angstr^2)] -> [kJ/(mol*nm^2)]
+		bondCoeffs[i].z = par.bondCoeff[i].k3*4.184*1000.0;	// [kcal/(mol*angstr^3)] -> [kJ/(mol*nm^3)]
+		bondCoeffs[i].w = par.bondCoeff[i].k4*4.184*10000.0;	// [kcal/(mol*angstr^4)] -> [kJ/(mol*nm^4)]
 	}
 
 	potentials.push_back(new BondsClass2Atom(&mdd, bondCountsPar, bondCountsTop, pair, bondCoeffs));
 
 	//AngleClass2
-	//add top.func = 10
+
 	int angleCountsPar = par.angleCount;
-	int angleCountsTop = top.angleCount;
+	int angleCountsTop = 0;
+
+	for(i = 0; i < top.angleCount; i++){
+		if(top.angles[i].func == 10){
+			angleCountsTop++;
+		}
+	}
 
 	int4* angle;
 	angle = (int4*)calloc(angleCountsTop, sizeof(int4));
 
-	for(int i = 0; i < angleCountsTop; i++){
-		angle[i].x = top.angles[i].i - 1;
-		angle[i].y = top.angles[i].j - 1;
-		angle[i].z = top.angles[i].k - 1;
-		angle[i].w = top.angles[i].c0 - 1;
+	angleCountsTop = 0;
+	for(i = 0; i < top.angleCount; i++){
+		if(top.angles[i].func == 10){
+			angle[i].x = top.angles[i].i - 1;
+			angle[i].y = top.angles[i].j - 1;
+			angle[i].z = top.angles[i].k - 1;
+			angle[i].w = (int)top.angles[i].c0 - 1;
+			angleCountsTop++;
+		}
 	}
 
 	float4* angleCoeffs;
 	angleCoeffs = (float4*)calloc(angleCountsPar, sizeof(float4));
 
 	for(int i = 0; i < angleCountsPar; i++){
-		angleCoeffs[i].x = par.angleCoeff[i].theta0;
-		angleCoeffs[i].y = par.angleCoeff[i].k2;
-		angleCoeffs[i].z = par.angleCoeff[i].k3;
-		angleCoeffs[i].w = par.angleCoeff[i].k4;
+		angleCoeffs[i].x = par.angleCoeff[i].theta0;	// [degree]
+		angleCoeffs[i].y = par.angleCoeff[i].k2*4.184;	// [kcal/(mol*rad^2)] -> [kJ/(mol*rad^2)]
+		angleCoeffs[i].z = par.angleCoeff[i].k3*4.184;	// [kcal/(mol*rad^3)] -> [kJ/(mol*rad^3)]
+		angleCoeffs[i].w = par.angleCoeff[i].k4*4.184;	// [kcal/(mol*rad^4)] -> [kJ/(mol*rad^4)]
 	}
 
 	potentials.push_back(new AngleClass2(&mdd, angleCountsPar, angleCountsTop, angle, angleCoeffs));
+
+//PROTEIN
+	if(getYesNoParameter(PARAMETER_PROTEIN, DEFAULT_PROTEIN)){
+		//FENE
+		bondCountsTop = 0;
+		for(i = 0; i < top.bondCount; i++){
+			if(top.bonds[i].func == 40){
+				bondCountsTop++;
+			}
+		}
+
+		int2* pairFene;
+		pairFene = (int2*)calloc(bondCountsTop, sizeof(int2));
+	
+		float* pairFeneC0;
+		pairFeneC0 = (float*)calloc(bondCountsTop, sizeof(float));
+	
+		bondCountsTop = 0;
+		for(i = 0; i < top.bondCount; i++){
+			if(top.bonds[i].func == 40){
+				pairFene[bondCountsTop].x = top.bonds[i].i - 1;
+				pairFene[bondCountsTop].y = top.bonds[i].j - 1;
+				pairFeneC0[bondCountsTop] = top.bonds[i].c0/10.0;	// [angstr] -> [nm]
+				bondCountsTop++;
+			}
+		}
+
+		potentials.push_back(new FENE(&mdd, bondCountsTop, pairFene, pairFeneC0));
+
+		//LJP
+		int pairsCountsTop = 0;
+		for(i = 0; i < top.pairsCount; i++){
+			if(top.pairs[i].func == 40){
+				pairsCountsTop++;
+			}
+		}
+
+		int2* pairsLJP;
+		pairsLJP = (int2*)calloc(pairsCountsTop, sizeof(int2));
+
+		float* pairsLJPC0;
+		pairsLJPC0 = (float*)calloc(pairsCountsTop, sizeof(float));
+
+		float* pairsLJPC1;
+		pairsLJPC1 = (float*)calloc(pairsCountsTop, sizeof(float));
+
+		pairsCountsTop = 0;
+		for(i = 0; i < top.pairsCount; i++){
+			if(top.pairs[i].func == 40){
+				pairsLJP[pairsCountsTop].x = top.pairs[i].i - 1;
+				pairsLJP[pairsCountsTop].y = top.pairs[i].j - 1;
+				pairsLJPC0[pairsCountsTop] = top.pairs[i].c0/10.0;		// r0 [angstr] -> [nm]
+				pairsLJPC1[pairsCountsTop] = top.pairs[i].c1*4.184;		// eps [KCal / mol] -> [KJ / mol]
+				pairsCountsTop++;
+			}
+		}
+
+		potentials.push_back(new LJP(&mdd, pairsCountsTop, pairsLJP, pairsLJPC0, pairsLJPC1));
+	}
 
 	//Init pair lists
 
@@ -289,7 +380,37 @@ void MDGPU::init()
 			exclusions[i].y = top.exclusions[i].i - 1;
 		}
 	}
-	std::sort(exclusions.begin(), exclusions.end(), int2_comparatorEx);
+	
+	if(getYesNoParameter(PARAMETER_PROTEIN, DEFAULT_PROTEIN)){
+		for(int b = 0; b < top.bondCount; b++){
+			if(top.bonds[b].func == 40){
+				int2 excl;
+				excl.x = top.bonds[b].i - 1;
+				excl.y = top.bonds[b].j - 1;
+				if (excl.x > excl.y){
+					int temp = excl.x;
+					excl.x = excl.y;
+					excl.y = temp;
+				}
+				exclusions.push_back(excl);
+			}
+		}
+		for(int b = 0; b < top.pairsCount; b++){
+			if(top.pairs[b].func == 40){
+				int2 excl;
+				excl.x = top.pairs[b].i - 1;
+				excl.y = top.pairs[b].j - 1;
+				if (excl.x > excl.y){
+					int temp = excl.x;
+					excl.x = excl.y;
+					excl.y = temp;
+				}
+				exclusions.push_back(excl);
+			}
+		}
+	}
+
+	std::sort(exclusions.begin(), exclusions.end(), &int2_comparatorEx);
 
 	PairListL1* plistL1 = new PairListL1(&mdd, exclusions, possiblePairsCutoff, pairsCutoff, possiblePairsFreq);
 	PairListL2* plistL2 = new PairListL2(&mdd, plistL1->d_pairs, pairsCutoff, coulCutoff, pairsFreq);
@@ -298,7 +419,7 @@ void MDGPU::init()
 
 	//Gauss
 	int typeCount = 1;
-	bool boo;
+	/*bool boo;
 	for (int i = 1; i < top.atomCount; i++){
 		for(int j = 0; j < i; j++){
 			if (atoi(top.atoms[j].type) == atoi(top.atoms[i].type)){ 
@@ -311,6 +432,11 @@ void MDGPU::init()
 		if (boo) {
 			typeCount++;
 		}
+	}*/
+	for (int i = 1; i < top.atomCount; i++){
+		if(typeCount < atoi(top.atoms[i].type)){
+			typeCount = atoi(top.atoms[i].type);
+		}
 	}
 	printf("typeCount = %d\n", typeCount);
 	
@@ -321,8 +447,8 @@ void MDGPU::init()
 		for(int j = 0; j < typeCount; j++){
 			for(int k = 0; k < par.ljCount; k++){
 				if((i == par.lj_RepulsiveCoeff[k].i - 1 && j == par.lj_RepulsiveCoeff[k].j - 1) || (j == par.lj_RepulsiveCoeff[k].i - 1 && i == par.lj_RepulsiveCoeff[k].j - 1)){
-					gaussExCoeff[i+j*typeCount].A = par.lj_RepulsiveCoeff[k].A;
 					gaussExCoeff[i+j*typeCount].l = par.lj_RepulsiveCoeff[k].l;
+					gaussExCoeff[i+j*typeCount].A = par.lj_RepulsiveCoeff[k].A*4.184/pow(10.0, gaussExCoeff[i+j*typeCount].l);	// [kcal/mol*angstr^l] -> [kJ/mol*nm^l];
 				}
 			}
 			for(int k = 0; k < par.gaussCount; k++){
@@ -332,30 +458,90 @@ void MDGPU::init()
 					gaussExCoeff[i+j*typeCount].C = (float*)calloc(par.gaussCoeff[k].numberGaussians, sizeof(float));
 					gaussExCoeff[i+j*typeCount].R = (float*)calloc(par.gaussCoeff[k].numberGaussians, sizeof(float));
 					for(int l = 0; l < par.gaussCoeff[k].numberGaussians; l++){
-						gaussExCoeff[i+j*typeCount].B[l] = par.gaussCoeff[k].B[l];
-						gaussExCoeff[i+j*typeCount].C[l] = par.gaussCoeff[k].C[l];
-						gaussExCoeff[i+j*typeCount].R[l] = par.gaussCoeff[k].R[l];
+						gaussExCoeff[i+j*typeCount].B[l] = par.gaussCoeff[k].B[l]*4.184;		// [kcal/mol] -> [kJ/mol]
+						gaussExCoeff[i+j*typeCount].C[l] = par.gaussCoeff[k].C[l]*100.0;		// [1/angstr^2] -> [1/nm^2]
+						gaussExCoeff[i+j*typeCount].R[l] = par.gaussCoeff[k].R[l]/10.0;			// [angstr] -> [nm]
 					}
 				}		
 			}
 		}
 	}
 	
-	if(coulCutoff - gausExclCutoff > 10.0f){
-		PairListL2* plistGausExcl = new PairListL2(&mdd, plistL2->d_pairs, coulCutoff, gausExclCutoff, pairsFreq);
-		float cutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
-		potentials.push_back(new GaussExcluded(&mdd, cutoff, typeCount, gaussExCoeff, plistGausExcl));
-		updaters.push_back(plistGausExcl);
-	} else {
-		float cutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
-		potentials.push_back(new GaussExcluded(&mdd, cutoff, typeCount, gaussExCoeff, plistL2));
-	}
-
+	float cutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
+	potentials.push_back(new GaussExcluded(&mdd, cutoff, typeCount, gaussExCoeff, plistL2));
+	
 	float dielectric = getFloatParameter(PARAMETER_DIELECTRIC, DEFAULT_DIELECTRIC);
 	PPPM* pppm = new PPPM(&mdd, dielectric, coulCutoff);
 	potentials.push_back(pppm);
 	potentials.push_back(new Coulomb(&mdd, plistL2, pppm->get_alpha(), dielectric, coulCutoff));
+	
+/*	//REpulsive
 
+	std::vector<int2> exclusions_prot;
+
+	for(int b = 0; b < top.bondCount; b++){
+		if(top.bonds[b].func == 40){
+			int2 excl;
+			excl.x = top.bonds[b].i - 1;
+			excl.y = top.bonds[b].j - 1;
+			if (excl.x > excl.y){
+				int temp = excl.x;
+				excl.x = excl.y;
+				excl.y = temp;
+			}
+			exclusions_prot.push_back(excl);
+		}
+	}
+	for(int b = 0; b < top.pairsCount; b++){
+		if(top.pairs[b].func == 40){
+			int2 excl;
+			excl.x = top.pairs[b].i - 1;
+			excl.y = top.pairs[b].j - 1;
+			if (excl.x > excl.y){
+				int temp = excl.x;
+				excl.x = excl.y;
+				excl.y = temp;
+			}
+			exclusions_prot.push_back(excl);
+		}
+	}
+
+	std::sort(exclusions_prot.begin(), exclusions_prot.end(), &int2_comparatorEx);
+
+	//for pairList1
+	float possiblePairsCutoff = getFloatParameter(PARAMETER_POSSIBLE_PAIRLIST_CUTOFF);
+	int possiblePairsFreq = getIntegerParameter(PARAMETER_POSSIBLE_PAIRLIST_FREQUENCE);
+	//for pairList2
+	float pairsCutoff = getFloatParameter(PARAMETER_PAIRLIST_CUTOFF);
+	int pairsFreq = getIntegerParameter(PARAMETER_PAIRLIST_FREQUENCE);
+
+	float nbCutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
+
+	PairListL1* plistL1_prot = new PairListL1(&mdd, exclusions_prot, possiblePairsCutoff, pairsCutoff, possiblePairsFreq);
+	PairListL2* plistL2_prot = new PairListL2(&mdd, plistL1_prot->d_pairs, pairsCutoff, nbCutoff, pairsFreq);
+	updaters.push_back(plistL1_prot);
+	updaters.push_back(plistL2_prot);
+
+	float rep_eps = getFloatParameter(PARAMETER_REPULSIVE_EPSILON);
+	float rep_sigm = getFloatParameter(PARAMETER_REPULSIVE_SIGMA);
+
+	potentials.push_back(new Repulsive(&mdd, plistL2_prot, nbCutoff, rep_eps, rep_sigm));*/
+
+	//PushingSphere
+	if(getYesNoParameter(PARAMETER_PUSHING_SPHERE, DEFAULT_PUSHING_SPHERE)){
+		float psR0 = getFloatParameter(PARAMETER_PUSHING_SPHERE_RADIUS0);
+		float psR = getFloatParameter(PARAMETER_PUSHING_SPHERE_RADIUS);
+		float4 pscenterPoint;
+		getVectorParameter(PARAMETER_PUSHING_SPHERE_CENTER_POINT, &pscenterPoint.x, &pscenterPoint.y, &pscenterPoint.z);
+		float psUpdate = getIntegerParameter(PARAMETER_PUSHING_SPHERE_UPDATE_FREQ);
+		float psSigma = getFloatParameter(PARAMETER_PUSHING_SPHERE_SIGMA);
+		float psEpsilon = getFloatParameter(PARAMETER_PUSHING_SPHERE_EPSILON);
+		char psfilename[1024];
+		getMaskedParameter(psfilename, PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME); 
+		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psfilename));
+	}
+
+//UPDATERS
 	updaters.push_back(new CoordinatesOutputDCD(&mdd));
 	updaters.push_back(new EnergyOutput(&mdd, &potentials));
 	
@@ -426,16 +612,16 @@ void MDGPU::compute()
 	for(u = 0; u != updaters.size(); u++){
 		if(nav > updaters[u]->getFrequence()){
 			nav = updaters[u]->getFrequence();
-			cudaThreadSynchronize();
+			//cudaThreadSynchronize();
 		}
 	}
 
-	cudaThreadSynchronize();
+	//cudaThreadSynchronize();
 	for(p = 0; p != potentials.size(); p++){
-		potentials[p]->compute(&mdd);
+		potentials[p]->compute();
 //checkCUDAError("Here!");
 //printf("bla!");
-		cudaThreadSynchronize();
+		//cudaThreadSynchronize();
 	}
 
 	/*cudaMemcpy(mdd.h_force, mdd.d_force, mdd.N*sizeof(float4), cudaMemcpyDeviceToHost);
@@ -451,23 +637,25 @@ void MDGPU::compute()
 	fclose(file);
 	exit(0);*/
 
-	for(mdd.step = 0; mdd.step <= numsteps; mdd.step += nav){
+	//for(mdd.step = 0; mdd.step <= numsteps; mdd.step += nav){
+	while(mdd.step <= numsteps){
 		for(u = 0; u != updaters.size(); u++){
 			if(mdd.step % updaters[u]->getFrequence() == 0){
-				updaters[u]->update(&mdd);
-				cudaThreadSynchronize();
+				updaters[u]->update();
+				//cudaThreadSynchronize();
 			}
 		}
 		for(i = 0; i < nav; i++){
-			integrator->integrate_step_one(&mdd);
-			cudaThreadSynchronize();
+			integrator->integrate_step_one();
+			//cudaThreadSynchronize();
 			for(p = 0; p != potentials.size(); p++){
-				potentials[p]->compute(&mdd);
-				cudaThreadSynchronize();
-				checkCUDAError("one of the potentials");
+				potentials[p]->compute();
+				//cudaThreadSynchronize();
+				//checkCUDAError("one of the potentials");
 			}
 
-			integrator->integrate_step_two(&mdd);
+			integrator->integrate_step_two();
+			mdd.step ++;
 		}
 	}
 

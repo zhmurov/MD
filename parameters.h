@@ -25,6 +25,8 @@
 #define VALUE_INTEGRATOR_LEAP_FROG				"leap-frog"
 #define VALUE_INTEGRATOR_VELOCITY_VERLET			"velocity-verlet"
 #define VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER			"leap-frog-nose-hoover"
+#define VALUE_INTEGRATOR_LEAP_FROG_NEW				"leap-frog-new"
+#define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
 
 #define PARAMETER_NOSE_HOOVER_TAU				"nose-hoover-tau"
 #define PARAMETER_NOSE_HOOVER_T0				"nose-hoover-T0"
@@ -44,6 +46,22 @@
 #define PARAMETER_POSSIBLE_PAIRLIST_CUTOFF			"possible_pairs_cutoff"
 #define PARAMETER_POSSIBLE_PAIRLIST_FREQUENCE			"possible_pairs_freq"
 #define PARAMETER_NONBONDED_CUTOFF				"nb_cutoff"
+
+#define PARAMETER_PROTEIN						"protein"
+#define DEFAULT_PROTEIN							0
+
+#define PARAMETER_REPULSIVE_EPSILON				"rep_eps"
+#define PARAMETER_REPULSIVE_SIGMA				"rep_sigm"
+
+#define PARAMETER_PUSHING_SPHERE					"push_sphere"
+#define DEFAULT_PUSHING_SPHERE						0
+#define PARAMETER_PUSHING_SPHERE_RADIUS0			"ps_radius0"
+#define PARAMETER_PUSHING_SPHERE_RADIUS				"ps_radius"
+#define PARAMETER_PUSHING_SPHERE_CENTER_POINT		"ps_center_of_sphere"
+#define PARAMETER_PUSHING_SPHERE_UPDATE_FREQ		"ps_update_freq"
+#define PARAMETER_PUSHING_SPHERE_SIGMA				"ps_sigma"
+#define PARAMETER_PUSHING_SPHERE_EPSILON			"ps_epsilon"
+#define PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME	"ps_presure_filename"
 
 #define PARAMETER_DIELECTRIC					"dielectric"
 #define DEFAULT_DIELECTRIC					1.0

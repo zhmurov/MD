@@ -12,6 +12,7 @@ LDFLAGS				:= -lrt -lm -lcudart -lcufft
 # compilers
 #NVCC				:= $(CUDA_INSTALL_PATH)/bin/nvcc --compiler-options -fpermissive -arch sm_20 --ptxas-options=-v -use_fast_math 
 NVCC				:= $(CUDA_INSTALL_PATH)/bin/nvcc --compiler-options -fpermissive -arch sm_20 --ptxas-options=-v -use_fast_math
+#NVCC				:= $(CUDA_INSTALL_PATH)/bin/nvcc --compiler-options -fpermissive -arch sm_20 --ptxas-options=-v
 CC					:= g++
 LINKER				:= g++ -fPIC
 # files

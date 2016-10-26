@@ -13,10 +13,10 @@
 
 #define DEFAULT_DATA_ALLIGN	32
 #define DEFAULT_BLOCK_SIZE	64
-#define BOLTZMANN_CONSTANT	0.0019872041*0.0004184
+#define BOLTZMANN_CONSTANT	0.008314462		// [kJ/(K*mol)]
 
-#define FTM2V   1.0/48.88821291/48.88821291
-#define QQR2E   332.06371
+#define FTM2V   1.0
+#define QQR2E   138.59
 
 typedef struct{
 	float3 rlo;
@@ -60,7 +60,7 @@ typedef struct {
 class IPotential {
 public:
 	virtual ~IPotential(){}
-	virtual void compute (MDData *mdd) = 0;
+	virtual void compute () = 0;
 	virtual int get_energy_count() = 0;
 	virtual std::string get_energy_name(int energy_id) = 0;
 	virtual float get_energies(int energy_id, int timestep) = 0;
@@ -75,8 +75,8 @@ protected:
 class IIntegrator {
 public:
 	virtual ~IIntegrator(){}
-	virtual void integrate_step_one (MDData *mdd) = 0;
-	virtual void integrate_step_two (MDData *mdd) = 0;
+	virtual void integrate_step_one () = 0;
+	virtual void integrate_step_two () = 0;
 protected:
 	MDData* mdd;
 	int blockSize;
@@ -87,7 +87,7 @@ protected:
 class IUpdater {
 public:
 	virtual ~IUpdater(){}
-	virtual void update (MDData *mdd) = 0;
+	virtual void update () = 0;
 	int getFrequence(){ return frequence;}
 protected:
 	MDData* mdd;
