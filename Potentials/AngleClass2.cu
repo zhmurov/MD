@@ -220,7 +220,7 @@ __global__ void angleClass2Sum_kernel(int* d_count, float4* d_forces, int widthT
 	}
 }
 
-void AngleClass2::compute(MDData *mdd){
+void AngleClass2::compute(){
 	angleClass2Compute_kernel<<<this->blockCount, this->blockSize>>>(d_ad.angles, d_ad.refs, d_ad.forces, widthTot, angleCount);
 	//cudaThreadSynchronize();
 	angleClass2Sum_kernel<<<blockCountSum, blockSizeSum>>>(d_ad.count, d_ad.forces, widthTot, lastAngled);

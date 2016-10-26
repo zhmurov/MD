@@ -147,9 +147,9 @@ PPPM::~PPPM()
 	}
 }
 
-void PPPM::compute(MDData *mdd)
+void PPPM::compute()
 {
-	/*cudaMemset(d_mesh, 0, sizeof(cufftComplex)*mesh_dim);
+	cudaMemset(d_mesh, 0, sizeof(cufftComplex)*mesh_dim);
 
 	// Spread charges on the mesh
 	assign_charges_to_grid_kernel<<<blockCount, blockSize>>>(d_mesh, d_rho_coeff, order, mesh_size);
@@ -178,7 +178,7 @@ void PPPM::compute(MDData *mdd)
 
 	// Force calculation
 	compute_PPPM_forces_kernel<<<blockCount, blockSize>>>(d_El, d_rho_coeff, order, mesh_size, q_factor);
-*/
+
 	/*int i;
 	cudaThreadSynchronize();
 	cudaMemcpy(mdd->h_force, mdd->d_force, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);

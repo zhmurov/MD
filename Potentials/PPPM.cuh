@@ -19,7 +19,7 @@ class PPPM : public IPotential {
 public:
 	PPPM(MDData *mdd, float dielectric, float cutoff);
 	~PPPM();
-	void compute(MDData *mdd);
+	void compute();
 	int get_energy_count() {return 1;}
 	std::string get_energy_name(int energy_id) {return "PPPM";}
 	float get_energies(int energy_id, int timestep);

@@ -28,7 +28,7 @@ class AngleClass2 : public IPotential {
 public:
 	AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4* angle, float4* angleCoeffs);
 	~AngleClass2();
-	void compute(MDData *mdd);
+	void compute();
 	int get_energy_count() {return 1;}
 	std::string get_energy_name(int energy_id) {return "Angle";}
 	float get_energies(int energy_id, int timestep);

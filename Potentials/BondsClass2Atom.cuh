@@ -22,7 +22,7 @@ class BondsClass2Atom : public IPotential {
 public:
 	BondsClass2Atom(MDData *mdd, int bondCount, int bondCountTop, int4* pair, float4* bondCoeffs);
 	~BondsClass2Atom();
-	void compute(MDData *mdd);
+	void compute();
 	int get_energy_count() {return 1;}
 	std::string get_energy_name(int energy_id) {return "Bond";}
 	float get_energies(int energy_id, int timestep);

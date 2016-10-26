@@ -13,7 +13,7 @@ class Langevin : public IPotential {
 public:
 	Langevin(MDData *mdd, float damping, int seed, float temperature);
 	~Langevin();
-	void compute(MDData *mdd);
+	void compute();
 	int get_energy_count() {return 0;}
 	std::string get_energy_name(int energy_id) {return "Langevin";}
 	float get_energies(int energy_id, int timestep) {return 0.0f;}

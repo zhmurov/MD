@@ -110,7 +110,7 @@ __global__ void coulombErfc_kernel(int* d_pairsCount, int* d_pairsList, float al
 	}
 }
 
-void Coulomb::compute(MDData *mdd){
+void Coulomb::compute(){
 	if(alpha == 0.0f){
 		coulomb_kernel<<<this->blockCount, this->blockSize>>>(plist->d_pairs.count, plist->d_pairs.list, kc, cutoff, mdd->widthTot);
 	} else {

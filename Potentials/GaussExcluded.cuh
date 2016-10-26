@@ -30,7 +30,7 @@ class GaussExcluded : public IPotential {
 public:
 	GaussExcluded(MDData *mdd, float cutoffCONF, int typeCount, GaussExCoeff* gauss, PairlistUpdater *pl);
 	~GaussExcluded();
-	void compute(MDData *mdd);
+	void compute();
 	int get_energy_count() {return 2;}
 	std::string get_energy_name(int energy_id) {
 		if(energy_id == 0)

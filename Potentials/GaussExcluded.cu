@@ -55,8 +55,8 @@ GaussExcluded::GaussExcluded(MDData *mdd, float cutoffCONF, int typeCount, Gauss
 			}
 		}
 	}
-
-/*	printf("Excluded volume parameters:\n");
+/*
+	printf("Excluded volume parameters:\n");
 	for(i = 0; i < atomTypesCount; i++){
 		for(j = 0; j < atomTypesCount; j++){
 			printf("(%5.4e, %5.4e)\t", h_ged.exclPar[i*atomTypesCount + j].x, h_ged.exclPar[i*atomTypesCount + j].y);
@@ -106,7 +106,8 @@ GaussExcluded::GaussExcluded(MDData *mdd, float cutoffCONF, int typeCount, Gauss
 			printf("\n");
 		}
 	}
-	exit(0);*/
+	exit(0);
+*/
 	h_ged.energies = (float2*)calloc(mdd->N, sizeof(float2));
 	cudaMalloc((void**)&d_ged.energies, mdd->N*sizeof(float2));
 
@@ -183,7 +184,7 @@ __global__ void gaussExcluded_kernel(int* d_pairsCount, int* d_pairsList, GEData
 	}
 }
 
-void GaussExcluded::compute(MDData *mdd){
+void GaussExcluded::compute(){
 	gaussExcluded_kernel<<<this->blockCount, this->blockSize>>>(plist->d_pairs.count, plist->d_pairs.list, d_ged, mdd->widthTot, atomTypesCount, cutoff);
 	/*int i;
 	cudaMemcpy(mdd->h_force, mdd->d_force, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);

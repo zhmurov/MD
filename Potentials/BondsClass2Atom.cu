@@ -155,7 +155,7 @@ __global__ void bondClass2_kernel(int* d_bondCount, int2* d_bonds, int widthTot,
 }
 
 
-void BondsClass2Atom::compute(MDData *mdd){
+void BondsClass2Atom::compute(){
 	bondClass2_kernel<<<this->blockCount, this->blockSize>>>(d_bd.bondCount, d_bd.bonds, widthTot, bondedCount);
 /*
 	int i;

@@ -46,7 +46,7 @@ __global__ void langevin_kernel(float gamma, float var, int N){
 	}
 }
 
-void Langevin::compute(MDData *mdd){
+void Langevin::compute(){
 	langevin_kernel<<<this->blockCount, this->blockSize>>>(gamma, var, mdd->N);
 }
 
