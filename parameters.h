@@ -63,6 +63,16 @@
 #define PARAMETER_PUSHING_SPHERE_EPSILON			"ps_epsilon"
 #define PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME	"ps_presure_filename"
 
+#define PARAMETER_INDENTATION_TIP_RADIUS			"ind_tip_radius"
+#define PARAMETER_INDENTATION_BASE_COORD			"ind_base_coord"
+#define PARAMETER_INDENTATION_BASE_DISPLACEMENT_FREQUENCY	"ind_base_freq"
+#define PARAMETER_INDENTATION_N					"ind_n"
+#define PARAMETER_INDENTATION_VELOCITY				"ind_vel"
+#define PARAMETER_INDENTATION_KSPRING				"ind_ks"
+#define PARAMETER_INDENTATION_EPSILON				"ind_eps"
+#define PARAMETER_INDENTATION_SIGMA				"ind_sigm"
+#define PARAMETER_INDENTATION_PLANE				"ind_plane"
+
 #define PARAMETER_DIELECTRIC					"dielectric"
 #define DEFAULT_DIELECTRIC					1.0
 #define PARAMETER_PPPM_ORDER					"pppm_order"

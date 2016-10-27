@@ -25,6 +25,7 @@
 #include "Potentials/LJP.cu"
 #include "Potentials/Repulsive.cu"
 #include "Potentials/PushingSphere.cu"
+#include "Potentials/Indentation.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
@@ -540,6 +541,71 @@ void MDGPU::init()
 		getMaskedParameter(psfilename, PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME); 
 		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psfilename));
 	}
+
+	//INDENTATION
+	float ind_tip_radius = getFloatParameter(PARAMETER_INDENTATION_TIP_RADIUS);
+
+	float3 ind_base_coord;
+	getVectorParameter(PARAMETER_INDENTATION_BASE_COORD, &ind_base_coord.x, &ind_base_coord.y, &ind_base_coord.z);
+	int ind_base_freq = getIntegerParameter(PARAMETER_INDENTATION_BASE_DISPLACEMENT_FREQUENCY);
+	float3 ind_tip_coord;
+
+	ind_tip_coord = ind_base_coord;
+
+	float ind_vel = getFloatParameter(PARAMETER_INDENTATION_VELOCITY);
+	float ind_ks = getFloatParameter(PARAMETER_INDENTATION_KSPRING);
+
+	float ind_eps = getFloatParameter(PARAMETER_INDENTATION_EPSILON);
+	float ind_sigm = getFloatParameter(PARAMETER_INDENTATION_SIGMA);
+
+	float3 ind_n;
+	getVectorParameter(PARAMETER_INDENTATION_N, &ind_n.x, &ind_n.y, &ind_n.z);
+
+	//PLANE
+	float3 ind_p;
+	getVectorParameter(PARAMETER_INDENTATION_PLANE, &ind_p.x, &ind_p.y, &ind_p.z);
+
+	//D = -(A*x0 + B*y0 + C*z0)
+	float D = -(ind_n.x*ind_p.x + ind_n.y*ind_p.y + ind_n.z*ind_p.z);
+
+	//potentials.push_back(new FENE(&mdd, &topdata));
+	//potentials.push_back(new LJP(&mdd, &topdata));
+	//potentials.push_back(new Repulsive(&mdd, plistL2, nbCutoff, rep_eps, rep_sigm));
+
+	int dcd_freq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+	char pdb_cant_filename[FILENAME_LENGTH];
+	getMaskedParameter(pdb_cant_filename, PARAMETER_PDB_CANTILEVER_OUTPUT_FILENAME);
+	char dcd_cant_filename[FILENAME_LENGTH];
+	getMaskedParameter(dcd_cant_filename, PARAMETER_DCD_CANTILEVER_OUTPUT_FILENAME);
+
+
+//PDB_CANTILEVER
+	pdb_cant.atomCount = 2;
+	pdb_cant.atoms = (PDBAtom*)calloc(2, sizeof(PDBAtom));
+	//tip
+	pdb_cant.atoms[0].id = 1;
+	strcpy(pdb_cant.atoms[0].name, "TIP");
+	pdb_cant.atoms[0].chain = 'T';
+	strcpy(pdb_cant.atoms[0].resName, "tip");
+	pdb_cant.atoms[0].altLoc = ' ';
+	pdb_cant.atoms[0].resid = 0;
+	pdb_cant.atoms[0].x = ind_tip_coord.x*10.0;	// [nm] -> [angstr]
+	pdb_cant.atoms[0].y = ind_tip_coord.y*10.0;	// [nm] -> [angstr]
+	pdb_cant.atoms[0].z = ind_tip_coord.z*10.0;	// [nm] -> [angstr]
+	//base
+	pdb_cant.atoms[1].id = 2;
+	strcpy(pdb_cant.atoms[1].name, "BASE");
+	pdb_cant.atoms[1].chain = 'B';
+	strcpy(pdb_cant.atoms[1].resName, "bas");
+	pdb_cant.atoms[1].altLoc = ' ';
+	pdb_cant.atoms[1].resid = 0;
+	pdb_cant.atoms[1].x = ind_base_coord.x*10.0;	// [nm] -> [angstr]
+	pdb_cant.atoms[1].y = ind_base_coord.y*10.0;	// [nm] -> [angstr]
+	pdb_cant.atoms[1].z = ind_base_coord.z*10.0;	// [nm] -> [angstr]
+
+	writePDB(pdb_cant_filename, &pdb_cant);
+
+	potentials.push_back(new Indentation(&mdd, ind_base_freq, ind_base_coord, ind_tip_radius, ind_tip_coord, ind_n, ind_vel, ind_ks, ind_eps, ind_sigm, dcd_freq, dcd_cant_filename, ind_p, D));
 
 //UPDATERS
 	updaters.push_back(new CoordinatesOutputDCD(&mdd));
