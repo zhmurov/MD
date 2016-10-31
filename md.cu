@@ -105,6 +105,7 @@ void MDGPU::init()
 {
 	TOPData top;
 	PARAMData par;
+	PDB pdb_cant;
 
 	char filename[FILENAME_LENGTH];
 	getMaskedParameter(filename, PARAMETER_TOPOLOGY_FILENAME);
