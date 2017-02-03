@@ -11,15 +11,15 @@ public:
 	std::string get_energy_name(int energy_id) { return "FENE";}
 	float get_energies(int energy_id, int timestep);
 private:
-	int max_pairCount;
+	int max_Nbonds;
 
-	int* h_pairCount;
-	int* h_pairMap_atom;
-	float* h_pairMap_r0;
+	int* h_bondCount;
+	int* h_bondMap_atom;
+	float* h_bondMap_r0;
 
-	int* d_pairCount;
-	int* d_pairMap_atom;
-	float* d_pairMap_r0;
+	int* d_bondCount;
+	int* d_bondMap_atom;
+	float* d_bondMap_r0;
 
 	float* h_energy;
 	float* d_energy;

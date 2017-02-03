@@ -2,7 +2,7 @@
 
 //[bonds] func = 1
 
-FENE::FENE(MDData *mdd, int bondCount, int2* bonds, float* bondsC0)
+FENE::FENE(MDData *mdd, int bondCount, int2* bonds, float* bonds_C0)
 {
 	this->mdd = mdd;
 
@@ -11,63 +11,51 @@ FENE::FENE(MDData *mdd, int bondCount, int2* bonds, float* bondsC0)
 
 	int i, j, b;
 
-//max_pairCount
-
-	int* temp_pairCount;
-	temp_pairCount = (int*)calloc(mdd->N, sizeof(int));
-
+//MAX_NBONDS
+	int* Nbonds;		//quantity of bonds for an aminoacid
+	Nbonds = (int*)calloc(mdd->N, sizeof(int));
 	for (b = 0; b < bondCount; b++){
 		i = bonds[b].x;
 		j = bonds[b].y;
 
-		//if (topdata->bonds[b].func == 1){ //TODO
-			temp_pairCount[i]++;
-			temp_pairCount[j]++;
-		//}
+		Nbonds[i]++;
+		Nbonds[j]++;
 	}
-
-	max_pairCount = 0;
-
+	max_Nbonds = 0;
 	for (i = 0; i < mdd->N; i++){
-
-		if (temp_pairCount[i] > max_pairCount){
-			max_pairCount = temp_pairCount[i];
+		if (Nbonds[i] > max_Nbonds){
+			max_Nbonds = Nbonds[i];
 		}
 	}
-	printf("max_pairCount = %2d\n", max_pairCount);
-
-	free(temp_pairCount);
+	printf("max_Nbonds = %2d\n", max_Nbonds);
+	free(Nbonds);
 
 //MAKE PAIRLIST
 
-	h_pairCount = (int*)calloc(mdd->N, sizeof(int));
-	h_pairMap_atom = (int*)calloc((mdd->N*max_pairCount), sizeof(int));	//TODO
-	h_pairMap_r0 = (float*)calloc((mdd->N*max_pairCount), sizeof(float));
+	h_bondCount = (int*)calloc(mdd->N, sizeof(int));
+	h_bondMap_atom = (int*)calloc((mdd->N*max_Nbonds), sizeof(int));	//TODO
+	h_bondMap_r0 = (float*)calloc((mdd->N*max_Nbonds), sizeof(float));
 
-	cudaMalloc((void**)&d_pairCount, mdd->N*sizeof(int));
-	cudaMalloc((void**)&d_pairMap_atom, (mdd->N*max_pairCount)*sizeof(int));
-	cudaMalloc((void**)&d_pairMap_r0, (mdd->N*max_pairCount)*sizeof(float));
+	cudaMalloc((void**)&d_bondCount, mdd->N*sizeof(int));
+	cudaMalloc((void**)&d_bondMap_atom, (mdd->N*max_Nbonds)*sizeof(int));
+	cudaMalloc((void**)&d_bondMap_r0, (mdd->N*max_Nbonds)*sizeof(float));
 
 	for (b = 0; b < bondCount; b++){
 		i = bonds[b].x;
 		j = bonds[b].y;
 
-		//if (topdata->bonds[b].func == 1){
-			h_pairMap_atom[i + h_pairCount[i]*mdd->N] = j;
-			h_pairMap_r0[i + h_pairCount[i]*mdd->N] = bondsC0[b];
-			h_pairCount[i]++;
+		h_bondMap_atom[i + h_bondCount[i]*mdd->N] = j;
+		h_bondMap_r0[i + h_bondCount[i]*mdd->N] = bonds_C0[b];
+		h_bondCount[i]++;
 
-			h_pairMap_atom[j + h_pairCount[j]*mdd->N] = i;
-			h_pairMap_r0[j + h_pairCount[j]*mdd->N] = bondsC0[b];
-			h_pairCount[j]++;
-
-			//printf("Adding %2d-%2d\n", i, j);
-		//}
+		h_bondMap_atom[j + h_bondCount[j]*mdd->N] = i;
+		h_bondMap_r0[j + h_bondCount[j]*mdd->N] = bonds_C0[b];
+		h_bondCount[j]++;
 	}
 
-	cudaMemcpy(d_pairCount, h_pairCount, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_pairMap_atom, h_pairMap_atom, (mdd->N*max_pairCount)*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_pairMap_r0, h_pairMap_r0, (mdd->N*max_pairCount)*sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_bondCount, h_bondCount, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_bondMap_atom, h_bondMap_atom, (mdd->N*max_Nbonds)*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_bondMap_r0, h_bondMap_r0, (mdd->N*max_Nbonds)*sizeof(float), cudaMemcpyHostToDevice);
 
 //ENERGY
 	h_energy = (float*)calloc(mdd->N, sizeof(float));
@@ -77,18 +65,18 @@ FENE::FENE(MDData *mdd, int bondCount, int2* bonds, float* bondsC0)
 }
 
 FENE::~FENE(){
-	free(h_pairCount);
-	free(h_pairMap_atom);
-	free(h_pairMap_r0);
+	free(h_bondCount);
+	free(h_bondMap_atom);
+	free(h_bondMap_r0);
 	free(h_energy);
-	cudaFree(d_pairCount);
-	cudaFree(d_pairMap_atom);
-	cudaFree(d_pairMap_r0);
+	cudaFree(d_bondCount);
+	cudaFree(d_bondMap_atom);
+	cudaFree(d_bondMap_r0);
 	cudaFree(d_energy);
 }
 
 //================================================================================================
-__global__ void FENE_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairMap_r0){
+__global__ void FENE_kernel(int* d_bondCount, int* d_bondMap_atom, float* d_bondMap_r0){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -109,11 +97,11 @@ __global__ void FENE_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pair
 		ri = c_mdd.d_coord[i];
 		f = c_mdd.d_force[i];
 
-		int p;			//p - pairs
-		for (p = 0; p < d_pairCount[i]; p++){
+		int b;			//b - bonds
+		for (b = 0; b < d_bondCount[i]; b++){
 
-			j = d_pairMap_atom[i + p*c_mdd.N];
-			r0 = d_pairMap_r0[i + p*c_mdd.N];
+			j = d_bondMap_atom[i + b*c_mdd.N];
+			r0 = d_bondMap_r0[i + b*c_mdd.N];
 
 			rj = c_mdd.d_coord[j];
 
@@ -145,7 +133,7 @@ __global__ void FENE_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pair
 }
 
 //================================================================================================
-__global__ void FENE_Energy_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairMap_r0, float* d_energy){
+__global__ void FENE_Energy_kernel(int* d_bondCount, int* d_bondMap_atom, float* d_bondMap_r0, float* d_energy){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -164,11 +152,11 @@ __global__ void FENE_Energy_kernel(int* d_pairCount, int* d_pairMap_atom, float*
 
 		float energy = 0.0;
 
-		int p;			//p - pairs
-		for (p = 0; p < d_pairCount[i]; p++){
+		int p;			//b - bonds
+		for (p = 0; p < d_bondCount[i]; p++){
 
-			j = d_pairMap_atom[i + p*c_mdd.N];
-			r0 = d_pairMap_r0[i + p*c_mdd.N];
+			j = d_bondMap_atom[i + p*c_mdd.N];
+			r0 = d_bondMap_r0[i + p*c_mdd.N];
 
 			rj = c_mdd.d_coord[j];
 
@@ -196,14 +184,14 @@ __global__ void FENE_Energy_kernel(int* d_pairCount, int* d_pairMap_atom, float*
 //================================================================================================
 void FENE::compute(){
 
-	FENE_kernel<<<this->blockCount, this->blockSize>>>(d_pairCount, d_pairMap_atom, d_pairMap_r0);
+	FENE_kernel<<<this->blockCount, this->blockSize>>>(d_bondCount, d_bondMap_atom, d_bondMap_r0);
 
 }
 
 //================================================================================================
 float FENE::get_energies(int energy_id, int timestep){
 
-	FENE_Energy_kernel<<<this->blockCount, this->blockSize>>>(d_pairCount, d_pairMap_atom, d_pairMap_r0, d_energy);
+	FENE_Energy_kernel<<<this->blockCount, this->blockSize>>>(d_bondCount, d_bondMap_atom, d_bondMap_r0, d_energy);
 
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);

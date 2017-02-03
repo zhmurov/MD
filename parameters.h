@@ -47,31 +47,38 @@
 #define PARAMETER_POSSIBLE_PAIRLIST_FREQUENCE			"possible_pairs_freq"
 #define PARAMETER_NONBONDED_CUTOFF				"nb_cutoff"
 
-#define PARAMETER_PROTEIN						"protein"
-#define DEFAULT_PROTEIN							0
+#define PARAMETER_PROTEIN					"protein"
+#define DEFAULT_PROTEIN						0
 
 #define PARAMETER_REPULSIVE_EPSILON				"rep_eps"
 #define PARAMETER_REPULSIVE_SIGMA				"rep_sigm"
 
-#define PARAMETER_PUSHING_SPHERE					"push_sphere"
-#define DEFAULT_PUSHING_SPHERE						0
+#define PARAMETER_PUSHING_SPHERE				"push_sphere"
+#define DEFAULT_PUSHING_SPHERE					0
 #define PARAMETER_PUSHING_SPHERE_RADIUS0			"ps_radius0"
 #define PARAMETER_PUSHING_SPHERE_RADIUS				"ps_radius"
-#define PARAMETER_PUSHING_SPHERE_CENTER_POINT		"ps_center_of_sphere"
-#define PARAMETER_PUSHING_SPHERE_UPDATE_FREQ		"ps_update_freq"
+#define PARAMETER_PUSHING_SPHERE_CENTER_POINT			"ps_center_of_sphere"
+#define PARAMETER_PUSHING_SPHERE_UPDATE_FREQ			"ps_update_freq"
 #define PARAMETER_PUSHING_SPHERE_SIGMA				"ps_sigma"
 #define PARAMETER_PUSHING_SPHERE_EPSILON			"ps_epsilon"
-#define PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME	"ps_presure_filename"
+#define PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME		"ps_presure_filename"
 
+#define PARAMETER_INDENTATION					"indentation"
+#define DEFAULT_INDENTATION					0
 #define PARAMETER_INDENTATION_TIP_RADIUS			"ind_tip_radius"
 #define PARAMETER_INDENTATION_BASE_COORD			"ind_base_coord"
+#define PARAMETER_INDENTATION_TIP_COORD				"ind_tip_coord"
 #define PARAMETER_INDENTATION_BASE_DISPLACEMENT_FREQUENCY	"ind_base_freq"
 #define PARAMETER_INDENTATION_N					"ind_n"
 #define PARAMETER_INDENTATION_VELOCITY				"ind_vel"
 #define PARAMETER_INDENTATION_KSPRING				"ind_ks"
 #define PARAMETER_INDENTATION_EPSILON				"ind_eps"
 #define PARAMETER_INDENTATION_SIGMA				"ind_sigm"
-#define PARAMETER_INDENTATION_PLANE				"ind_plane"
+
+#define PARAMETER_SURFACE_COORD					"sf_coord"
+#define PARAMETER_SURFACE_N					"sf_n"
+#define PARAMETER_SURFACE_EPSILON				"sf_eps"
+#define PARAMETER_SURFACE_SIGMA					"sf_sigm"
 
 #define PARAMETER_DIELECTRIC					"dielectric"
 #define DEFAULT_DIELECTRIC					1.0

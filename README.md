@@ -1,2 +1,2 @@
-# SOP+DNA
- Test2
+# PROTEIN+DNA
+ working version (03.02.2017)

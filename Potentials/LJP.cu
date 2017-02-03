@@ -2,62 +2,64 @@
 
 //[pairs] func = 1
 
-LJP::LJP(MDData *mdd, int pairsCount, int2* pairs, float* pairsC0, float* pairsC1){
+LJP::LJP(MDData *mdd, int pairCount, int2* pairs, float* pairs_C0, float* pairs_C1){
 
 	this->mdd = mdd;
 
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 
-	int i, j, b;
+	int i, j, p;
+//MAX_NPAIRS
+	int* Npairs;			//quantity of pairs for an aminoacid
+	Npairs = (int*)calloc(mdd->N, sizeof(int));
+	for (p = 0; p < pairCount; p++){
+		i = pairs[p].x;
+		j = pairs[p].y;
+
+		Npairs[i]++;
+		Npairs[j]++;
+	}
+	max_Npairs = 0;
+	for (i = 0; i < mdd->N; i++){
+		if (Npairs[i] > max_Npairs){
+			max_Npairs = Npairs[i];
+		}
+	}
+	printf("max_Npairs = %2d\n", max_Npairs);
+	free(Npairs);
 
 //MAKE PAIRLIST
 
 	h_pairCount = (int*)calloc(mdd->N, sizeof(int));
-	h_pairMap_atom = (int*)calloc((mdd->N*mdd->N), sizeof(int));
-	h_pairMap_r0 = (float*)calloc((mdd->N*mdd->N), sizeof(float));
-	h_pairMap_eps = (float*)calloc((mdd->N*mdd->N), sizeof(float));
+	h_pairMap_atom = (int*)calloc((mdd->N*max_Npairs), sizeof(int));
+	h_pairMap_r0 = (float*)calloc((mdd->N*max_Npairs), sizeof(float));
+	h_pairMap_eps = (float*)calloc((mdd->N*max_Npairs), sizeof(float));
 
 	cudaMalloc((void**)&d_pairCount, mdd->N*sizeof(int));
-	cudaMalloc((void**)&d_pairMap_atom, (mdd->N*mdd->N)*sizeof(int));
-	cudaMalloc((void**)&d_pairMap_r0, (mdd->N*mdd->N)*sizeof(float));
-	cudaMalloc((void**)&d_pairMap_eps, (mdd->N*mdd->N)*sizeof(float));
+	cudaMalloc((void**)&d_pairMap_atom, (mdd->N*max_Npairs)*sizeof(int));
+	cudaMalloc((void**)&d_pairMap_r0, (mdd->N*max_Npairs)*sizeof(float));
+	cudaMalloc((void**)&d_pairMap_eps, (mdd->N*max_Npairs)*sizeof(float));
 
-	for (b = 0; b < pairsCount; b++){
-		i = pairs[b].x;
-		j = pairs[b].y;
+	for (p = 0; p < pairCount; p++){
+		i = pairs[p].x;
+		j = pairs[p].y;
 
-		//if (topdata->pairs[b].func == 1){
-			h_pairMap_atom[i + h_pairCount[i]*mdd->N] = j;
-			h_pairMap_r0[i + h_pairCount[i]*mdd->N] = pairsC0[b];
-			h_pairMap_eps[i + h_pairCount[i]*mdd->N] = pairsC1[b];
-			h_pairCount[i]++;
+		h_pairMap_atom[i + h_pairCount[i]*mdd->N] = j;
+		h_pairMap_r0[i + h_pairCount[i]*mdd->N] = pairs_C0[p];
+		h_pairMap_eps[i + h_pairCount[i]*mdd->N] = pairs_C1[p];
+		h_pairCount[i]++;
 
-			h_pairMap_atom[j + h_pairCount[j]*mdd->N] = i;
-			h_pairMap_r0[j + h_pairCount[j]*mdd->N] = pairsC0[b];
-			h_pairMap_eps[j + h_pairCount[j]*mdd->N] = pairsC1[b];
-			h_pairCount[j]++;
-
-			//printf("Adding %2d-%2d;\teps = %7.7f\n", i, j, h_pairMap_eps[i + h_pairCount[j]*mdd->N]);
-		//}
+		h_pairMap_atom[j + h_pairCount[j]*mdd->N] = i;
+		h_pairMap_r0[j + h_pairCount[j]*mdd->N] = pairs_C0[p];
+		h_pairMap_eps[j + h_pairCount[j]*mdd->N] = pairs_C1[p];
+		h_pairCount[j]++;
 	}
-
-/*
-	for (i = 0; i < mdd->N; i++){
-
-		int N = h_pairCount[i];
-		for (j = 0; j < N; j++){
-
-			printf("Adding %2d-%2d;\teps = %7.7f\n", i, h_pairMap_atom[i + j*mdd->N], h_pairMap_eps[i + j*mdd->N]);
-		}
-		printf("\n");
-	}
-*/
 
 	cudaMemcpy(d_pairCount, h_pairCount, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_pairMap_atom, h_pairMap_atom, (mdd->N*mdd->N)*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_pairMap_r0, h_pairMap_r0, (mdd->N*mdd->N)*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_pairMap_eps, h_pairMap_eps, (mdd->N*mdd->N)*sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_pairMap_atom, h_pairMap_atom, (mdd->N*max_Npairs)*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_pairMap_r0, h_pairMap_r0, (mdd->N*max_Npairs)*sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_pairMap_eps, h_pairMap_eps, (mdd->N*max_Npairs)*sizeof(float), cudaMemcpyHostToDevice);
 
 //ENERGY
 	h_energy = (float*)calloc(mdd->N, sizeof(float));
@@ -108,10 +110,10 @@ __global__ void LJP_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairM
 			rij.y = rj.y - ri.y;
 			rij.z = rj.z - ri.z;
 
-			float3 pb = c_mdd.bc.len;
+			/*float3 pb = c_mdd.bc.len;
 			rij.x -= rint(rij.x/pb.x)*pb.x;
 			rij.y -= rint(rij.y/pb.y)*pb.y;
-			rij.z -= rint(rij.z/pb.z)*pb.z;
+			rij.z -= rint(rij.z/pb.z)*pb.z;*/
 
 			rij_mod = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
 
@@ -134,6 +136,7 @@ __global__ void LJP_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairM
 
 void LJP::compute(){
 
+	
 	LJP_kernel<<<this->blockCount, this->blockSize>>>(d_pairCount, d_pairMap_atom, d_pairMap_r0, d_pairMap_eps);
 
 }
@@ -178,7 +181,7 @@ __global__ void LJP_Energy_kernel(int* d_pairCount, int* d_pairMap_atom, float* 
 			temp1 = pow(r0, 12.0f)/pow(rij_mod, 12.0f);
 			temp2 = pow(r0, 6.0f)/pow(rij_mod, 6.0f);
 
-			energy += -eps*(temp1 - 2.0*temp2);
+			energy += eps*(temp1 - 2.0*temp2);
 		}
 
 		d_energy[i] = energy;
