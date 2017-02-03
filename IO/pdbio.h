@@ -19,33 +19,18 @@ typedef struct {
   char   name[5], chain, resName[4], altLoc;
   int    resid;
   double x, y, z;
+	
+  char segment[7];
 
   double occupancy;
   double beta;
 
 } PDBAtom;
 
-typedef struct {
-
-	int resid1;
-	char chain1;
-
-	int resid2;
-	char chain2;
-
-} PDBSSBond;
-
-typedef struct {
-	int* connectCount;
-	int* connectMap;
-} PDBConnect;
 
 typedef struct {
 	int atomCount;
 	PDBAtom* atoms;
-	int ssCount;
-	PDBSSBond* ssbonds;
-	PDBConnect connections;
 } PDB;
 
 
