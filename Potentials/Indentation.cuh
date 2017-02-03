@@ -5,41 +5,45 @@
 
 class Indentation : public IPotential {
 public:
-	Indentation(MDData *mdd, int base_freq, float3 base_coord, float tip_radius, float3 tip_coord, float3 n, float vel, float ks, float eps, float sigm, int dcd_freq, char* dcd_tip_filename, float3 plane, float const1);
+	Indentation(MDData *mdd, int N, int tip_radius, float3 tip_coord, float3 base_coord, int base_freq, float3 n, float vel, float ks, float eps, float sigm, float3 sf_coord, float3 sf_n, float sf_eps, float sf_sigm, int dcd_freq, char* dcd_cant_filename);
 	~Indentation();
 	void compute();
 	int get_energy_count() {return 0;}
 	std::string get_energy_name(int energy_id) {return "Indentation";}
 	float get_energies(int energy_id, int timestep);
 private:
-	int base_freq;
-	float3 base_coord;
+	int N;
+
 	float tip_radius;
 	float3 tip_coord;
+	float3 base_coord;
+	int base_freq;
 	float3 n;
 	float vel;
 	float ks;
 	float eps;
 	float sigm;
-	float3 plane;
-	float const1;		// -(A*x0 + B*y0 + C*z0)
+	float3 sf_coord;
+	float3 sf_n;
+	float sf_eps;
+	float sf_sigm;
+	int dcd_freq;
+	char* dcd_cant_filename;
+
+	float const1;		// -A*x0 - B*y0 - C*z0
 	float const2;		// sqrt(A^2 + B^2 + C^2)
 
-	float base_displacement;
 	float tip_displacement;
+	float base_displacement;
 
 	float3 tip_current_coord;
+	int current_step;
 
 	float3* h_forcetip;
 	float3* d_forcetip;
 
 	float* h_energy;
 	float* d_energy;
-
-	int current_step;
-	int dcd_freq;
-
-	char* dcd_cant_filename;
 
 	DCD dcd_cant;
 };
