@@ -8,12 +8,15 @@
 #include "LeapFrog_overdumped.cuh"
 #include "../md.cuh"
 
-LeapFrog_overdumped::LeapFrog_overdumped(MDData *mdd, float T, float seed){
+LeapFrog_overdumped::LeapFrog_overdumped(MDData *mdd, float T, float seed, int* h_fixatoms){
 
 	this->mdd = mdd;
 	this->dt = mdd->dt;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->blockCount = (mdd->N-1)/this->blockSize + 1;
+
+	cudaMalloc((void**)&d_fixatoms, mdd->N*sizeof(int));
+	cudaMemcpy(d_fixatoms, h_fixatoms, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 
 	initRand(seed, mdd->N);
 
@@ -35,13 +38,15 @@ LeapFrog_overdumped::LeapFrog_overdumped(MDData *mdd, float T, float seed){
 
 LeapFrog_overdumped::~LeapFrog_overdumped(){
 
+	free(h_fixatoms);
 	free(h_gama);
 	free(h_var);
+	cudaFree(d_fixatoms);
 	cudaFree(d_gama);
 	cudaFree(d_var);
 }
 
-__global__ void integrateLeapFrog_overdumped(float* d_gama, float* d_var){
+__global__ void integrateLeapFrog_overdumped(float* d_gama, float* d_var, int* d_fixatoms){
 
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if (d_i < c_mdd.N){
@@ -69,9 +74,11 @@ __global__ void integrateLeapFrog_overdumped(float* d_gama, float* d_var){
 
 		vel.w += gama*(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z)/(c_mdd.d_mass[d_i]*2.0*tau);
 
-		coord.x += vel.x;
-		coord.y += vel.y;
-		coord.z += vel.z;
+		if (d_fixatoms[d_i] == 0){
+			coord.x += vel.x;
+			coord.y += vel.y;
+			coord.z += vel.z;
+		}
 
 		if(coord.x > c_mdd.bc.rhi.x){
 			coord.x -= c_mdd.bc.len.x;
@@ -115,7 +122,7 @@ void LeapFrog_overdumped::integrate_step_one(){
 
 void LeapFrog_overdumped::integrate_step_two(){
 
-	integrateLeapFrog_overdumped<<<this->blockCount, this->blockSize>>>(d_gama, d_var);
+	integrateLeapFrog_overdumped<<<this->blockCount, this->blockSize>>>(d_gama, d_var, d_fixatoms);
 
 /*
 	cudaMemcpy(mdd->h_coord, mdd->d_coord, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);

@@ -8,11 +8,15 @@
 #include "LeapFrogNoseHoover.cuh"
 #include "../md.cuh"
 
-LeapFrogNoseHoover::LeapFrogNoseHoover(MDData *mdd, float tau, float T0){
+LeapFrogNoseHoover::LeapFrogNoseHoover(MDData *mdd, float tau, float T0, int* h_fixatoms){
 	this->mdd = mdd;
 	this->dt = mdd->dt;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->blockCount = (mdd->N-1)/this->blockSize + 1;
+
+	cudaMalloc((void**)&d_fixatoms, mdd->N*sizeof(int));
+	cudaMemcpy(d_fixatoms, h_fixatoms, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
+
 	h_T = (float*)calloc(mdd->N, sizeof(float));
 	cudaMalloc((void**)&d_T, mdd->N*sizeof(float));
 	gamma = 0.0f;
@@ -30,7 +34,7 @@ void LeapFrogNoseHoover::integrate_step_one (){
 	// Do nothing
 }
 
-__global__ void integrateLeapFrogNoseHoover_step_two_kernel(float gamma, float* d_T){
+__global__ void integrateLeapFrogNoseHoover_step_two_kernel(float gamma, float* d_T, int* d_fixatoms){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
 		float4 coord = c_mdd.d_coord[d_i];
@@ -53,9 +57,11 @@ __global__ void integrateLeapFrogNoseHoover_step_two_kernel(float gamma, float* 
 		d_T[d_i] = temp*m;
 		vel.w += temp;
 
-		coord.x += vel.x*c_mdd.dt;
-		coord.y += vel.y*c_mdd.dt;
-		coord.z += vel.z*c_mdd.dt;
+		if (d_fixatoms[d_i] == 0){
+			coord.x += vel.x*c_mdd.dt;
+			coord.y += vel.y*c_mdd.dt;
+			coord.z += vel.z*c_mdd.dt;
+		}
 
 		if(coord.x > c_mdd.bc.rhi.x){
 			coord.x -= c_mdd.bc.len.x;
@@ -106,7 +112,7 @@ __global__ void integrateLeapFrogNoseHoover_step_two_kernel(float gamma, float* 
 }
 
 void LeapFrogNoseHoover::integrate_step_two (){
-	integrateLeapFrogNoseHoover_step_two_kernel<<<this->blockCount, this->blockSize>>>(gamma, d_T);
+	integrateLeapFrogNoseHoover_step_two_kernel<<<this->blockCount, this->blockSize>>>(gamma, d_T, d_fixatoms);
 	/*cudaMemcpy(h_T, d_T, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float temp = 0.0f;
 	int i;
