@@ -28,6 +28,10 @@
 #define VALUE_INTEGRATOR_LEAP_FROG_NEW				"leap-frog-new"
 #define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
 
+#define PARAMETER_FIX						"fixation"
+#define DEFAULT_FIX_ATOMTYPE					0
+#define PARAMETER_FIX_ATOMTYPE					"atomtype"
+
 #define PARAMETER_NOSE_HOOVER_TAU				"nose-hoover-tau"
 #define PARAMETER_NOSE_HOOVER_T0				"nose-hoover-T0"
 
