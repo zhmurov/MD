@@ -15,6 +15,7 @@
 #define PARAMETER_TOPOLOGY_FILENAME				"topology_file"
 #define PARAMETER_PARAMETERS_FILENAME				"parameter_file"
 #define PARAMETER_COORDINATES_FILENAME				"coordinates_file"
+#define PARAMETER_STRUCTURE_FILENAME				"structure_file"
 
 #define PARAMETER_TIMESTEP					"timestep"
 #define PARAMETER_NUMSTEPS					"run"
@@ -29,8 +30,8 @@
 #define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
 
 #define PARAMETER_FIX						"fixation"
-#define DEFAULT_FIX_ATOMTYPE					0
-#define PARAMETER_FIX_ATOMTYPE					"atomtype"
+#define DEFAULT_FIX						0
+#define PARAMETER_FIX_ATOMTYPE					"fix_atomtype"
 
 #define PARAMETER_NOSE_HOOVER_TAU				"nose-hoover-tau"
 #define PARAMETER_NOSE_HOOVER_T0				"nose-hoover-T0"
