@@ -176,6 +176,7 @@ void MDGPU::init()
 	int i, j;
 	for(i = 0; i < mdd.N; i++){
 		mdd.h_charge[i] = top.atoms[i].charge;
+		//TODO
 		mdd.h_atomTypes[i] = atoi(top.atoms[i].type) - 1;
 	}
 
@@ -210,6 +211,13 @@ void MDGPU::init()
 
 	// Add potentials, updaters and integrators
 
+	if (getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX)){
+
+		for (int i = 0; i < 
+		
+
+
+
 	char integ_str[PARAMETER_MAX_LENGTH];
 	getMaskedParameter(integ_str, PARAMETER_INTEGRATOR);
 
@@ -222,13 +230,25 @@ void MDGPU::init()
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED) == 0) { //add to parameters.h
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
-		integrator = new LeapFrog_overdumped(&mdd, temperature, seed); // TODO add random force
+		if (getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX)){
+			//TODO
+			int fix_atomType = getIntegerParameter(PARAMETER_FIX_ATOMTYPE) - 1;
+		} else {
+			int fix_atomType = -1;
+		}
+		integrator = new LeapFrog_overdumped(&mdd, temperature, seed, fix_atomType); // TODO add random force
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0) {
 		integrator = new VelocityVerlet(&mdd);
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0) {
 		float tau = getFloatParameter(PARAMETER_NOSE_HOOVER_TAU);
 		float T0 = getFloatParameter(PARAMETER_NOSE_HOOVER_T0);
-		integrator = new LeapFrogNoseHoover(&mdd, tau, T0);
+		if (getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX)){
+			//TODO
+			int fix_atomType = getIntegerParameter(PARAMETER_FIX_ATOMTYPE) - 1;
+		} else {
+			int fix_atomType = -1;
+		}
+		integrator = new LeapFrogNoseHoover(&mdd, tau, T0, fix_atomType);
 	} else {
 		DIE("Integrator was set incorrectly!");
 	}
