@@ -21,6 +21,7 @@
 #include "IO/psfio.h"
 #include "IO/xyzio.h"
 #include "Util/wrapper.h"
+#include "Util/timer.h"
 #include "Util/ran2.h"
 #include "cuda.h"
 
