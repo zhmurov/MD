@@ -27,4 +27,6 @@ private:
 	float* h_p_sphere;
 	float* d_p_sphere;
 	char filename[1024];
+	float* h_energy;
+	float* d_energy;
 };
