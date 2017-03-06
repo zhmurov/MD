@@ -64,9 +64,9 @@ __global__ void pushSphereCompute_kernel(float* d_p_sphere, float R, float4 r0, 
 			df.y = -mul*R_ri.y/mod_R_ri;
 			df.z = -mul*R_ri.z/mod_R_ri;
 		
-			p_sphere += mul;
+			p_sphere += mul/(R*R);
 
-			d_p_sphere[d_i] = p_sphere/(R*R);
+			d_p_sphere[d_i] = p_sphere;
 
 			f.x += df.x;
 			f.y += df.y;
@@ -95,6 +95,34 @@ void PushingSphere::compute(){
 		fclose(datout);
 	}
 }
+
+__global__ void PushingSphere_Energy_kernel(float* d_energy, float R, float4 r0, float sigma, float epsilon){
+	int i = threadIdx.x + blockIdx.x*blockDim.x;
+	if (i < c_mdd.N){
+		float4 ri = c_mdd.d_coord[i];
+		float4 R_ri;
+		R_ri.x = ri.x - r0.x;
+		R_ri.y = ri.y - r0.y;
+		R_ri.z = ri.z - r0.z;
+
+		float R_ri2 = R_ri.x*R_ri.x + R_ri.y*R_ri.y + R_ri.z*R_ri.z;
+		float mod_R_ri = sqrtf(R_ri2);
+
+		float r = R - mod_R_ri;
+
+		//float energy = epsilon*pow(sigma, 6.0f)/pow(r, 6.0f);
+		float energy = epsilon*pow(sigma, 2.0f)/pow(r, 2.0f);
+
+		d_energy[i] = energy;
+	}
+}
+
 float PushingSphere::get_energies(int energy_id, int timestep){
-	return 0;
+	PushingSphere_Energy_kernel<<<this->blockCount, this->blockSize>>>(d_energy, this->radius, this->centerPoint, this->sigma, this->epsilon);
+	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
+	float energy_sum = 0.0;
+	for (int i = 0; i < mdd->N; i++){
+		energy_sum += h_energy[i];
+	}
+	return energy_sum;
 }
