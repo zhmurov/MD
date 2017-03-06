@@ -68,6 +68,8 @@ void EnergyOutput::update(){
 	printf("%*f\n", ENERGY_OUTPUT_WIDTH, totalEnergy);
 	fprintf(file, "%f\n", totalEnergy);
 	fclose(file);
+	printTime(mdd->step);
+	printEstimatedTimeleft((float)mdd->step/(float)mdd->numsteps);
 }
 
 
