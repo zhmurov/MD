@@ -27,6 +27,7 @@ CPP_SOURCES			:= \
   IO/xyzio.cpp \
   IO/topio.cpp \
   Util/wrapper.cpp \
+  Util/timer.cpp \
   Util/mystl.cpp
 CU_SOURCES			:= \
   md.cu
