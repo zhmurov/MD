@@ -114,6 +114,8 @@ exit(0);
 
 void MDGPU::init()
 {
+	initTimer();
+	
 	TOPData top;
 	PARAMData par;
 
@@ -732,6 +734,7 @@ void MDGPU::generateVelocities(float T, int * rseed){
 void MDGPU::compute()
 {
 	mdd.step = 0;
+	printTime(mdd.step);
 	int numsteps = mdd.numsteps;
 	int nav = numsteps;
 	int i;
