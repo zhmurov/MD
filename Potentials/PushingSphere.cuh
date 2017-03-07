@@ -20,6 +20,7 @@ public:
 private:
 	float R0;
 	float R;
+	float radius;
 	float4 centerPoint;
 	int updatefreq;
 	float sigma;
