@@ -79,8 +79,8 @@ __global__ void pushSphereCompute_kernel(float* d_p_sphere, float R, float4 r0, 
 
 void PushingSphere::compute(){
 	float alpha = (float)mdd->step/(float)mdd->numsteps;
-	float radius = this->R0*(1.0f - alpha) + this->R*alpha;
-	pushSphereCompute_kernel<<<this->blockCount, this->blockSize>>>(d_p_sphere, radius, this->centerPoint, this->sigma, this->epsilon);
+	this->radius = this->R0*(1.0f - alpha) + this->R*alpha;
+	pushSphereCompute_kernel<<<this->blockCount, this->blockSize>>>(d_p_sphere, this->radius, this->centerPoint, this->sigma, this->epsilon);
 	if(mdd->step % this->updatefreq == 0){
 		cudaMemcpy(h_p_sphere, d_p_sphere, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 		FILE* datout = fopen(filename, "a");
