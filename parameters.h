@@ -15,6 +15,7 @@
 #define PARAMETER_TOPOLOGY_FILENAME				"topology_file"
 #define PARAMETER_PARAMETERS_FILENAME				"parameter_file"
 #define PARAMETER_COORDINATES_FILENAME				"coordinates_file"
+#define PARAMETER_OUTPUT_XYZ_FILENAME				"output_xyz_file"
 #define PARAMETER_STRUCTURE_FILENAME				"structure_file"
 
 #define PARAMETER_TIMESTEP					"timestep"
