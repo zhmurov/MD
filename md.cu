@@ -108,7 +108,7 @@ void checkCUDAError(const char* msg) {
 		error = cudaGetLastError();
 	if (error != cudaSuccess) {
 		printf("CudaError: %s: %s\n", msg, cudaGetErrorString(error));
-exit(0);
+		exit(0);
 	}
 }
 
@@ -214,20 +214,23 @@ void MDGPU::init()
 	// Add potentials, updaters and integrators
 
 	// TODO Add reading fixatoms from PDB
-	PDB pdb;
 
-	getMaskedParameter(filename, PARAMETER_STRUCTURE_FILENAME);
-	readPDB(filename, &pdb);
 
-	int fixatoms[mdd.N];
+	int* fixedAtomsMask;
+	fixedAtomsMask = (int*)calloc(mdd.N, sizeof(int));
 	if (getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX)){
+
+		PDB fixedAtomsPDB;
+
+		getMaskedParameter(filename, PARAMETER_STRUCTURE_FILENAME);
+		readPDB(filename, &fixedAtomsPDB);
 
 		//int fix_atomType = getIntegerParameter(PARAMETER_FIX_ATOMTYPE) - 1;
 		for (int i = 0; i < mdd.N; i++){
 		//	if (mdd.h_atomTypes[i] == fix_atomType){
-				fixatoms[i] = int(pdb.atoms[i].beta);
+				fixedAtomsMask[i] = int(fixedAtomsPDB.atoms[i].beta);
 		//	} else {
-		//		fixatoms[i] = 0;
+		//		fixedAtomsMask[i] = 0;
 		//	}
 		}
 	}
@@ -244,13 +247,13 @@ void MDGPU::init()
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED) == 0) { //add to parameters.h
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
-		integrator = new LeapFrog_overdumped(&mdd, temperature, seed, fixatoms); // TODO add random force
+		integrator = new LeapFrog_overdumped(&mdd, temperature, seed, fixedAtomsMask); // TODO add random force
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0) {
 		integrator = new VelocityVerlet(&mdd);
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0) {
 		float tau = getFloatParameter(PARAMETER_NOSE_HOOVER_TAU);
 		float T0 = getFloatParameter(PARAMETER_NOSE_HOOVER_T0);
-		integrator = new LeapFrogNoseHoover(&mdd, tau, T0, fixatoms);
+		integrator = new LeapFrogNoseHoover(&mdd, tau, T0, fixedAtomsMask);
 	} else {
 		DIE("Integrator was set incorrectly!");
 	}

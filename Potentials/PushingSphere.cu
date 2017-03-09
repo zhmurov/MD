@@ -27,6 +27,13 @@ PushingSphere::PushingSphere(MDData *mdd, float R0, float R, float4 centerPoint,
 	cudaMalloc((void**)&d_p_sphere, mdd->N*sizeof(float));
 
 	cudaMemcpy(d_p_sphere, h_p_sphere, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
+
+	h_energy = (float*)calloc(mdd->N, sizeof(float));
+	cudaMalloc((void**)&d_energy, mdd->N*sizeof(float));
+
+	cudaMemcpy(d_energy, h_energy, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
+
+
 	printf("Done initializing Pushing Sphere potential\n");
 }
 
@@ -90,7 +97,7 @@ void PushingSphere::compute(){
 			h_p_sphere[i] = 0;
 		}
 		float presureOnSphere = stress/(4.0*M_PI*this->updatefreq);
-		fprintf(datout, "%d\t%f\t%e\n", mdd->step, radius, presureOnSphere);
+		fprintf(datout, "%d\t%f\t%e\n", mdd->step, this->radius, presureOnSphere);
 		cudaMemcpy(d_p_sphere, h_p_sphere, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 		fclose(datout);
 	}
@@ -100,6 +107,7 @@ __global__ void PushingSphere_Energy_kernel(float* d_energy, float R, float4 r0,
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
 		float4 ri = c_mdd.d_coord[i];
+
 		float4 R_ri;
 		R_ri.x = ri.x - r0.x;
 		R_ri.y = ri.y - r0.y;
@@ -107,12 +115,12 @@ __global__ void PushingSphere_Energy_kernel(float* d_energy, float R, float4 r0,
 
 		float R_ri2 = R_ri.x*R_ri.x + R_ri.y*R_ri.y + R_ri.z*R_ri.z;
 		float mod_R_ri = sqrtf(R_ri2);
-
 		float r = R - mod_R_ri;
 
-		//float energy = epsilon*pow(sigma, 6.0f)/pow(r, 6.0f);
-		float energy = epsilon*pow(sigma, 2.0f)/pow(r, 2.0f);
-
+		float sor = sigma/r;
+		float sor2 = sor*sor;
+		float energy = epsilon*sor2;
+		
 		d_energy[i] = energy;
 	}
 }
