@@ -793,17 +793,18 @@ void MDGPU::compute()
 	}
 	
 	//XYZ-File ending coord
-	char filename[FILENAME_LENGTH];
-	getMaskedParameter(filename, PARAMETER_OUTPUT_XYZ_FILENAME);
-	FILE * file;
-	file = fopen(filename, "w");
-	fprintf(file, "%d\n", mdd.N);
-	fprintf(file, "Created by mdd.cu\n");
-	for(i = 0; i < mdd.N; i++){
-		fprintf(file, "%s\t%f\t%f\t%f\t", "P", mdd.h_coord[i].x, mdd.h_coord[i].y, mdd.h_coord[i].z);
+	if(getYesNoParameter(PARAMETER_OUTPUT_XYZ, DEFAULT_OUTPUT_XYZ)){
+		char filename[FILENAME_LENGTH];
+		getMaskedParameter(filename, PARAMETER_OUTPUT_XYZ_FILENAME);
+		FILE * file;
+		file = fopen(filename, "w");
+		fprintf(file, "%d\n", mdd.N);
+		fprintf(file, "Created by mdd.cu\n");
+		for(i = 0; i < mdd.N; i++){
+			fprintf(file, "%s\t%f\t%f\t%f\t", "P", mdd.h_coord[i].x, mdd.h_coord[i].y, mdd.h_coord[i].z);
+		}
+		fclose(file);
 	}
-	fclose(file);
-
 }
 
 MDGPU::~MDGPU()
