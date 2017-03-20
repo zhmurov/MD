@@ -801,7 +801,7 @@ void MDGPU::compute()
 		fprintf(file, "%d\n", mdd.N);
 		fprintf(file, "Created by mdd.cu\n");
 		for(i = 0; i < mdd.N; i++){
-			fprintf(file, "%s\t%f\t%f\t%f\t", "P", mdd.h_coord[i].x, mdd.h_coord[i].y, mdd.h_coord[i].z);
+			fprintf(file, "%s\t%f\t%f\t%f\n", "P", mdd.h_coord[i].x, mdd.h_coord[i].y, mdd.h_coord[i].z);
 		}
 		fclose(file);
 	}
