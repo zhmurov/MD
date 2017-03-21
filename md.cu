@@ -42,6 +42,7 @@
 
 #include "Integrators/LeapFrog_new.cu"
 #include "Integrators/LeapFrog_overdumped.cu"
+#include "Integrators/SteepestDescent.cu"
 
 void dumpPSF(char* filename, TOPData &top){
 	printf("Creating psf...\n");
@@ -254,6 +255,11 @@ void MDGPU::init()
 		float tau = getFloatParameter(PARAMETER_NOSE_HOOVER_TAU);
 		float T0 = getFloatParameter(PARAMETER_NOSE_HOOVER_T0);
 		integrator = new LeapFrogNoseHoover(&mdd, tau, T0, fixedAtomsMask);
+	} else if (strcmp(integ_str, VALUE_INTEGRATOR_STEEPEST_DESCENT) == 0) { //add to parameters.h
+		int seed = getIntegerParameter(PARAMETER_RSEED);
+		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
+		float maxForce = getFloatParameter(PARAMETER_STEEPEST_DESCENT_MAXFORCE);
+		integrator = new SteepestDescent(&mdd, temperature, seed, fixedAtomsMask, maxForce);
 	} else {
 		DIE("Integrator was set incorrectly!");
 	}

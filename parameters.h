@@ -28,6 +28,7 @@
 #define VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER			"leap-frog-nose-hoover"
 #define VALUE_INTEGRATOR_LEAP_FROG_NEW				"leap-frog-new"
 #define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
+#define VALUE_INTEGRATOR_STEEPEST_DESCENT			"steepest-descent"
 
 #define PARAMETER_FIX						"fixation"
 #define DEFAULT_FIX						0
@@ -44,6 +45,8 @@
 #define DEFAULT_LANGEVIN					0
 #define PARAMETER_LANGEVIN_SEED					"langevin_seed"
 #define PARAMETER_DAMPING					"damping"
+
+#define PARAMETER_STEEPEST_DESCENT_MAXFORCE			"max_force"
 
 #define PARAMETER_EXCLUDE_BOND_TYPES				"exclude_bond_types"
 #define PARAMETER_PAIRLIST_CUTOFF				"pairs_cutoff"
