@@ -604,9 +604,13 @@ void MDGPU::init()
 		float psUpdate = getIntegerParameter(PARAMETER_PUSHING_SPHERE_UPDATE_FREQ);
 		float psSigma = getFloatParameter(PARAMETER_PUSHING_SPHERE_SIGMA);
 		float psEpsilon = getFloatParameter(PARAMETER_PUSHING_SPHERE_EPSILON);
+		int lj_or_harmonic = 0;
+		if(getYesNoParameter(PARAMETER_PUSHING_SPHERE_HARMONIC, DEFAULT_PUSHING_SPHERE_HARMONIC)){
+			lj_or_harmonic = 1; 		
+		}
 		char psfilename[1024];
 		getMaskedParameter(psfilename, PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME); 
-		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psfilename));
+		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psfilename, lj_or_harmonic));
 	}
 
 	//INDENTATION
