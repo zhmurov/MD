@@ -66,23 +66,19 @@ __global__ void integrateSteepestDescent_kernel(float* d_gama, float* d_var, int
 		float4 rf = rforce(d_i);
 		float df = tau/gama;
 
-		/*vel.x = df*f.x;
-		vel.y = df*f.y;
-		vel.z = df*f.z;*/
+		float modF = sqrtf(f.x*f.x + f.y*f.y + f.z*f.z);
+
+		if(modF > maxForce){
+			f.x = f.x*maxForce/modF;
+			f.y = f.y*maxForce/modF;
+			f.z = f.z*maxForce/modF;
+		}
 
 		vel.x = df*(f.x + var*rf.x);
 		vel.y = df*(f.y + var*rf.y);
 		vel.z = df*(f.z + var*rf.z);
 		
-		float modF = vel.x*vel.x + vel.y*vel.y + vel.z*vel.z;
-
-		vel.w += gama*modF/(c_mdd.d_mass[d_i]*2.0*tau);
-
-		if(modF > maxForce){
-			vel.x *= modF/maxForce;
-			vel.y *= modF/maxForce;
-			vel.z *= modF/maxForce;
-		}
+		vel.w += gama*(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z)/(c_mdd.d_mass[d_i]*2.0*tau);
 
 		if (d_fixatoms[d_i] == 0){
 			coord.x += vel.x;
@@ -133,31 +129,4 @@ void SteepestDescent::integrate_step_one(){
 void SteepestDescent::integrate_step_two(){
 
 	integrateSteepestDescent_kernel<<<this->blockCount, this->blockSize>>>(d_gama, d_var, d_fixatoms, maxForce);
-
-/*
-	cudaMemcpy(mdd->h_coord, mdd->d_coord, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);
-
-	int i, j;
-	float3 rij;
-	float rij_mod, r0, dev;		//deviation
-	for (i = 0; i < (mdd->N - 1); i++){
-
-		j = i+1;
-		if ((i == topdata->bonds[i].i) && (j == topdata->bonds[i].j)){
-			rij.x = mdd->h_coord[j].x*10.0 - mdd->h_coord[i].x*10.0;
-			rij.y = mdd->h_coord[j].y*10.0 - mdd->h_coord[i].y*10.0;
-			rij.z = mdd->h_coord[j].z*10.0 - mdd->h_coord[i].z*10.0;
-
-			rij_mod = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
-			r0 = topdata->bonds[i].c0;
-			dev = abs(rij_mod - r0);
-
-			//printf("[%2d]-[%2d]\trij_mod = %5.5f\tr0 = %5.5f\tabs(dev) = %5.5f\t[ANGSTR]\n", i, (i+1), rij_mod, r0, dev);
-
-			if (dev >= 2.0){
-				printf("WARNING-WARNING-WARNING-WARNING-WARNING\n");
-			}
-		}
-	}
-*/
 }
