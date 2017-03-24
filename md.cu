@@ -604,9 +604,13 @@ void MDGPU::init()
 		float psUpdate = getIntegerParameter(PARAMETER_PUSHING_SPHERE_UPDATE_FREQ);
 		float psSigma = getFloatParameter(PARAMETER_PUSHING_SPHERE_SIGMA);
 		float psEpsilon = getFloatParameter(PARAMETER_PUSHING_SPHERE_EPSILON);
+		int lj_or_harmonic = 0;
+		if(getYesNoParameter(PARAMETER_PUSHING_SPHERE_HARMONIC, DEFAULT_PUSHING_SPHERE_HARMONIC)){
+			lj_or_harmonic = 1; 		
+		}
 		char psfilename[1024];
 		getMaskedParameter(psfilename, PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME); 
-		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psfilename));
+		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psfilename, lj_or_harmonic));
 	}
 
 	//INDENTATION
@@ -807,7 +811,7 @@ void MDGPU::compute()
 		fprintf(file, "%d\n", mdd.N);
 		fprintf(file, "Created by mdd.cu\n");
 		for(i = 0; i < mdd.N; i++){
-			fprintf(file, "%s\t%f\t%f\t%f\n", "P", mdd.h_coord[i].x, mdd.h_coord[i].y, mdd.h_coord[i].z);
+			fprintf(file, "%s\t%f\t%f\t%f\n", "P", mdd.h_coord[i].x*10.0, mdd.h_coord[i].y*10.0, mdd.h_coord[i].z*10.0);
 		}
 		fclose(file);
 	}
