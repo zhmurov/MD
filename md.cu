@@ -608,9 +608,31 @@ void MDGPU::init()
 		if(getYesNoParameter(PARAMETER_PUSHING_SPHERE_HARMONIC, DEFAULT_PUSHING_SPHERE_HARMONIC)){
 			lj_or_harmonic = 1; 		
 		}
-		char psfilename[1024];
-		getMaskedParameter(psfilename, PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME); 
-		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psfilename, lj_or_harmonic));
+		char psFilename[1024];
+		getMaskedParameter(psFilename, PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME);
+		
+		int* push_mask;
+		push_mask = (int*)calloc(top.atomCount, sizeof(int));
+
+		if(getYesNoParameter(PARAMETER_PUSHING_SPHERE_MASK, DEFAULT_PUSHING_SPHERE_MASK)){
+			char psPDBFilename[1024];
+			getMaskedParameter(psPDBFilename, PARAMETER_PUSHING_SPHERE_MASK_PDB_FILENAME);
+			PDB push_maskPDB;
+			readPDB(psPDBFilename, &push_maskPDB);
+			for(int i = 0; i < push_maskPDB.atomCount; i++){
+				if((int)push_maskPDB.atoms[i].occupancy == 1){
+					push_mask[i] = 1;	
+				}			
+			}
+		}else{
+			for(int i = 0; i < top.atomCount; i++){
+				if(atoi(top.atoms[i].type) == 1){
+					push_mask[i] = 1;
+				}			
+			}		
+		}
+
+		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psFilename, lj_or_harmonic, push_mask));
 	}
 
 	//INDENTATION

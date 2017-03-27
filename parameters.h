@@ -61,17 +61,20 @@
 #define PARAMETER_REPULSIVE_EPSILON				"rep_eps"
 #define PARAMETER_REPULSIVE_SIGMA				"rep_sigm"
 
-#define PARAMETER_PUSHING_SPHERE				"push_sphere"
-#define DEFAULT_PUSHING_SPHERE					0
+#define PARAMETER_PUSHING_SPHERE					"push_sphere"
+#define DEFAULT_PUSHING_SPHERE						0
 #define PARAMETER_PUSHING_SPHERE_RADIUS0			"ps_radius0"
 #define PARAMETER_PUSHING_SPHERE_RADIUS				"ps_radius"
-#define PARAMETER_PUSHING_SPHERE_CENTER_POINT			"ps_center_of_sphere"
-#define PARAMETER_PUSHING_SPHERE_UPDATE_FREQ			"ps_update_freq"
+#define PARAMETER_PUSHING_SPHERE_CENTER_POINT		"ps_center_of_sphere"
+#define PARAMETER_PUSHING_SPHERE_UPDATE_FREQ		"ps_update_freq"
 #define PARAMETER_PUSHING_SPHERE_SIGMA				"ps_sigma"
 #define PARAMETER_PUSHING_SPHERE_EPSILON			"ps_epsilon"
 #define PARAMETER_PUSHING_SPHERE_HARMONIC			"ps_harmonic"
 #define DEFAULT_PUSHING_SPHERE_HARMONIC				0
-#define PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME		"ps_presure_filename"
+#define PARAMETER_PUSHING_SPHERE_OUTPUT_FILENAME	"ps_presure_filename"
+#define PARAMETER_PUSHING_SPHERE_MASK				"ps_mask"
+#define DEFAULT_PUSHING_SPHERE_MASK					0
+#define PARAMETER_PUSHING_SPHERE_MASK_PDB_FILENAME	"ps_mask_pdb_filename"
 
 #define PARAMETER_INDENTATION					"indentation"
 #define DEFAULT_INDENTATION					0
