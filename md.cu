@@ -124,8 +124,10 @@ void MDGPU::init()
 	getMaskedParameter(filename, PARAMETER_TOPOLOGY_FILENAME);
 	readTOP(filename, &top);
 
-	getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
-	readPARAM(filename, &par);
+	if (getYesNoParameter(PARAMETER_DNA, DEFAULT_DNA)){
+		getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
+		readPARAM(filename, &par);
+	}
 
 	getMaskedParameter(filename, PARAMETER_PSF_OUTPUT_FILENAME);
 	dumpPSF(filename, top);
@@ -185,11 +187,11 @@ void MDGPU::init()
 
 	//TODO
 	for(i = 0; i < mdd.N; i++){
-		for(j = 0; j < top.atomCount; j++){
-			if(atoi(top.atoms[i].type) == atoi(top.atoms[j].type)){
-				mdd.h_mass[i] = top.atoms[j].mass;
-			}
-		}
+		//for(j = 0; j < top.atomCount; j++){
+		//	if(atoi(top.atoms[i].type) == atoi(top.atoms[j].type)){
+				mdd.h_mass[i] = top.atoms[i].mass;
+		//	}
+		//}
 	}
 	double totalMass = 0.0;
 	for(i = 0; i < mdd.N; i++){
@@ -562,7 +564,7 @@ void MDGPU::init()
 						int temp = excl.x;
 						excl.x = excl.y;
 						excl.y = temp;
-						printf("WARNING\n");
+						printf("WARNING bond %d: %d-%d\n", b, excl.y, excl.x);
 					}
 					exclusions.push_back(excl);
 				}
@@ -577,7 +579,7 @@ void MDGPU::init()
 						int temp = excl.x;
 						excl.x = excl.y;
 						excl.y = temp;
-						printf("WARNING\n");
+						printf("WARNING pairs\n");
 					}
 					exclusions.push_back(excl);
 				}
