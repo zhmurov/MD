@@ -82,7 +82,11 @@ typedef struct {
 	TOPAngle* angles;
 	TOPDihedral* dihedrals;
 	TOPExclusion* exclusions;
+
+	int* ids;
 } TOPData;
 
 extern int readTOP(const char* filename, TOPData* topData);
 extern void writeTOP(const char* filename, TOPData* topData);
+//Added 28.03.17
+extern int getIndexInTOP(int nr, TOPData* topData);

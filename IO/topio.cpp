@@ -30,6 +30,16 @@ TOPAngle readAngleLineFromTOP(FILE* topFile);
 TOPDihedral readDihedralLineFromTOP(FILE* topFile);
 TOPExclusion readExclusionLineFromTOP(FILE* topFile);
 
+//Added 28.03.17
+int getIndexInTOP(int nr, TOPData* topData){
+	if(topData->ids[nr] != -1){
+		return topData->ids[nr];
+	} else {
+		printf("Atom with index %d not found in the topology file.\n", nr);
+		exit(0);
+	}
+}
+
 int readTOP(const char* filename, TOPData* topData){
 	printf("Reading topology from '%s'.\n", filename);
 	FILE* topFile = safe_fopen(filename, "r");
@@ -78,6 +88,7 @@ int readTOP(const char* filename, TOPData* topData){
 	}
 
 	rewind(topFile);
+
 	int count = 0;
 	while(safe_fgets(buffer, BUF_SIZE, topFile) != NULL){
 		if(strstr(buffer, "[ atoms ]") != 0){
@@ -137,6 +148,27 @@ int readTOP(const char* filename, TOPData* topData){
 				}
 			}
 		}
+	}
+
+//Added 28.03.17
+	int maxnr = 0;
+	for(int i = 0; i < topData->atomCount; i++){
+		if(topData->atoms[i].id > maxnr){
+			maxnr = topData->atoms[i].id;
+		}
+	}
+	topData->ids = (int*)calloc((maxnr+1) , sizeof(int));
+	for(int i = 0; i <= maxnr; i++){
+		topData->ids[i] = -1;
+	}
+	for(int i = 0; i <= maxnr; i++){
+		if(topData->atoms[i].id == i){
+			topData->ids[i] = topData->atoms[i].id;
+		}
+	}
+	//TODO DELETE printf
+	for(int i = 0; i <= maxnr; i++){
+		printf("ids[%d] = %d\n", i, topData->ids[i]);
 	}
 
 	fclose(topFile);
