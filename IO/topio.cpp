@@ -5,6 +5,12 @@
  *      Author: zhmurov
  *  Changes: 16.08.2016
  *	Author: kir_min
+ *  Changes: 28.03.2017
+ *  	Author: ilya_kir
+ *  	Added function getIndexInTOP
+ *  Changes: 03.04.2017
+ *  	Author: ilya_kir
+ *  	Added reading func to function readExclusionLineFromTOP 
  */
 
 #include <stdio.h>
@@ -150,7 +156,7 @@ int readTOP(const char* filename, TOPData* topData){
 		}
 	}
 
-//Added 28.03.17
+	//Added 28.03.17
 	int maxnr = 0;
 	for(int i = 0; i < topData->atomCount; i++){
 		if(topData->atoms[i].id > maxnr){
@@ -161,15 +167,14 @@ int readTOP(const char* filename, TOPData* topData){
 	for(int i = 0; i <= maxnr; i++){
 		topData->ids[i] = -1;
 	}
-	for(int i = 0; i <= maxnr; i++){
-		if(topData->atoms[i].id == i){
-			topData->ids[i] = topData->atoms[i].id;
-		}
+	for(int i = 0; i < topData->atomCount; i++){
+		topData->ids[topData->atoms[i].id] = i;
 	}
+
 	//TODO DELETE printf
-	for(int i = 0; i <= maxnr; i++){
-		printf("ids[%d] = %d\n", i, topData->ids[i]);
-	}
+	//for(int i = 0; i <= maxnr; i++){
+	//	printf("ids[%d] = %d\n", i, topData->ids[i]);
+	//}
 
 	fclose(topFile);
 	printf("Done reading the topology section.\n");
@@ -479,10 +484,13 @@ TOPExclusion readExclusionLineFromTOP(FILE* topFile){
 
 		pch = strtok(NULL, " \t");
 		exclusion.j = atoi(pch);
+
+	//Added 03.04.17
+		pch = strtok(NULL, " \t");
+		exclusion.func = atoi(pch);
 	} else {
 		exclusion.i = -1;
 	}
-
 	return exclusion;
 }
 
