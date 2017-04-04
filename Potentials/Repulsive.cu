@@ -90,7 +90,7 @@ __global__ void Repulsive_Energy_kernel(float* d_energy, int* pairs_count, int* 
 		ri = c_mdd.d_coord[i];
 
 		int count = pairs_count[i];
-		energy = 0;
+		energy = 0.0f;
 		int p;			//p - pairs
 		for (p = 0; p < count; p++){
 
