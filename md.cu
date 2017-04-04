@@ -131,8 +131,10 @@ void MDGPU::init()
 	getMaskedParameter(filename, PARAMETER_TOPOLOGY_FILENAME);
 	readTOP(filename, &top);
 
-	getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
-	readPARAM(filename, &par);
+	if (getYesNoParameter(PARAMETER_DNA, DEFAULT_DNA)){
+		getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
+		readPARAM(filename, &par);
+	}
 
 	getMaskedParameter(filename, PARAMETER_PSF_OUTPUT_FILENAME);
 	dumpPSF(filename, top);

@@ -171,11 +171,6 @@ int readTOP(const char* filename, TOPData* topData){
 		topData->ids[topData->atoms[i].id] = i;
 	}
 
-	//TODO DELETE printf
-	//for(int i = 0; i <= maxnr; i++){
-	//	printf("ids[%d] = %d\n", i, topData->ids[i]);
-	//}
-
 	fclose(topFile);
 	printf("Done reading the topology section.\n");
 	return count;
