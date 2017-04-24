@@ -131,7 +131,7 @@ void MDGPU::init()
 	getMaskedParameter(filename, PARAMETER_TOPOLOGY_FILENAME);
 	readTOP(filename, &top);
 
-	if (getYesNoParameter(PARAMETER_DNA, DEFAULT_DNA)){
+	if(getYesNoParameter(PARAMETER_POTENTIAL_BONDSCLASS2ATOM, DEFAULT_POTENTIAL_BONDSCLASS2ATOM) || getYesNoParameter(PARAMETER_POTENTIAL_ANGLECLASS2, DEFAULT_POTENTIAL_ANGLECLASS2) || getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED)){
 		getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
 		readPARAM(filename, &par);
 	}
@@ -278,7 +278,7 @@ void MDGPU::init()
 //=====================================================================
 
 	//BondsClass2Atom potential
-	if(getYesNoParameter(PARAMETER_POTENTIAL_BONDSCLASS2ATOM)){
+	if(getYesNoParameter(PARAMETER_POTENTIAL_BONDSCLASS2ATOM, DEFAULT_POTENTIAL_BONDSCLASS2ATOM)){
 
 		func_bc2a = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BONDSCLASS2ATOM, DEFAULT_FUNCTIONTYPE_BONDSCLASS2ATOM);
 
@@ -319,7 +319,7 @@ void MDGPU::init()
 	}
 
 	//AngleClass2 potential
-	if(getYesNoParameter(PARAMETER_POTENTIAL_ANGLECLASS2)){
+	if(getYesNoParameter(PARAMETER_POTENTIAL_ANGLECLASS2, DEFAULT_POTENTIAL_ANGLECLASS2)){
 
 		func_ac2 = getIntegerParameter(PARAMETER_FUNCTIONTYPE_ANGLECLASS2, DEFAULT_FUNCTIONTYPE_ANGLECLASS2);
 
@@ -365,7 +365,7 @@ void MDGPU::init()
 	float coulCutoff = getFloatParameter(PARAMETER_COULOMB_CUTOFF);
 
 	//Initialization of pairLists
-	if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED) || getYesNoParameter(PARAMETER_POTENTIAL_COULOMB)){
+	if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED) || getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB)){
 
 		float gausExclCutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
 		float pairsCutoff = getFloatParameter(PARAMETER_PAIRLIST_CUTOFF);
@@ -391,7 +391,7 @@ void MDGPU::init()
 		updaters.push_back(plistL2);
 
 		//GaussExcluded potential
-		if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED)){
+		if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED)){
 
 			int typeCount = 1;
 			bool boo;
@@ -452,7 +452,7 @@ void MDGPU::init()
 
 		//Coulomb potential
 		//PPPM potential
-		if(getYesNoParameter(PARAMETER_POTENTIAL_COULOMB) && getYesNoParameter(PARAMETER_POTENTIAL_PPPM)){
+		if(getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB) && getYesNoParameter(PARAMETER_POTENTIAL_PPPM, DEFAULT_POTENTIAL_PPPM)){
 
 			PPPM* pppm = new PPPM(&mdd, dielectric, coulCutoff);
 
@@ -472,7 +472,7 @@ void MDGPU::init()
 //=====================================================================
 
 	//FENE potential
-	if(getYesNoParameter(PARAMETER_POTENTIAL_FENE)){
+	if(getYesNoParameter(PARAMETER_POTENTIAL_FENE, DEFAULT_POTENTIAL_FENE)){
 
 		func_fene = getIntegerParameter(PARAMETER_FUNCTIONTYPE_FENE, DEFAULT_FUNCTIONTYPE_FENE);
 
@@ -505,7 +505,7 @@ void MDGPU::init()
 	}
 
 	//LennardJones potential
-	if(getYesNoParameter(PARAMETER_POTENTIAL_LENNARDJONES)){
+	if(getYesNoParameter(PARAMETER_POTENTIAL_LENNARDJONES, DEFAULT_POTENTIAL_LENNARDJONES)){
 
 		func_ljp = getIntegerParameter(PARAMETER_FUNCTIONTYPE_LENNARDJONES, DEFAULT_FUNCTIONTYPE_LENNARDJONES);
 
@@ -541,7 +541,7 @@ void MDGPU::init()
 	}
 
 	//Repulsive potential (PPPM and Coulumb have to be off)
-	if(getYesNoParameter(PARAMETER_POTENTIAL_REPULSIVE) && !getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED) && !getYesNoParameter(PARAMETER_POTENTIAL_COULOMB)){
+	if(getYesNoParameter(PARAMETER_POTENTIAL_REPULSIVE, DEFAULT_POTENTIAL_REPULSIVE) && !getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED) && !getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB)){
 
 		func_rep = getIntegerParameter(PARAMETER_FUNCTIONTYPE_REPULSIVE, DEFAULT_FUNCTIONTYPE_REPULSIVE);
 
