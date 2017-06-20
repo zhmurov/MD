@@ -17,18 +17,21 @@ EnergyOutput::EnergyOutput(MDData *mdd, std::vector<IPotential*>* potentials){
 }
 
 EnergyOutput::~EnergyOutput(){
-
 }
 
 void EnergyOutput::update(){
-	int p, i;
+
 	FILE* file = fopen(filename, "a");
 
+	int p, i;
+	double temp = 0.0f;		//temperature [K]
 
-	double temp = 0.0f;
 	cudaMemcpy(mdd->h_vel, mdd->d_vel, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);
+
+	// TODO ENERGY_OUTPUT_VELOCITY_WARNING
 	double velThresholdSq = ENERGY_OUTPUT_VELOCITY_WARNING*(float)this->frequence;
 	velThresholdSq = velThresholdSq*velThresholdSq;
+
 	for(i = 0; i < mdd->N; i++){
 		temp += mdd->h_vel[i].w*mdd->h_mass[i];
 		if(mdd->h_vel[i].w > velThresholdSq){
@@ -38,9 +41,7 @@ void EnergyOutput::update(){
 	}
 	cudaMemcpy(mdd->d_vel, mdd->h_vel, mdd->N*sizeof(float4), cudaMemcpyHostToDevice);
 	temp /= ((float)mdd->N)*((float)this->frequence)*3.0f*BOLTZMANN_CONSTANT;
-//	temp /= ((float)mdd->N)*3.0f*BOLTZMANN_CONSTANT;
 
-//if(mdd->step%(this->frequence*10) == 0){
 	printf("%*s%*s",
 			ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_STEP,
 			ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TEMPERATURE);
@@ -50,7 +51,6 @@ void EnergyOutput::update(){
 		}
 	}
 	printf("%*s\n", ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TOTAL);
-//}
 
 	printf("%*d%*f",
 			ENERGY_OUTPUT_WIDTH, mdd->step,
@@ -71,6 +71,3 @@ void EnergyOutput::update(){
 	printTime(mdd->step);
 	printEstimatedTimeleft((float)mdd->step/(float)mdd->numsteps);
 }
-
-
-

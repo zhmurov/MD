@@ -84,8 +84,13 @@ void dumpPSF(char* filename, TOPData &top){
 
 	for(int i = 0; i < top.bondCount; i++){
 		if ((top.bonds[i].func == func_fene) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
+<<<<<<< HEAD
 			psf.bonds[currentBond].i = top.bonds[i].i;
 			psf.bonds[currentBond].j = top.bonds[i].j;
+=======
+			psf.bonds[currentBond].i = getIndexInTOP(top.bonds[i].i, &top) + 1;
+			psf.bonds[currentBond].j = getIndexInTOP(top.bonds[i].j, &top) + 1;
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 			currentBond++;
 		}
 	}
@@ -243,14 +248,18 @@ void MDGPU::init()
 
 	if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG) == 0) {
 		integrator = new LeapFrog(&mdd);
+<<<<<<< HEAD
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NEW) == 0) {			 //TODO CHANGE NEW, add to parameters.h
+=======
+	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NEW) == 0) {				 //TODO CHANGE NEW, add to parameters.h
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
 		integrator = new LeapFrog_new(&mdd, temperature, seed);
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED) == 0) {
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
-		integrator = new LeapFrog_overdumped(&mdd, temperature, seed, fixedAtomsMask); // TODO add random force
+		integrator = new LeapFrog_overdumped(&mdd, temperature, seed, fixedAtomsMask); 		// TODO add random force
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0) {
 		integrator = new VelocityVerlet(&mdd);
 	} else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0) {
@@ -279,12 +288,21 @@ void MDGPU::init()
 
 	//BondsClass2Atom potential
 	if(getYesNoParameter(PARAMETER_POTENTIAL_BONDSCLASS2ATOM, DEFAULT_POTENTIAL_BONDSCLASS2ATOM)){
+<<<<<<< HEAD
 
 		func_bc2a = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BONDSCLASS2ATOM, DEFAULT_FUNCTIONTYPE_BONDSCLASS2ATOM);
 
 		int bondCountsPar = par.bondCount;
 		int bondCountsTop = 0;
 
+=======
+
+		func_bc2a = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BONDSCLASS2ATOM, DEFAULT_FUNCTIONTYPE_BONDSCLASS2ATOM);
+
+		int bondCountsPar = par.bondCount;
+		int bondCountsTop = 0;
+
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 		for(b = 0; b < top.bondCount; b++){
 			if(top.bonds[b].func == func_bc2a){
 				bondCountsTop++;
@@ -313,9 +331,15 @@ void MDGPU::init()
 			bondCoeffs[i].z = par.bondCoeff[i].k3*4.184*1000.0;	// [kcal/(mol*angstr^3)] -> [kJ/(mol*nm^3)]
 			bondCoeffs[i].w = par.bondCoeff[i].k4*4.184*10000.0;	// [kcal/(mol*angstr^4)] -> [kJ/(mol*nm^4)]
 		}
+<<<<<<< HEAD
 		checkCUDAError("before BondClass2Atom potential");
 		potentials.push_back(new BondsClass2Atom(&mdd, bondCountsPar, bondCountsTop, pair, bondCoeffs));
 		checkCUDAError("after BondClass2Atom potential");
+=======
+		checkCUDAError("CUDA ERROR: before BondClass2Atom potential");
+		potentials.push_back(new BondsClass2Atom(&mdd, bondCountsPar, bondCountsTop, pair, bondCoeffs));
+		checkCUDAError("CUDA ERROR: after BondClass2Atom potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 	}
 
 	//AngleClass2 potential
@@ -344,6 +368,7 @@ void MDGPU::init()
 				angle[i].w = (int)top.angles[i].c0 - 1;
 				angleCountsTop++;
 			}
+<<<<<<< HEAD
 		}
 
 		float4* angleCoeffs;
@@ -359,10 +384,28 @@ void MDGPU::init()
 		checkCUDAError("before AngleClass2 potential");
 		potentials.push_back(new AngleClass2(&mdd, angleCountsPar, angleCountsTop, angle, angleCoeffs));
 		checkCUDAError("after AngleClass2 potential");
+=======
+		}
+
+		float4* angleCoeffs;
+		angleCoeffs = (float4*)calloc(angleCountsPar, sizeof(float4));
+
+		for(i = 0; i < angleCountsPar; i++){
+			angleCoeffs[i].x = par.angleCoeff[i].theta0;	// [degree]
+			angleCoeffs[i].y = par.angleCoeff[i].k2*4.184;	// [kcal/(mol*rad^2)] -> [kJ/(mol*rad^2)]
+			angleCoeffs[i].z = par.angleCoeff[i].k3*4.184;	// [kcal/(mol*rad^3)] -> [kJ/(mol*rad^3)]
+			angleCoeffs[i].w = par.angleCoeff[i].k4*4.184;	// [kcal/(mol*rad^4)] -> [kJ/(mol*rad^4)]
+		}
+
+		checkCUDAError("CUDA ERROR: before AngleClass2 potential");
+		potentials.push_back(new AngleClass2(&mdd, angleCountsPar, angleCountsTop, angle, angleCoeffs));
+		checkCUDAError("CUDA ERROR: after AngleClass2 potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 	}
 
 	float dielectric = getFloatParameter(PARAMETER_DIELECTRIC, DEFAULT_DIELECTRIC);
 	float coulCutoff = getFloatParameter(PARAMETER_COULOMB_CUTOFF);
+<<<<<<< HEAD
 
 	//Initialization of pairLists
 	if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED) || getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB)){
@@ -463,6 +506,108 @@ void MDGPU::init()
 			checkCUDAError("before Coulomb potential");
 			potentials.push_back(new Coulomb(&mdd, plistL2, pppm->get_alpha(), dielectric, coulCutoff));
 			checkCUDAError("after Coulomb potential");
+=======
+
+	//Initialization of pairLists
+	if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED) || getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB)){
+
+		float gausExclCutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
+		float pairsCutoff = getFloatParameter(PARAMETER_PAIRLIST_CUTOFF);
+		float possiblePairsCutoff = getFloatParameter(PARAMETER_POSSIBLE_PAIRLIST_CUTOFF);
+		int possiblePairsFreq = getIntegerParameter(PARAMETER_POSSIBLE_PAIRLIST_FREQUENCE);
+		int pairsFreq = getIntegerParameter(PARAMETER_PAIRLIST_FREQUENCE);
+
+		std::vector<int2> exclusions(top.exclusionCount);
+		for (i = 0; i < top.exclusionCount; i++){
+			if(getIndexInTOP(top.exclusions[i].i, &top) < getIndexInTOP(top.exclusions[i].j, &top)){
+				exclusions[i].x = getIndexInTOP(top.exclusions[i].i, &top);
+				exclusions[i].y = getIndexInTOP(top.exclusions[i].j, &top);
+			} else {
+				exclusions[i].x = getIndexInTOP(top.exclusions[i].j, &top);
+				exclusions[i].y = getIndexInTOP(top.exclusions[i].i, &top);
+			}
+		}
+		std::sort(exclusions.begin(), exclusions.end(), &int2_comparatorEx);
+
+		PairListL1* plistL1 = new PairListL1(&mdd, exclusions, possiblePairsCutoff, pairsCutoff, possiblePairsFreq);
+		PairListL2* plistL2 = new PairListL2(&mdd, plistL1->d_pairs, pairsCutoff, coulCutoff, pairsFreq);
+		updaters.push_back(plistL1);
+		updaters.push_back(plistL2);
+
+		//GaussExcluded potential
+		if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED)){
+
+			int typeCount = 1;
+			bool boo;
+			for (i = 1; i < top.atomCount; i++){
+				for(j = 0; j < i; j++){
+					if (atoi(top.atoms[j].type) == atoi(top.atoms[i].type)){ 
+						boo = false;
+						break;
+					}else{
+						boo = true;
+					}
+				}
+				if (boo) {
+					typeCount++;
+				}
+			}
+
+			for (i = 1; i < top.atomCount; i++){
+				if(typeCount < atoi(top.atoms[i].type)){
+					typeCount = atoi(top.atoms[i].type);
+				}
+			}
+			printf("typeCount = %d\n", typeCount);
+	
+			GaussExCoeff* gaussExCoeff;
+			gaussExCoeff = (GaussExCoeff*)calloc(typeCount*typeCount, sizeof(GaussExCoeff));
+
+			for(i = 0; i < typeCount; i++){
+				for(j = 0; j < typeCount; j++){
+					for(int k = 0; k < par.ljCount; k++){
+						if((i == par.lj_RepulsiveCoeff[k].i - 1 && j == par.lj_RepulsiveCoeff[k].j - 1) || (j == par.lj_RepulsiveCoeff[k].i - 1 && i == par.lj_RepulsiveCoeff[k].j - 1)){
+							gaussExCoeff[i+j*typeCount].l = par.lj_RepulsiveCoeff[k].l;
+							gaussExCoeff[i+j*typeCount].A = par.lj_RepulsiveCoeff[k].A*4.184/pow(10.0, gaussExCoeff[i+j*typeCount].l);	// [kcal/mol*angstr^l] -> [kJ/mol*nm^l];
+						}
+					}
+					for(int k = 0; k < par.gaussCount; k++){
+						if((i == par.gaussCoeff[k].i - 1 && j == par.gaussCoeff[k].j - 1) || (j == par.gaussCoeff[k].i - 1 && i == par.gaussCoeff[k].j - 1)){
+							gaussExCoeff[i+j*typeCount].numberGaussians = par.gaussCoeff[k].numberGaussians;
+							gaussExCoeff[i+j*typeCount].B = (float*)calloc(par.gaussCoeff[k].numberGaussians, sizeof(float));
+							gaussExCoeff[i+j*typeCount].C = (float*)calloc(par.gaussCoeff[k].numberGaussians, sizeof(float));
+							gaussExCoeff[i+j*typeCount].R = (float*)calloc(par.gaussCoeff[k].numberGaussians, sizeof(float));
+							for(int l = 0; l < par.gaussCoeff[k].numberGaussians; l++){
+								gaussExCoeff[i+j*typeCount].B[l] = par.gaussCoeff[k].B[l]*4.184;		// [kcal/mol] -> [kJ/mol]
+								gaussExCoeff[i+j*typeCount].C[l] = par.gaussCoeff[k].C[l]*100.0;		// [1/angstr^2] -> [1/nm^2]
+								gaussExCoeff[i+j*typeCount].R[l] = par.gaussCoeff[k].R[l]/10.0;			// [angstr] -> [nm]
+							}
+						}		
+					}
+				}
+			}
+	
+			float cutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
+
+			checkCUDAError("CUDA ERROR: before GaussExcluded potential");
+			potentials.push_back(new GaussExcluded(&mdd, cutoff, typeCount, gaussExCoeff, plistL2));
+			checkCUDAError("CUDA ERROR: after GaussExcluded potential");
+		}
+
+		//Coulomb potential
+		//PPPM potential
+		if(getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB) && getYesNoParameter(PARAMETER_POTENTIAL_PPPM, DEFAULT_POTENTIAL_PPPM)){
+
+			PPPM* pppm = new PPPM(&mdd, dielectric, coulCutoff);
+
+			checkCUDAError("CUDA ERROR: before PPPM potential");
+			potentials.push_back(pppm);
+			checkCUDAError("CUDA ERROR: after PPPM potential");
+
+			checkCUDAError("CUDA ERROR: before Coulomb potential");
+			potentials.push_back(new Coulomb(&mdd, plistL2, pppm->get_alpha(), dielectric, coulCutoff));
+			checkCUDAError("CUDA ERROR: after Coulomb potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 		}
 	}
 
@@ -499,9 +644,15 @@ void MDGPU::init()
 			}
 		}
 
+<<<<<<< HEAD
 		checkCUDAError("before FENE potential");
 		potentials.push_back(new FENE(&mdd, bondCount, bondsFENE, bondsFENE_C0));
 		checkCUDAError("after FENE potential");
+=======
+		checkCUDAError("CUDA ERROR: before FENE potential");
+		potentials.push_back(new FENE(&mdd, bondCount, bondsFENE, bondsFENE_C0));
+		checkCUDAError("CUDA ERROR: after FENE potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 	}
 
 	//LennardJones potential
@@ -535,18 +686,32 @@ void MDGPU::init()
 				pairsCount++;
 			}
 		}
+<<<<<<< HEAD
 		checkCUDAError("before LennardJones potential");
 		potentials.push_back(new LJP(&mdd, pairsCount, pairsLJP, pairsLJP_C0, pairsLJP_C1));
 		checkCUDAError("after LennardJones potential");
+=======
+		checkCUDAError("CUDA ERROR: before LennardJones potential");
+		potentials.push_back(new LJP(&mdd, pairsCount, pairsLJP, pairsLJP_C0, pairsLJP_C1));
+		checkCUDAError("CUDA ERROR: after LennardJones potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 	}
 
 	//Repulsive potential (PPPM and Coulumb have to be off)
 	if(getYesNoParameter(PARAMETER_POTENTIAL_REPULSIVE, DEFAULT_POTENTIAL_REPULSIVE) && !getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED) && !getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB)){
+<<<<<<< HEAD
 
 		func_rep = getIntegerParameter(PARAMETER_FUNCTIONTYPE_REPULSIVE, DEFAULT_FUNCTIONTYPE_REPULSIVE);
 
 		std::vector<int2> exclusions(top.exclusionCount);
 
+=======
+
+		func_rep = getIntegerParameter(PARAMETER_FUNCTIONTYPE_REPULSIVE, DEFAULT_FUNCTIONTYPE_REPULSIVE);
+
+		std::vector<int2> exclusions(top.exclusionCount);
+
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 		for (i = 0; i < top.exclusionCount; i++){
 			if(top.exclusions[i].func = func_rep){
 				if(getIndexInTOP(top.exclusions[i].i, &top) < getIndexInTOP(top.exclusions[i].j, &top)){
@@ -578,9 +743,15 @@ void MDGPU::init()
 		float rep_eps = getFloatParameter(PARAMETER_REPULSIVE_EPSILON);
 		float rep_sigm = getFloatParameter(PARAMETER_REPULSIVE_SIGMA);
 
+<<<<<<< HEAD
 		checkCUDAError("before Repulsive potential");
 		potentials.push_back(new Repulsive(&mdd, plistL2, nbCutoff, rep_eps, rep_sigm));
 		checkCUDAError("after Repulsive potential");
+=======
+		checkCUDAError("CUDA ERROR: before Repulsive potential");
+		potentials.push_back(new Repulsive(&mdd, plistL2, nbCutoff, rep_eps, rep_sigm));
+		checkCUDAError("CUDA ERROR: after Repulsive potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 	}
 
 //=====================================================================
@@ -625,9 +796,15 @@ void MDGPU::init()
 			}		
 		}
 
+<<<<<<< HEAD
 		checkCUDAError("before PushingSphere potential");
 		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psFilename, lj_or_harmonic, push_mask));
 		checkCUDAError("after PushingSphere potential");
+=======
+		checkCUDAError("CUDA ERROR: before PushingSphere potential");
+		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psFilename, lj_or_harmonic, push_mask));
+		checkCUDAError("CUDA ERROR: after PushingSphere potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 	}
 
 	//Indentation potential
@@ -707,9 +884,15 @@ void MDGPU::init()
 		writePDB(pdb_cant_filename, &pdb_cant);
 */
 
+<<<<<<< HEAD
 		checkCUDAError("before Indentation potential");
 		potentials.push_back(new Indentation(&mdd, atomCount, ind_tip_radius, ind_tip_coord, ind_base_coord, ind_base_freq, ind_n, ind_vel, ind_ks, ind_eps, ind_sigm, sf_coord, sf_n, sf_eps, sf_sigm, dcd_freq, dcd_cant_filename));
 		checkCUDAError("after Indentation potential");
+=======
+		checkCUDAError("CUDA ERROR: before Indentation potential");
+		potentials.push_back(new Indentation(&mdd, atomCount, ind_tip_radius, ind_tip_coord, ind_base_coord, ind_base_freq, ind_n, ind_vel, ind_ks, ind_eps, ind_sigm, sf_coord, sf_n, sf_eps, sf_sigm, dcd_freq, dcd_cant_filename));
+		checkCUDAError("CUDA ERROR: after Indentation potential");
+>>>>>>> af434c6... 1) Fixed Langevin potential. Parameter 'damping' is defined(in config file) in [1/ps].
 	}
 
 
@@ -771,54 +954,33 @@ void MDGPU::compute()
 	int numsteps = mdd.numsteps;
 	int nav = numsteps;
 	int i;
-	int u, p;
+	int u;		// updater
+	int p;		// potential
+
+	// nav - lowest updaters frequency
 	for(u = 0; u != updaters.size(); u++){
 		if(nav > updaters[u]->getFrequence()){
 			nav = updaters[u]->getFrequence();
-			//cudaThreadSynchronize();
 		}
 	}
-
-	//cudaThreadSynchronize();
+	// TODO
 	for(p = 0; p != potentials.size(); p++){
 		potentials[p]->compute();
-//checkCUDAError("Here!");
-//printf("bla!");
-		//cudaThreadSynchronize();
 	}
-
-	/*cudaMemcpy(mdd.h_force, mdd.d_force, mdd.N*sizeof(float4), cudaMemcpyDeviceToHost);
-	FILE* file = fopen("forces.dat", "w");
-	for(i = 0; i < mdd.N; i++){
-		fprintf(file, "%f %f %f\n", mdd.h_force[i].x, mdd.h_force[i].y, mdd.h_force[i].z);
-	}
-	fclose(file);
-	file = fopen("coords.dat", "w");
-	for(i = 0; i < mdd.N; i++){
-		fprintf(file, "%f %f %f\n", mdd.h_coord[i].x, mdd.h_coord[i].y, mdd.h_coord[i].z);
-	}
-	fclose(file);
-	exit(0);*/
-
-	//for(mdd.step = 0; mdd.step <= numsteps; mdd.step += nav){
 	while(mdd.step <= numsteps){
 		for(u = 0; u != updaters.size(); u++){
 			if(mdd.step % updaters[u]->getFrequence() == 0){
 				updaters[u]->update();
-				//cudaThreadSynchronize();
 			}
 		}
 		for(i = 0; i < nav; i++){
 			integrator->integrate_step_one();
-			//cudaThreadSynchronize();
 			for(p = 0; p != potentials.size(); p++){
 				potentials[p]->compute();
-				//cudaThreadSynchronize();
-				checkCUDAError("CUDA ERROR");
+				checkCUDAError("CUDA ERROR: after potential inside MDGPU:compute()");
 			}
-
 			integrator->integrate_step_two();
-			mdd.step ++;
+			mdd.step++;
 		}
 	}
 	
@@ -839,6 +1001,7 @@ void MDGPU::compute()
 
 MDGPU::~MDGPU()
 {
+
 	free(mdd.h_coord);
 	free(mdd.h_vel);
 	free(mdd.h_force);
