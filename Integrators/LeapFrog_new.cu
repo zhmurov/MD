@@ -65,6 +65,10 @@ __global__ void integrateLeapFrog_underdumped(float* d_gama, float* d_var){
 		vel.y += df*(f.y - vel.y*gama + var*rf.y);
 		vel.z += df*(f.z - vel.z*gama + var*rf.z);
 
+		//vel.x += df*f.x;
+		//vel.y += df*f.y;
+		//vel.z += df*f.z;
+
 		vel.w += vel.x*vel.x + vel.y*vel.y + vel.z*vel.z;
 
 		coord.x += vel.x*tau;

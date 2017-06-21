@@ -64,13 +64,9 @@ __global__ void integrateLeapFrog_overdumped(float* d_gama, float* d_var, int* d
 		float4 rf = rforce(d_i);
 		float df = tau/gama;
 
-		/*vel.x = df*f.x;
-		vel.y = df*f.y;
-		vel.z = df*f.z;*/
-
-		vel.x = df*(f.x + var*rf.x);
-		vel.y = df*(f.y + var*rf.y);
-		vel.z = df*(f.z + var*rf.z);
+		vel.x = df*(f.x + var*rf.x);		// [nm]
+		vel.y = df*(f.y + var*rf.y);		// [nm]
+		vel.z = df*(f.z + var*rf.z);		// [nm]
 
 		vel.w += gama*(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z)/(c_mdd.d_mass[d_i]*2.0*tau);
 

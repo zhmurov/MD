@@ -60,7 +60,7 @@ typedef struct {
 class IPotential {
 public:
 	virtual ~IPotential(){}
-	virtual void compute () = 0;
+	virtual void compute() = 0;
 	virtual int get_energy_count() = 0;
 	virtual std::string get_energy_name(int energy_id) = 0;
 	virtual float get_energies(int energy_id, int timestep) = 0;
@@ -75,8 +75,8 @@ protected:
 class IIntegrator {
 public:
 	virtual ~IIntegrator(){}
-	virtual void integrate_step_one () = 0;
-	virtual void integrate_step_two () = 0;
+	virtual void integrate_step_one() = 0;
+	virtual void integrate_step_two() = 0;
 protected:
 	MDData* mdd;
 	int blockSize;
@@ -87,8 +87,8 @@ protected:
 class IUpdater {
 public:
 	virtual ~IUpdater(){}
-	virtual void update () = 0;
-	int getFrequence(){ return frequence;}
+	virtual void update() = 0;
+	int getFrequence() {return frequence;}
 protected:
 	MDData* mdd;
 	int blockSize;

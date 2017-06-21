@@ -33,15 +33,11 @@ __global__ void integrateLeapFrog_step_two_kernel(){
 		float m = c_mdd.d_mass[d_i];
 		m = 1.0f/m;
 		m *= c_mdd.dt;
-		m *= c_mdd.ftm2v;
 
-		vel.x += m*f.x;
-		vel.y += m*f.y;
-		vel.z += m*f.z;
+		vel.x += m*f.x;			// [nm/ps]
+		vel.y += m*f.y;			// [nm/ps]
+		vel.z += m*f.z;			// [nm/ps]
 
-		/*vel.x *= 0.9f;
-		vel.y *= 0.9f;
-		vel.z *= 0.9f;*/
 		vel.w += vel.x*vel.x + vel.y*vel.y + vel.z*vel.z;
 
 		coord.x += vel.x*c_mdd.dt;
