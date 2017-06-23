@@ -5,6 +5,12 @@
  *      Author: zhmurov
  *  Changes: 16.08.2016
  *	Author: kir_min
+ *  Changes: 28.03.2017
+ *  	Author: ilya_kir
+ *  	Added function getIndexInTOP
+ *  Changes: 03.04.2017
+ *  	Author: ilya_kir
+ *  	Added reading func to function readExclusionLineFromTOP 
  */
 
 #include <stdio.h>
@@ -29,6 +35,16 @@ TOPPair readPairLineFromTOP(FILE* topFile);
 TOPAngle readAngleLineFromTOP(FILE* topFile);
 TOPDihedral readDihedralLineFromTOP(FILE* topFile);
 TOPExclusion readExclusionLineFromTOP(FILE* topFile);
+
+//Added 28.03.17
+int getIndexInTOP(int nr, TOPData* topData){
+	if(topData->ids[nr] != -1){
+		return topData->ids[nr];
+	} else {
+		printf("Atom with index %d not found in the topology file.\n", nr);
+		exit(0);
+	}
+}
 
 int readTOP(const char* filename, TOPData* topData){
 	printf("Reading topology from '%s'.\n", filename);
@@ -78,6 +94,7 @@ int readTOP(const char* filename, TOPData* topData){
 	}
 
 	rewind(topFile);
+
 	int count = 0;
 	while(safe_fgets(buffer, BUF_SIZE, topFile) != NULL){
 		if(strstr(buffer, "[ atoms ]") != 0){
@@ -137,6 +154,21 @@ int readTOP(const char* filename, TOPData* topData){
 				}
 			}
 		}
+	}
+
+	//Added 28.03.17
+	int maxnr = 0;
+	for(int i = 0; i < topData->atomCount; i++){
+		if(topData->atoms[i].id > maxnr){
+			maxnr = topData->atoms[i].id;
+		}
+	}
+	topData->ids = (int*)calloc((maxnr+1) , sizeof(int));
+	for(int i = 0; i <= maxnr; i++){
+		topData->ids[i] = -1;
+	}
+	for(int i = 0; i < topData->atomCount; i++){
+		topData->ids[topData->atoms[i].id] = i;
 	}
 
 	fclose(topFile);
@@ -447,10 +479,13 @@ TOPExclusion readExclusionLineFromTOP(FILE* topFile){
 
 		pch = strtok(NULL, " \t");
 		exclusion.j = atoi(pch);
+
+	//Added 03.04.17
+		pch = strtok(NULL, " \t");
+		exclusion.func = atoi(pch);
 	} else {
 		exclusion.i = -1;
 	}
-
 	return exclusion;
 }
 

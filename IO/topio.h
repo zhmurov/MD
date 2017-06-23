@@ -5,7 +5,9 @@
  *      Author: zhmurov
  *  Changes: 16.08.2016
  *	Author: kir_min
- */
+ *  Changes: 03.04.2017
+ *  	Author: ilya_kir
+*/
 
 #pragma once
 
@@ -65,6 +67,7 @@ typedef struct {
 typedef struct {
 	int i;
 	int j;
+	int func;
 } TOPExclusion;
 
 typedef struct {
@@ -82,7 +85,10 @@ typedef struct {
 	TOPAngle* angles;
 	TOPDihedral* dihedrals;
 	TOPExclusion* exclusions;
+
+	int* ids;
 } TOPData;
 
 extern int readTOP(const char* filename, TOPData* topData);
 extern void writeTOP(const char* filename, TOPData* topData);
+extern int getIndexInTOP(int nr, TOPData* topData);
