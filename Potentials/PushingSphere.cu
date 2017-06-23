@@ -6,17 +6,19 @@
  */
 #include "PushingSphere.cuh"
 
-PushingSphere::PushingSphere(MDData *mdd, float R0, float R, float4 centerPoint, int updatefreq, float sigma, float epsilon, const char* outdatfilename, int lj_or_harmonic, int* push_mask){
+PushingSphere::PushingSphere(MDData *mdd, float R0, float vSphere, float4 centerPoint, int updatefreq, float sigma, float epsilon, const char* outdatfilename, int ljOrHarmonic, int* pushMask){
 	printf("Initializing Pushing Sphere potential\n");
 	this->mdd = mdd;
 	this->R0 = R0;
-	this->R = R;
+	this->vSphere = vSphere;
 	this->centerPoint = centerPoint;
 	this->updatefreq = updatefreq;
 	this->sigma = sigma;
 	this->epsilon = epsilon;
-	this->lj_or_harmonic = lj_or_harmonic;
+	this->ljOrHarmonic = ljOrHarmonic;
 	strcpy(filename, outdatfilename);
+
+	printf("The sphere will change on %f nm every ps\n", vSphere);
 
 	FILE* datout = fopen(filename, "w");
 	fclose(datout); 
@@ -28,14 +30,14 @@ PushingSphere::PushingSphere(MDData *mdd, float R0, float R, float4 centerPoint,
 	cudaMalloc((void**)&d_mask, mdd->N*sizeof(int));
 
 	for(int i = 0; i < mdd->N; i++){
-		h_mask[i] = push_mask[i];
+		h_mask[i] = pushMask[i];
 	}
 	cudaMemcpy(d_mask, h_mask, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 
-	h_p_sphere = (float*)calloc(mdd->N, sizeof(float));
-	cudaMalloc((void**)&d_p_sphere, mdd->N*sizeof(float));
+	h_pressureOnSphere = (float*)calloc(mdd->N, sizeof(float));
+	cudaMalloc((void**)&d_pressureOnSphere, mdd->N*sizeof(float));
 
-	cudaMemcpy(d_p_sphere, h_p_sphere, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_pressureOnSphere, h_pressureOnSphere, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 
 	h_energy = (float*)calloc(mdd->N, sizeof(float));
 	cudaMalloc((void**)&d_energy, mdd->N*sizeof(float));
@@ -47,15 +49,15 @@ PushingSphere::PushingSphere(MDData *mdd, float R0, float R, float4 centerPoint,
 }
 
 PushingSphere::~PushingSphere(){
-	free(h_p_sphere);
-	cudaFree(d_p_sphere);
+	free(h_pressureOnSphere);
+	cudaFree(d_pressureOnSphere);
 }
 
-__global__ void pushingSphereLJ_kernel(int* d_mask, float* d_p_sphere, float R, float4 r0, float sigma, float epsilon){
+__global__ void pushingSphereLJ_kernel(int* d_mask, float* d_pressureOnSphere, float R, float4 r0, float sigma, float epsilon){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if (d_i < c_mdd.N){
 		if(d_mask[d_i] == 1){
-			float p_sphere = d_p_sphere[d_i];
+			float p = d_pressureOnSphere[d_i];
 			float4 f = c_mdd.d_force[d_i];
 			float4 ri = c_mdd.d_coord[d_i];
 
@@ -80,9 +82,9 @@ __global__ void pushingSphereLJ_kernel(int* d_mask, float* d_p_sphere, float R, 
 			df.y = -mul*R_ri.y/mod_R_ri;
 			df.z = -mul*R_ri.z/mod_R_ri;
 		
-			p_sphere += mul/(R*R);
+			p += mul/(R*R);
 
-			d_p_sphere[d_i] = p_sphere;
+			d_pressureOnSphere[d_i] = p; // p = force/r^2
 
 			f.x += df.x;
 			f.y += df.y;
@@ -93,12 +95,12 @@ __global__ void pushingSphereLJ_kernel(int* d_mask, float* d_p_sphere, float R, 
 	}
 }
 
-__global__ void pushingSphereHarmonic_kernel(int* d_mask, float* d_p_sphere, float R, float4 r0, float sigma, float epsilon){
+__global__ void pushingSphereHarmonic_kernel(int* d_mask, float* d_pressureOnSphere, float R, float4 r0, float sigma, float epsilon){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if (d_i < c_mdd.N){
 		if(d_mask[d_i] == 1){
 			float k = epsilon;
-			float p_sphere = d_p_sphere[d_i];
+			float p = d_pressureOnSphere[d_i];
 			float4 f = c_mdd.d_force[d_i];
 			float4 ri = c_mdd.d_coord[d_i];
 
@@ -124,9 +126,9 @@ __global__ void pushingSphereHarmonic_kernel(int* d_mask, float* d_p_sphere, flo
 			df.y = mul*R_ri.y/mod_R_ri;
 			df.z = mul*R_ri.z/mod_R_ri;
 		
-			p_sphere += mul/(R*R);
+			p += mul/(R*R);
 
-			d_p_sphere[d_i] = p_sphere;
+			d_pressureOnSphere[d_i] = p; // p = force/r^2
 
 			f.x += df.x;
 			f.y += df.y;
@@ -138,27 +140,26 @@ __global__ void pushingSphereHarmonic_kernel(int* d_mask, float* d_p_sphere, flo
 }
 
 void PushingSphere::compute(){
-	float alpha = (float)mdd->step/(float)mdd->numsteps;
-	this->radius = this->R0*(1.0f - alpha) + this->R*alpha;
+	this->radius = this->R0 - this->vSphere*mdd->step;
 
-	if(lj_or_harmonic == PUSHING_SPHERE_LJ){
-		pushingSphereLJ_kernel<<<this->blockCount, this->blockSize>>>(d_mask, d_p_sphere, this->radius, this->centerPoint, this->sigma, this->epsilon);
-	}
-	if(lj_or_harmonic == PUSHING_SPHERE_HARMONIC){
-		pushingSphereHarmonic_kernel<<<this->blockCount, this->blockSize>>>(d_mask, d_p_sphere, this->radius, this->centerPoint, this->sigma, this->epsilon);
+	if(ljOrHarmonic == PUSHING_SPHERE_LJ){
+		pushingSphereLJ_kernel<<<this->blockCount, this->blockSize>>>(d_mask, d_pressureOnSphere, this->radius, this->centerPoint, this->sigma, this->epsilon);
+	}else
+	if(ljOrHarmonic == PUSHING_SPHERE_HARMONIC){
+		pushingSphereHarmonic_kernel<<<this->blockCount, this->blockSize>>>(d_mask, d_pressureOnSphere, this->radius, this->centerPoint, this->sigma, this->epsilon);
 	}
 
 	if(mdd->step % this->updatefreq == 0){
-		cudaMemcpy(h_p_sphere, d_p_sphere, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
+		cudaMemcpy(h_pressureOnSphere, d_pressureOnSphere, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 		FILE* datout = fopen(filename, "a");
 		float stress = 0.0;
 		for(int i = 0; i < mdd->N; i++){
-			stress += h_p_sphere[i];
-			h_p_sphere[i] = 0;
+			stress += h_pressureOnSphere[i];
+			h_pressureOnSphere[i] = 0;
 		}
 		float presureOnSphere = stress/(4.0*M_PI*this->updatefreq);
 		fprintf(datout, "%d\t%f\t%e\n", mdd->step, this->radius, presureOnSphere);
-		cudaMemcpy(d_p_sphere, h_p_sphere, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_pressureOnSphere, h_pressureOnSphere, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 		fclose(datout);
 	}
 }
@@ -216,10 +217,10 @@ __global__ void pushingSphereHarmonicEnergy_kernel(int* d_mask, float* d_energy,
 
 float PushingSphere::getEnergies(int energyId, int timestep){
 
-	if(lj_or_harmonic == PUSHING_SPHERE_LJ){
+	if(ljOrHarmonic == PUSHING_SPHERE_LJ){
 		pushingSphereLJEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_mask, d_energy, this->radius, this->centerPoint, this->sigma, this->epsilon);
-	}
-	if(lj_or_harmonic == PUSHING_SPHERE_HARMONIC){
+	}else
+	if(ljOrHarmonic == PUSHING_SPHERE_HARMONIC){
 		pushingSphereHarmonicEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_mask, d_energy, this->radius, this->centerPoint, this->sigma, this->epsilon);
 	}
 

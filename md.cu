@@ -589,7 +589,14 @@ void MDGPU::init()
 	if(getYesNoParameter(PARAMETER_PUSHING_SPHERE, DEFAULT_PUSHING_SPHERE)){
 
 		float psR0 = getFloatParameter(PARAMETER_PUSHING_SPHERE_RADIUS0);
-		float psR = getFloatParameter(PARAMETER_PUSHING_SPHERE_RADIUS);
+
+		float psR = getFloatParameter(PARAMETER_PUSHING_SPHERE_RADIUS, -1.0);
+		float psV = getFloatParameter(PARAMETER_PUSHING_SPHERE_SPEED, 0.0);
+
+		if((psR > 0) && (psV == 0)){
+			psV = (psR0 - psR)/mdd.numsteps;
+		}
+
 		float4 pscenterPoint;
 		getVectorParameter(PARAMETER_PUSHING_SPHERE_CENTER_POINT, &pscenterPoint.x, &pscenterPoint.y, &pscenterPoint.z);
 		float psUpdate = getIntegerParameter(PARAMETER_PUSHING_SPHERE_UPDATE_FREQ);
@@ -624,7 +631,7 @@ void MDGPU::init()
 		}
 
 		checkCUDAError("CUDA ERROR: before PushingSphere potential\n");
-		potentials.push_back(new PushingSphere(&mdd, psR0, psR, pscenterPoint, psUpdate, psSigma, psEpsilon, psFilename, lj_or_harmonic, push_mask));
+		potentials.push_back(new PushingSphere(&mdd, psR0, psV, pscenterPoint, psUpdate, psSigma, psEpsilon, psFilename, lj_or_harmonic, push_mask));
 		checkCUDAError("CUDA ERROR: after PushingSphere potential\n");
 	}
 

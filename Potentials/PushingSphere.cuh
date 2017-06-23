@@ -14,7 +14,7 @@
 
 class PushingSphere : public IPotential {
 public:
-	PushingSphere(MDData *mdd, float R0, float R, float4 centerPoint, int updatefreq, float sigma, float epsilon, const char* outdatfilename, int lj_or_harmonic, int* push_mask);
+	PushingSphere(MDData *mdd, float R0, float vSphere, float4 centerPoint, int updatefreq, float sigma, float epsilon, const char* outdatfilename, int ljOrHarmonic, int* pushMask);
 	~PushingSphere();
 	void compute();
 	int getEnergyCount(){return 1;}
@@ -22,17 +22,17 @@ public:
 	float getEnergies(int energyId, int timestep);
 private:
 	float R0;
-	float R;
+	float vSphere;
 	float radius;
 	float4 centerPoint;
 	int updatefreq;
 	float sigma;
 	float epsilon;
-	int lj_or_harmonic;
+	int ljOrHarmonic;
 	int* h_mask;
 	int* d_mask;
-	float* h_p_sphere;
-	float* d_p_sphere;
+	float* h_pressureOnSphere;
+	float* d_pressureOnSphere;
 	char filename[1024];
 	float* h_energy;
 	float* d_energy;
