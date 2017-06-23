@@ -17,9 +17,9 @@ public:
 	PushingSphere(MDData *mdd, float R0, float R, float4 centerPoint, int updatefreq, float sigma, float epsilon, const char* outdatfilename, int lj_or_harmonic, int* push_mask);
 	~PushingSphere();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "PushingSphere";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energyId){return "PushingSphere";}
+	float getEnergies(int energyId, int timestep);
 private:
 	float R0;
 	float R;

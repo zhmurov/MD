@@ -31,14 +31,14 @@ public:
 	GaussExcluded(MDData *mdd, float cutoffCONF, int typeCount, GaussExCoeff* gauss, PairlistUpdater *pl);
 	~GaussExcluded();
 	void compute();
-	int get_energy_count() {return 2;}
-	std::string get_energy_name(int energy_id) {
-		if(energy_id == 0)
+	int getEnergyCount(){return 2;}
+	std::string getEnergyName(int energyId) {
+		if(energyId == 0)
 			return "Gaussian";
 		else
 			return "Excluded";
 	}
-	float get_energies(int energy_id, int timestep);
+	float getEnergies(int energyId, int timestep);
 private:
 	PairlistUpdater *plist;
 	GEData h_ged;

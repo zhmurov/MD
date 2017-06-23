@@ -191,7 +191,7 @@ void PPPM::compute()
 	exit(0);*/
 }
 
-float PPPM::get_energies(int energy_id, int timestep)
+float PPPM::getEnergies(int energyId, int timestep)
 {
 	if(timestep != lastStepEnergyComputed){
 		compute_PPPM_energy_kernel<<<this->blockCountMesh, this->blockSizeMesh>>>(d_energies, d_mesh, d_G, mesh_dim);
@@ -497,7 +497,7 @@ __global__ void assign_charges_to_grid_kernel(cufftComplex *d_mesh, float *d_rho
 		float qi = c_mdd.d_charge[d_i];
 
 		if (qi!=0.0f) {
-			float4 ri = c_mdd.d_coord[d_i];//tex1Dfetch(t_coord, d_i);
+			float4 ri = c_mdd.d_coord[d_i];
 
 			float3 pb = c_mdd.bc.len;
 			float mesh_dx = pb.x / (float)mesh_size.x;
@@ -583,7 +583,7 @@ __global__ void compute_PPPM_forces_kernel(float3 *d_El, float *d_rho_coeff, int
 		float qi = c_mdd.d_charge[d_i];
 
 		if (qi!=0.0f) {
-			float4 ri = tex1Dfetch(t_coord, d_i);
+			float4 ri = c_mdd.d_coord[d_i];
 			float4 force = c_mdd.d_force[d_i];
 
 			qi *= q_factor;

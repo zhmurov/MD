@@ -69,7 +69,7 @@ Indentation::~Indentation(){
 	//TODO destroyDCD(&dcd);
 }
 
-__global__ void Indentation_kernel(int N, float tip_radius, float3 tip_current_coord, float eps, float sigm, float3 sf_n, float sf_eps, float sf_sigm, float const1, float const2, float3* d_forcetip){
+__global__ void indentation_kernel(int N, float tip_radius, float3 tip_current_coord, float eps, float sigm, float3 sf_n, float sf_eps, float sf_sigm, float const1, float const2, float3* d_forcetip){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < N){
@@ -135,7 +135,7 @@ void Indentation::compute(){
 	tip_current_coord.z = tip_coord.z + tip_displacement*n.z;
 
 
-	Indentation_kernel<<<this->blockCount, this->blockSize>>>(N, tip_radius, tip_current_coord, eps, sigm, sf_n, sf_eps, sf_sigm, const1, const2, d_forcetip);
+	indentation_kernel<<<this->blockCount, this->blockSize>>>(N, tip_radius, tip_current_coord, eps, sigm, sf_n, sf_eps, sf_sigm, const1, const2, d_forcetip);
 
 	float mult = 0.0;
 	float3 resforce = make_float3(0.0f, 0.0f, 0.0f);
@@ -194,7 +194,7 @@ void Indentation::compute(){
 	}
 }
 
-__global__ void Indentation_Energy_kernel(int N, float tip_radius, float3 tip_current_coord, float eps, float sigm, float* d_energy){
+__global__ void indentationEnergy_kernel(int N, float tip_radius, float3 tip_current_coord, float eps, float sigm, float* d_energy){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < N){
@@ -221,9 +221,9 @@ __global__ void Indentation_Energy_kernel(int N, float tip_radius, float3 tip_cu
 
 
 
-float Indentation::get_energies(int energy_id, int Nstep){
+float Indentation::getEnergies(int energyId, int Nstep){
 
-	Indentation_Energy_kernel<<<this->blockCount, this->blockSize>>>(N, tip_radius, tip_current_coord, eps, sigm, d_energy);
+	indentationEnergy_kernel<<<this->blockCount, this->blockSize>>>(N, tip_radius, tip_current_coord, eps, sigm, d_energy);
 
 	cudaMemcpy(h_energy, d_energy, N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0;

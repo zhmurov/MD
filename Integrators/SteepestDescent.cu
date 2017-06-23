@@ -122,11 +122,11 @@ __global__ void integrateSteepestDescent_kernel(float* d_gama, float* d_var, int
 	}
 }
 
-void SteepestDescent::integrate_step_one(){
+void SteepestDescent::integrateStepOne(){
 	//Do nothing
 }
 
-void SteepestDescent::integrate_step_two(){
+void SteepestDescent::integrateStepTwo(){
 
 	integrateSteepestDescent_kernel<<<this->blockCount, this->blockSize>>>(d_gama, d_var, d_fixatoms, maxForce);
 }

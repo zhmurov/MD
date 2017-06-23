@@ -30,11 +30,11 @@ LeapFrogNoseHoover::~LeapFrogNoseHoover(){
 
 }
 
-void LeapFrogNoseHoover::integrate_step_one (){
+void LeapFrogNoseHoover::integrateStepOne(){
 	// Do nothing
 }
 
-__global__ void integrateLeapFrogNoseHoover_step_two_kernel(float gamma, float* d_T, int* d_fixatoms){
+__global__ void integrateLeapFrogNoseHooverStepTwo_kernel(float gamma, float* d_T, int* d_fixatoms){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
 		float4 coord = c_mdd.d_coord[d_i];
@@ -111,8 +111,8 @@ __global__ void integrateLeapFrogNoseHoover_step_two_kernel(float gamma, float* 
 	}
 }
 
-void LeapFrogNoseHoover::integrate_step_two (){
-	integrateLeapFrogNoseHoover_step_two_kernel<<<this->blockCount, this->blockSize>>>(gamma, d_T, d_fixatoms);
+void LeapFrogNoseHoover::integrateStepTwo (){
+	integrateLeapFrogNoseHooverStepTwo_kernel<<<this->blockCount, this->blockSize>>>(gamma, d_T, d_fixatoms);
 	/*cudaMemcpy(h_T, d_T, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float temp = 0.0f;
 	int i;

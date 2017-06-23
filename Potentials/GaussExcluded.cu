@@ -130,14 +130,14 @@ __global__ void gaussExcluded_kernel(int* d_pairsCount, int* d_pairsList, GEData
 		int pdisp = atomTypesCount*atomTypesCount;
 		float4 f = c_mdd.d_force[d_i];
 //		float4 f = make_float4(0.0, 0.0, 0.0, 0.0);
-		float4 r1 = tex1Dfetch(t_coord, d_i);
-		int aty1 = tex1Dfetch(t_atomTypes, d_i);
+		float4 r1 = c_mdd.d_coord[d_i];
+		int aty1 = c_mdd.d_atomTypes[d_i];
 		float4 r2;
 		for(p = 0; p < d_pairsCount[d_i]; p++){
 			j = d_pairsList[p*widthTot + d_i];
-			int aty2 = tex1Dfetch(t_atomTypes, j);
+			int aty2 = c_mdd.d_atomTypes[j];
 			int ij = aty2*atomTypesCount + aty1;
-			r2 = tex1Dfetch(t_coord, j);
+			r2 = c_mdd.d_coord[j];
 			r2.x -= r1.x;
 			r2.y -= r1.y;
 			r2.z -= r1.z;
@@ -201,15 +201,15 @@ __global__ void gaussExcludedEnergy_kernel(int* d_pairsCount, int* d_pairsList, 
 	if(d_i < c_mdd.N){
 		int p,j,k;
 		int pdisp = atomTypesCount*atomTypesCount;
-		float4 r1 = tex1Dfetch(t_coord, d_i);
-		int aty1 = tex1Dfetch(t_atomTypes, d_i);
+		float4 r1 = c_mdd.d_coord[d_i];
+		int aty1 = c_mdd.d_atomTypes[d_i];
 		float4 r2;
 		float2 energies = make_float2(0.0f, 0.0f);
 		for(p = 0; p < d_pairsCount[d_i]; p++){
 			j = d_pairsList[p*c_mdd.widthTot + d_i];
-			int aty2 = tex1Dfetch(t_atomTypes, j);
+			int aty2 = c_mdd.d_atomTypes[j];
 			int ij = aty2*atomTypesCount + aty1;
-			r2 = tex1Dfetch(t_coord, j);
+			r2 = c_mdd.d_coord[j];
 			r2.x -= r1.x;
 			r2.y -= r1.y;
 			r2.z -= r1.z;
@@ -241,7 +241,7 @@ __global__ void gaussExcludedEnergy_kernel(int* d_pairsCount, int* d_pairsList, 
 	}
 }
 
-float GaussExcluded::get_energies(int energy_id, int timestep){
+float GaussExcluded::getEnergies(int energyId, int timestep){
 	if(timestep != lastStepEnergyComputed){
 		gaussExcludedEnergy_kernel<<<this->blockCount, this->blockSize>>>(plist->d_pairs.count, plist->d_pairs.list, d_ged, atomTypesCount, cutoff);
 		cudaMemcpy(h_ged.energies, d_ged.energies, mdd->N*sizeof(float2), cudaMemcpyDeviceToHost);
@@ -256,6 +256,6 @@ float GaussExcluded::get_energies(int energy_id, int timestep){
 		energyValues[1] /= 2.0f;
 		lastStepEnergyComputed = timestep;
 	}
-	return energyValues[energy_id];
+	return energyValues[energyId];
 }
 

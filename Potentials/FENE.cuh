@@ -7,9 +7,9 @@ public:
 	FENE(MDData *mdd, int bondCount, int2* bonds, float* bondsC0);
 	~FENE();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) { return "FENE";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energyId){return "FENE";}
+	float getEnergies(int energyId, int timestep);
 private:
 	int max_Nbonds;
 

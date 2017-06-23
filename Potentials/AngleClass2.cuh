@@ -29,9 +29,9 @@ public:
 	AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4* angle, float4* angleCoeffs);
 	~AngleClass2();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "Angle";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energyId){return "Angle";}
+	float getEnergies(int energyId, int timestep);
 private:
 	AngleData h_ad;
 	AngleData d_ad;
@@ -42,4 +42,3 @@ private:
 	int blockCountSum;
 };
 
-texture<float4, 1, cudaReadModeElementType> t_anglePar;

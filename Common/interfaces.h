@@ -61,9 +61,9 @@ class IPotential {
 public:
 	virtual ~IPotential(){}
 	virtual void compute() = 0;
-	virtual int get_energy_count() = 0;
-	virtual std::string get_energy_name(int energy_id) = 0;
-	virtual float get_energies(int energy_id, int timestep) = 0;
+	virtual int getEnergyCount() = 0;
+	virtual std::string getEnergyName(int energyId) = 0;
+	virtual float getEnergies(int energyId, int timestep) = 0;
 protected:
 	MDData* mdd;
 	int blockSize;
@@ -75,8 +75,8 @@ protected:
 class IIntegrator {
 public:
 	virtual ~IIntegrator(){}
-	virtual void integrate_step_one() = 0;
-	virtual void integrate_step_two() = 0;
+	virtual void integrateStepOne() = 0;
+	virtual void integrateStepTwo() = 0;
 protected:
 	MDData* mdd;
 	int blockSize;
@@ -88,7 +88,7 @@ class IUpdater {
 public:
 	virtual ~IUpdater(){}
 	virtual void update() = 0;
-	int getFrequence() {return frequence;}
+	int getFrequence(){return frequence;}
 protected:
 	MDData* mdd;
 	int blockSize;

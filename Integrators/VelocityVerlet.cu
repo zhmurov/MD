@@ -19,7 +19,7 @@ VelocityVerlet::VelocityVerlet(MDData *mdd){
 VelocityVerlet::~VelocityVerlet(){
 }
 
-__global__ void integrateVelocityVerlet_step_one_kernel(float dt){
+__global__ void integrateVelocityVerletStepOne_kernel(float dt){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
 
@@ -92,11 +92,11 @@ __global__ void integrateVelocityVerlet_step_one_kernel(float dt){
 }
 
 
-void VelocityVerlet::integrate_step_one (){
-	integrateVelocityVerlet_step_one_kernel<<<this->blockCount, this->blockSize>>>(dt);
+void VelocityVerlet::integrateStepOne(){
+	integrateVelocityVerletStepOne_kernel<<<this->blockCount, this->blockSize>>>(dt);
 }
 
-__global__ void integrateVelocityVerlet_step_two_kernel(float dt){
+__global__ void integrateVelocityVerletStepTwo_kernel(float dt){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
 
@@ -117,7 +117,7 @@ __global__ void integrateVelocityVerlet_step_two_kernel(float dt){
 	}
 }
 
-void VelocityVerlet::integrate_step_two (){
-	integrateVelocityVerlet_step_two_kernel<<<this->blockCount, this->blockSize>>>(dt);
+void VelocityVerlet::integrateStepTwo(){
+	integrateVelocityVerletStepTwo_kernel<<<this->blockCount, this->blockSize>>>(dt);
 }
 

@@ -46,7 +46,7 @@ LeapFrog_overdumped::~LeapFrog_overdumped(){
 	cudaFree(d_var);
 }
 
-__global__ void integrateLeapFrog_overdumped(float* d_gama, float* d_var, int* d_fixatoms){
+__global__ void integrateLeapFrogOverdumped_kernel(float* d_gama, float* d_var, int* d_fixatoms){
 
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if (d_i < c_mdd.N){
@@ -112,13 +112,13 @@ __global__ void integrateLeapFrog_overdumped(float* d_gama, float* d_var, int* d
 	}
 }
 
-void LeapFrog_overdumped::integrate_step_one(){
+void LeapFrog_overdumped::integrateStepOne(){
 	//Do nothing
 }
 
-void LeapFrog_overdumped::integrate_step_two(){
+void LeapFrog_overdumped::integrateStepTwo(){
 
-	integrateLeapFrog_overdumped<<<this->blockCount, this->blockSize>>>(d_gama, d_var, d_fixatoms);
+	integrateLeapFrogOverdumped_kernel<<<this->blockCount, this->blockSize>>>(d_gama, d_var, d_fixatoms);
 
 /*
 	cudaMemcpy(mdd->h_coord, mdd->d_coord, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);

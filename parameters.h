@@ -16,6 +16,7 @@
 #define PARAMETER_PARAMETERS_FILENAME				"parameter_file"
 #define PARAMETER_COORDINATES_FILENAME				"coordinates_file"
 #define PARAMETER_STRUCTURE_FILENAME				"structure_file"
+#define PARAMETER_PDB_REFERENCE_FILENAME			"pdbref_file"
 
 #define PARAMETER_POTENTIAL_FENE				"fene"
 #define PARAMETER_POTENTIAL_LENNARDJONES			"lennardjones"
@@ -114,6 +115,11 @@
 #define PARAMETER_INDENTATION_KSPRING				"ind_ks"
 #define PARAMETER_INDENTATION_EPSILON				"ind_eps"
 #define PARAMETER_INDENTATION_SIGMA				"ind_sigm"
+
+#define PARAMETER_PULLING					"pulling"
+#define DEFAULT_PULLING						0
+#define PARAMETER_PULLING_BASE_DISPLACEMENT_FREQUENCY		"pull_base_freq"
+#define PARAMETER_PULLING_VELOCITY				"pull_vel"
 
 #define PARAMETER_SURFACE_COORD					"sf_coord"
 #define PARAMETER_SURFACE_N					"sf_n"

@@ -13,8 +13,8 @@ class LeapFrog_new : public IIntegrator {
 public:
 	LeapFrog_new(MDData *mdd, float T, float seed);
 	~LeapFrog_new();
-	void integrate_step_one ();
-	void integrate_step_two ();
+	void integrateStepOne();
+	void integrateStepTwo();
 private:
 	float* h_gama;
 	float* d_gama;

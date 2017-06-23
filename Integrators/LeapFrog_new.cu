@@ -41,7 +41,7 @@ LeapFrog_new::~LeapFrog_new(){
 	cudaFree(d_var);
 }
 
-__global__ void integrateLeapFrog_underdumped(float* d_gama, float* d_var){
+__global__ void integrateLeapFrogUnderdumped_kernel(float* d_gama, float* d_var){
 
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
@@ -112,11 +112,11 @@ __global__ void integrateLeapFrog_underdumped(float* d_gama, float* d_var){
 }
 
 
-void LeapFrog_new::integrate_step_one (){
+void LeapFrog_new::integrateStepOne (){
 	// Do nothing
 }
 
-void LeapFrog_new::integrate_step_two (){
+void LeapFrog_new::integrateStepTwo (){
 
-	integrateLeapFrog_underdumped<<<this->blockCount, this->blockSize>>>(d_gama, d_var);
+	integrateLeapFrogUnderdumped_kernel<<<this->blockCount, this->blockSize>>>(d_gama, d_var);
 }

@@ -46,8 +46,8 @@ void EnergyOutput::update(){
 			ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_STEP,
 			ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TEMPERATURE);
 	for(p = 0; p != (*potentials).size(); p++){
-		for(i = 0; i < (*potentials)[p]->get_energy_count(); i++){
-			printf("%*s", ENERGY_OUTPUT_WIDTH, (*potentials)[p]->get_energy_name(i).c_str());
+		for(i = 0; i < (*potentials)[p]->getEnergyCount(); i++){
+			printf("%*s", ENERGY_OUTPUT_WIDTH, (*potentials)[p]->getEnergyName(i).c_str());
 		}
 	}
 	printf("%*s\n", ENERGY_OUTPUT_WIDTH, ENERGY_OUTPUT_TOTAL);
@@ -58,8 +58,8 @@ void EnergyOutput::update(){
 	fprintf(file, "%d\t%f\t", mdd->step, temp);
 	float totalEnergy = 0;
 	for(p = 0; p != (*potentials).size(); p++){
-		for(i = 0; i < (*potentials)[p]->get_energy_count(); i++){
-			float energy = (*potentials)[p]->get_energies(i, mdd->step);
+		for(i = 0; i < (*potentials)[p]->getEnergyCount(); i++){
+			float energy = (*potentials)[p]->getEnergies(i, mdd->step);
 			totalEnergy += energy;
 			printf("%*f", ENERGY_OUTPUT_WIDTH, energy);
 			fprintf(file, "%f\t", energy);

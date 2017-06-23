@@ -17,9 +17,9 @@ public:
 	Coulomb(MDData *mdd, PairlistUpdater *pl, float alpha, float dielectric, float cutoff);
 	~Coulomb();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "Coulomb";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energyId){return "Coulomb";}
+	float getEnergies(int energyId, int timestep);
 private:
 	MDData* mdd;
 	PairlistUpdater *plist;

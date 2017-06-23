@@ -81,7 +81,7 @@ LJP::~LJP(){
 	cudaFree(d_energy);
 }
 
-__global__ void LJP_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairMap_r0, float* d_pairMap_eps){
+__global__ void lj_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairMap_r0, float* d_pairMap_eps){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -137,11 +137,11 @@ __global__ void LJP_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairM
 void LJP::compute(){
 
 	
-	LJP_kernel<<<this->blockCount, this->blockSize>>>(d_pairCount, d_pairMap_atom, d_pairMap_r0, d_pairMap_eps);
+	lj_kernel<<<this->blockCount, this->blockSize>>>(d_pairCount, d_pairMap_atom, d_pairMap_r0, d_pairMap_eps);
 
 }
 
-__global__ void LJP_Energy_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairMap_r0, float* d_pairMap_eps, float* d_energy){
+__global__ void ljEnergy_kernel(int* d_pairCount, int* d_pairMap_atom, float* d_pairMap_r0, float* d_pairMap_eps, float* d_energy){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -188,9 +188,9 @@ __global__ void LJP_Energy_kernel(int* d_pairCount, int* d_pairMap_atom, float* 
 	}
 }
 
-float LJP::get_energies(int energy_id, int timestep){
+float LJP::getEnergies(int energyId, int timestep){
 
-	LJP_Energy_kernel<<<this->blockCount, this->blockSize>>>(d_pairCount, d_pairMap_atom, d_pairMap_r0, d_pairMap_eps, d_energy);
+	ljEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_pairCount, d_pairMap_atom, d_pairMap_r0, d_pairMap_eps, d_energy);
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0;

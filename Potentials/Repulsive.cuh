@@ -7,9 +7,9 @@ public:
 	Repulsive(MDData *mdd, PairlistUpdater *plist, float nbCutoff, float rep_eps, float rep_sigm);
 	~Repulsive();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "Repulsive";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energyId){return "Repulsive";}
+	float getEnergies(int energyId, int timestep);
 private:
 	PairlistUpdater* plist;
 	float nbCutoff;

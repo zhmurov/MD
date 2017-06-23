@@ -25,7 +25,7 @@ Repulsive::~Repulsive(){
 	cudaFree(d_energy);
 }
 
-__global__ void Repulsive_kernel(int* pairs_count, int* pairs_list, float nbCutoff, float eps, float sigm){
+__global__ void repulsive_kernel(int* pairs_count, int* pairs_list, float nbCutoff, float eps, float sigm){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -73,10 +73,10 @@ __global__ void Repulsive_kernel(int* pairs_count, int* pairs_list, float nbCuto
 
 void Repulsive::compute(){
 
-	Repulsive_kernel<<<this->blockCount, this->blockSize>>>(plist->d_pairs.count, plist->d_pairs.list, nbCutoff, rep_eps, rep_sigm);
+	repulsive_kernel<<<this->blockCount, this->blockSize>>>(plist->d_pairs.count, plist->d_pairs.list, nbCutoff, rep_eps, rep_sigm);
 }
 
-__global__ void Repulsive_Energy_kernel(float* d_energy, int* pairs_count, int* pairs_list, float nbCutoff, float eps, float sigm){
+__global__ void repulsiveEnergy_kernel(float* d_energy, int* pairs_count, int* pairs_list, float nbCutoff, float eps, float sigm){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -116,9 +116,9 @@ __global__ void Repulsive_Energy_kernel(float* d_energy, int* pairs_count, int* 
 	}
 }
 
-float Repulsive::get_energies(int energy_id, int timestep){
+float Repulsive::getEnergies(int energyId, int timestep){
 
-	Repulsive_Energy_kernel<<<this->blockCount, this->blockSize>>>(d_energy, plist->d_pairs.count, plist->d_pairs.list, nbCutoff, rep_eps, rep_sigm);
+	repulsiveEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_energy, plist->d_pairs.count, plist->d_pairs.list, nbCutoff, rep_eps, rep_sigm);
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0;

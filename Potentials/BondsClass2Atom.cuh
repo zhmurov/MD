@@ -23,9 +23,9 @@ public:
 	BondsClass2Atom(MDData *mdd, int bondCount, int bondCountTop, int4* pair, float4* bondCoeffs);
 	~BondsClass2Atom();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "Bond";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount() {return 1;}
+	std::string getEnergyName(int energyId) {return "Bond";}
+	float getEnergies(int energyId, int timestep);
 private:
 	//Coeffs* getBondCoeffs(int type, ReadParameters &par);
 	//bool checkBondClass2(int type, ReadParameters &par);
@@ -36,5 +36,3 @@ private:
 	int maxBonds;
 	//int step;
 };
-
-texture<float4, 1, cudaReadModeElementType> t_bondPar;

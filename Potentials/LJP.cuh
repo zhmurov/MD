@@ -7,9 +7,9 @@ public:
 	LJP(MDData *mdd, int pairCount, int2* pairs, float* pairs_C0, float* pairs_C1);
 	~LJP();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "LJP";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energy_id){return "LJP";}
+	float getEnergies(int energyId, int timestep);
 private:
 	int max_Npairs;
 

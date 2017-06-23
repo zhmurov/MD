@@ -8,9 +8,9 @@ public:
 	Indentation(MDData *mdd, int N, int tip_radius, float3 tip_coord, float3 base_coord, int base_freq, float3 n, float vel, float ks, float eps, float sigm, float3 sf_coord, float3 sf_n, float sf_eps, float sf_sigm, int dcd_freq, char* dcd_cant_filename);
 	~Indentation();
 	void compute();
-	int get_energy_count() {return 0;}
-	std::string get_energy_name(int energy_id) {return "Indentation";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 0;}
+	std::string getEnergyName(int energyId){return "Indentation";}
+	float getEnergies(int energyId, int timestep);
 private:
 	int N;
 

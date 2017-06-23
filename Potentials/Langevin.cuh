@@ -14,9 +14,9 @@ public:
 	Langevin(MDData *mdd, float damping, int seed, float temperature);
 	~Langevin();
 	void compute();
-	int get_energy_count() {return 0;}
-	std::string get_energy_name(int energy_id) {return "Langevin";}
-	float get_energies(int energy_id, int timestep) {return 0.0f;}
+	int getEnergyCount(){return 0;}
+	std::string getEnergyName(int energyId){return "Langevin";}
+	float getEnergies(int energyId, int timestep){return 0.0f;}
 private:
 	float var;
 	float damping;

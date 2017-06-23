@@ -13,6 +13,6 @@ class LeapFrog : public IIntegrator {
 public:
 	LeapFrog(MDData *mdd);
 	~LeapFrog();
-	void integrate_step_one ();
-	void integrate_step_two ();
+	void integrateStepOne();
+	void integrateStepTwo();
 };

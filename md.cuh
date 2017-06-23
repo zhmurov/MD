@@ -54,8 +54,5 @@ private:
 };
 
 __device__ __constant__ MDData c_mdd;
-texture<float4, 1, cudaReadModeElementType> t_coord;
-texture<int, 1, cudaReadModeElementType> t_atomTypes;
-texture<float, 1, cudaReadModeElementType> t_charges;
 
 void initGPU();

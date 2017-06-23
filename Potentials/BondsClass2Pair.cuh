@@ -12,9 +12,9 @@ public:
 	BondsClass2Pair(MDData *mdd, std::vector<int3> &bonds, std::vector<Coeffs> &parameters);
 	~BondsClass2Pair();
 	void compute(MDData *mdd);
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "Bond";}
-	float get_energies(int energy_id, int timestep);
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energyId){return "Bond";}
+	float getEnergies(int energyId, int timestep);
 private:
 	Coeffs* getBondCoeffs(int type, ReadParameters &par);
 	bool checkBondClass2(int type, ReadParameters &par);
@@ -41,5 +41,3 @@ private:
 	int blockSizeSum;
 	int blockCountSum;
 };
-
-texture<float4, 1, cudaReadModeElementType> t_bondParPair;

@@ -37,19 +37,19 @@ Coulomb::~Coulomb(){
 __global__ void coulomb_kernel(int* d_pairsCount, int* d_pairsList, float kc, float cutoff, int widthTot){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
-		float4 r1 = tex1Dfetch(t_coord, d_i);
-		float q1 = tex1Dfetch(t_charges, d_i);
+		float4 r1 = c_mdd.d_coord[d_i];
+		float q1 = c_mdd.d_charge[d_i];
 		float4 r2;
 		float4 f = c_mdd.d_force[d_i];
 		int p, j;
 		for(p = 0; p < d_pairsCount[d_i]; p++){
 			j = d_pairsList[p*widthTot + d_i];
-			r2 = tex1Dfetch(t_coord, j);
+			r2 = c_mdd.d_coord[j];
 
 			r2.x -= r1.x;
 			r2.y -= r1.y;
 			r2.z -= r1.z;
-			float q2 = tex1Dfetch(t_charges, j);
+			float q2 = c_mdd.d_charge[j];
 
 			float3 pb = c_mdd.bc.len;
 			r2.x -= rint(r2.x/pb.x)*pb.x;
@@ -73,19 +73,19 @@ __global__ void coulomb_kernel(int* d_pairsCount, int* d_pairsList, float kc, fl
 __global__ void coulombErfc_kernel(int* d_pairsCount, int* d_pairsList, float alpha, float kc, float cutoff, int widthTot){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
-		float4 r1 = tex1Dfetch(t_coord, d_i);
-		float q1 = tex1Dfetch(t_charges, d_i);
+		float4 r1 = c_mdd.d_coord[d_i];
+		float q1 = c_mdd.d_charge[d_i];
 		float4 r2;
 		float4 f = c_mdd.d_force[d_i];
 		int p, j;
 		for(p = 0; p < d_pairsCount[d_i]; p++){
 			j = d_pairsList[p*widthTot + d_i];
-			r2 = tex1Dfetch(t_coord, j);
+			r2 = c_mdd.d_coord[j];
 
 			r2.x -= r1.x;
 			r2.y -= r1.y;
 			r2.z -= r1.z;
-			float q2 = tex1Dfetch(t_charges, j);
+			float q2 = c_mdd.d_charge[j];
 
 			float3 pb = c_mdd.bc.len;
 			r2.x -= rint(r2.x/pb.x)*pb.x;
@@ -130,19 +130,19 @@ void Coulomb::compute(){
 __global__ void coulombEnergy_kernel(int* d_pairsCount, int* d_pairsList, float* d_energy, float alpha, float kc, float cutoff, int widthTot){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
-		float4 r1 = tex1Dfetch(t_coord, d_i);
-		float q1 = tex1Dfetch(t_charges, d_i);
+		float4 r1 = c_mdd.d_coord[d_i];
+		float q1 = c_mdd.d_charge[d_i];
 		float4 r2;
 		float pot = 0.0f;
 		int p, j;
 		for(p = 0; p < d_pairsCount[d_i]; p++){
 			j = d_pairsList[p*widthTot + d_i];
-			r2 = tex1Dfetch(t_coord, j);
+			r2 = c_mdd.d_coord[j];
 
 			r2.x -= r1.x;
 			r2.y -= r1.y;
 			r2.z -= r1.z;
-			float q2 = tex1Dfetch(t_charges, j);
+			float q2 = c_mdd.d_charge[j];
 
 			float3 pb = c_mdd.bc.len;
 			r2.x -= rint(r2.x/pb.x)*pb.x;
@@ -159,7 +159,7 @@ __global__ void coulombEnergy_kernel(int* d_pairsCount, int* d_pairsList, float*
 	}
 }
 
-float Coulomb::get_energies(int energy_id, int timestep){
+float Coulomb::getEnergies(int energyId, int timestep){
 	if(timestep != lastStepEnergyComputed){
 		coulombEnergy_kernel<<<this->blockCount, this->blockSize>>>(plist->d_pairs.count, plist->d_pairs.list, d_energy, alpha, kc, cutoff, mdd->widthTot);
 		cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);

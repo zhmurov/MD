@@ -27,7 +27,6 @@ BondsClass2Pair::BondsClass2Pair(MDData *mdd, std::vector<int3> &bonds, std::vec
 	}
 
 	cudaMemcpy(d_bondPar, h_bondPar, btCount*sizeof(float4), cudaMemcpyHostToDevice);
-	cudaBindTexture(0, t_bondParPair, d_bondPar, btCount*sizeof(float4));
 
 	// Count bonds per atom
 
@@ -111,13 +110,13 @@ BondsClass2Pair::~BondsClass2Pair(){
 	cudaFree(d_energies);
 }
 
-__global__ void bondClass2Pair_kernel(int3* d_bonds, int2* d_refs, float4* d_forces, int bondCount){
+__global__ void bondClass2Pair_kernel(int3* d_bonds, int2* d_refs, float4* d_bondPar, float4* d_forces, int bondCount){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < bondCount){
 		int3 bond = d_bonds[d_i];
-		float4 r1 = tex1Dfetch(t_coord, bond.x);
-		float4 r2 = tex1Dfetch(t_coord, bond.y);
-		float4 par = tex1Dfetch(t_bondParPair, bond.z);
+		float4 r1 = c_mdd.d_coord[bond.x];
+		float4 r2 = c_mdd.d_coord[bond.y];
+		float4 par = d_bondPar[bond.z];
 		int2 ref = d_refs[d_i];
 
 		r2.x -= r1.x;
@@ -168,17 +167,17 @@ __global__ void bondClass2PairSum_kernel(int* d_count, float4* d_forces, int wid
 
 
 void BondsClass2Pair::compute(MDData *mdd){
-	bondClass2Pair_kernel<<<this->blockCount, this->blockSize>>>(d_bonds, d_refs, d_forces, bondCount);
+	bondClass2Pair_kernel<<<this->blockCount, this->blockSize>>>(d_bonds, d_refs, d_bondPar, d_forces, bondCount);
 	bondClass2PairSum_kernel<<<blockCountSum, blockSizeSum>>>(d_bondCount, d_forces, widthTot, lastBonded);
 }
 
-__global__ void bondClass2PairEnergy_kernel(int3* d_bonds, float* d_energies, int bondCount){
+__global__ void bondClass2PairEnergy_kernel(int3* d_bonds, float4* d_bondPar, float* d_energies, int bondCount){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < bondCount){
 		int3 bond = d_bonds[d_i];
-		float4 r1 = tex1Dfetch(t_coord, bond.x);
-		float4 r2 = tex1Dfetch(t_coord, bond.y);
-		float4 par = tex1Dfetch(t_bondParPair, bond.z);
+		float4 r1 = c_mdd.d_coord[bond.x];
+		float4 r2 = c_mdd.d_coord[bond.y];
+		float4 par = d_bondPar[bond.z];
 
 		r2.x -= r1.x;
 		r2.y -= r1.y;
@@ -201,8 +200,8 @@ __global__ void bondClass2PairEnergy_kernel(int3* d_bonds, float* d_energies, in
 	}
 }
 
-float BondsClass2Pair::get_energies(int energy_id, int timestep){
-	bondClass2PairEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_bonds, d_energies, bondCount);
+float BondsClass2Pair::getEnergies(int energyId, int timestep){
+	bondClass2PairEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_bonds, d_bondPar, d_energies, bondCount);
 	//cudaThreadSynchronize();
 	cudaMemcpy(h_energies, d_energies, bondCount*sizeof(float), cudaMemcpyDeviceToHost);
 	int i;

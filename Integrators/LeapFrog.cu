@@ -19,11 +19,11 @@ LeapFrog::~LeapFrog(){
 
 }
 
-void LeapFrog::integrate_step_one (){
+void LeapFrog::integrateStepOne(){
 	// Do nothing
 }
 
-__global__ void integrateLeapFrog_step_two_kernel(){
+__global__ void integrateLeapFrogStepTwo_kernel(){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
 		float4 coord = c_mdd.d_coord[d_i];
@@ -92,8 +92,8 @@ __global__ void integrateLeapFrog_step_two_kernel(){
 	}
 }
 
-void LeapFrog::integrate_step_two (){
-	integrateLeapFrog_step_two_kernel<<<this->blockCount, this->blockSize>>>();
+void LeapFrog::integrateStepTwo(){
+	integrateLeapFrogStepTwo_kernel<<<this->blockCount, this->blockSize>>>();
 }
 
 

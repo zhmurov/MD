@@ -97,8 +97,6 @@ AngleClass2::AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4
 	cudaMemcpy(d_ad.energies, h_ad.energies, angleCount*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_ad.pars, h_ad.pars, atCount*sizeof(float4), cudaMemcpyHostToDevice);
 
-	cudaBindTexture(0, t_anglePar, d_ad.pars, atCount*sizeof(float4));
-	
 	printf("Done initializing AngleClass2 potential\n");
 }
 
@@ -117,15 +115,15 @@ AngleClass2::~AngleClass2(){
 	cudaFree(d_ad.energies);
 }
 
-__global__ void angleClass2Compute_kernel(int4* d_angles, int4* d_refs, float4* d_forces, int widthTot, int angleCount){
+__global__ void angleClass2Compute_kernel(int4* d_angles, int4* d_refs, float4* d_pars, float4* d_forces, int widthTot, int angleCount){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < angleCount){
 
 		int4 angle = d_angles[d_i];
-		float4 r1 = tex1Dfetch(t_coord, angle.x);  // Atom i
-		float4 r2 = tex1Dfetch(t_coord, angle.y);  // Atom j
-		float4 r3 = tex1Dfetch(t_coord, angle.z);  // Atom k
-		float4 par = tex1Dfetch(t_anglePar, angle.w); // Potential parameters
+		float4 r1 = c_mdd.d_coord[angle.x];  // Atom i
+		float4 r2 = c_mdd.d_coord[angle.y];  // Atom j
+		float4 r3 = c_mdd.d_coord[angle.z];  // Atom k
+		float4 par = d_pars[angle.w]; // Potential parameters
 
 		float3 dr12, dr32;
 
@@ -169,7 +167,7 @@ __global__ void angleClass2Compute_kernel(int4* d_angles, int4* d_refs, float4* 
 		}
 
 		float diff = -arg*(par.y + arg*(par.z + arg*par.w));	// -dU/dtheta
-		diff /= sintheta;										// -(dU/dtheta)/sin
+		diff /= sintheta;					// -(dU/dtheta)/sin
 
 		/*if(sintheta < 1.e-6){
 			if(diff < 0){
@@ -181,8 +179,8 @@ __global__ void angleClass2Compute_kernel(int4* d_angles, int4* d_refs, float4* 
 			diff *= (-2.0f*par.y) / sintheta;
 		}*/
 
-		float c1 = diff*r12inv; 								// [-(dU/dtheta)/sin]*(1/rji)
-		float c2 = diff*r32inv;									// [-(dU/dtheta)/sin]*(1/rjk)
+		float c1 = diff*r12inv;		// [-(dU/dtheta)/sin]*(1/rji)
+		float c2 = diff*r32inv;		// [-(dU/dtheta)/sin]*(1/rjk)
 
 		float4 f1, f2, f3;
 		f1.x = c1*(dr12.x*(r12inv*costheta) - dr32.x*r32inv);
@@ -221,29 +219,21 @@ __global__ void angleClass2Sum_kernel(int* d_count, float4* d_forces, int widthT
 }
 
 void AngleClass2::compute(){
-	angleClass2Compute_kernel<<<this->blockCount, this->blockSize>>>(d_ad.angles, d_ad.refs, d_ad.forces, widthTot, angleCount);
+	angleClass2Compute_kernel<<<this->blockCount, this->blockSize>>>(d_ad.angles, d_ad.refs, d_ad.pars, d_ad.forces, widthTot, angleCount);
 	//cudaThreadSynchronize();
 	angleClass2Sum_kernel<<<blockCountSum, blockSizeSum>>>(d_ad.count, d_ad.forces, widthTot, lastAngled);
-	/*int i;
-	cudaMemcpy(mdd->h_force, mdd->d_force, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);
-	FILE* file = fopen("angle_forces.dat", "w");
-	for(i = 0; i < mdd->N; i++){
-		fprintf(file, "%f %f %f\n", mdd->h_force[i].x, mdd->h_force[i].y, mdd->h_force[i].z);
-	}
-	fclose(file);
-	exit(0);*/
 }
 
 
-__global__ void angleClass2Energy_kernel(int4* d_angles, float* d_energies, int angleCount){
+__global__ void angleClass2Energy_kernel(int4* d_angles, float4* d_pars, float* d_energies, int angleCount){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < angleCount){
 
 		int4 angle = d_angles[d_i];
-		float4 r1 = tex1Dfetch(t_coord, angle.x);  // Atom i
-		float4 r2 = tex1Dfetch(t_coord, angle.y);  // Atom j
-		float4 r3 = tex1Dfetch(t_coord, angle.z);  // Atom k
-		float4 par = tex1Dfetch(t_anglePar, angle.w); // Potential parameters
+		float4 r1 = c_mdd.d_coord[angle.x];  // Atom i
+		float4 r2 = c_mdd.d_coord[angle.y];  // Atom j
+		float4 r3 = c_mdd.d_coord[angle.z];  // Atom k
+		float4 par = d_pars[angle.w]; // Potential parameters
 
 		float3 dr12, dr32;
 
@@ -288,8 +278,8 @@ __global__ void angleClass2Energy_kernel(int4* d_angles, float* d_energies, int 
 }
 
 
-float AngleClass2::get_energies(int energy_id, int timestep){
-	angleClass2Energy_kernel<<<this->blockCount, this->blockSize>>>(d_ad.angles, d_ad.energies, angleCount);
+float AngleClass2::getEnergies(int energyId, int timestep){
+	angleClass2Energy_kernel<<<this->blockCount, this->blockSize>>>(d_ad.angles, d_ad.pars, d_ad.energies, angleCount);
 	//cudaThreadSynchronize();
 	cudaMemcpy(h_ad.energies, d_ad.energies, angleCount*sizeof(float), cudaMemcpyDeviceToHost);
 	int i;

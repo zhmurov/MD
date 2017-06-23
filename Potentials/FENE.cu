@@ -2,8 +2,7 @@
 
 //[bonds] func = 1
 
-FENE::FENE(MDData *mdd, int bondCount, int2* bonds, float* bonds_C0)
-{
+FENE::FENE(MDData *mdd, int bondCount, int2* bonds, float* bonds_C0){
 	this->mdd = mdd;
 
 	blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
@@ -76,7 +75,7 @@ FENE::~FENE(){
 }
 
 //================================================================================================
-__global__ void FENE_kernel(int* d_bondCount, int* d_bondMap_atom, float* d_bondMap_r0){
+__global__ void fene_kernel(int* d_bondCount, int* d_bondMap_atom, float* d_bondMap_r0){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -133,7 +132,9 @@ __global__ void FENE_kernel(int* d_bondCount, int* d_bondMap_atom, float* d_bond
 }
 
 //================================================================================================
-__global__ void FENE_Energy_kernel(int* d_bondCount, int* d_bondMap_atom, float* d_bondMap_r0, float* d_energy){
+__global__ void feneEnergy_kernel(int* d_bondCount, int* d_bondMap_atom, float* d_bondMap_r0, float* d_energy){
+
+// d_bondMapAtom
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < c_mdd.N){
@@ -184,14 +185,14 @@ __global__ void FENE_Energy_kernel(int* d_bondCount, int* d_bondMap_atom, float*
 //================================================================================================
 void FENE::compute(){
 
-	FENE_kernel<<<this->blockCount, this->blockSize>>>(d_bondCount, d_bondMap_atom, d_bondMap_r0);
+	fene_kernel<<<this->blockCount, this->blockSize>>>(d_bondCount, d_bondMap_atom, d_bondMap_r0);
 
 }
 
 //================================================================================================
-float FENE::get_energies(int energy_id, int timestep){
+float FENE::getEnergies(int energyId, int timestep){
 
-	FENE_Energy_kernel<<<this->blockCount, this->blockSize>>>(d_bondCount, d_bondMap_atom, d_bondMap_r0, d_energy);
+	feneEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_bondCount, d_bondMap_atom, d_bondMap_r0, d_energy);
 
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);

@@ -12,7 +12,7 @@
 __global__ void countL1Pairs_kernel(int* d_exclusionsCount, int* d_exclusionsList, int* d_pairsCount, float cutoffSq, int N){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < N){
-		float4 ri = tex1Dfetch(t_coord, d_i);
+		float4 ri = c_mdd.d_coord[d_i];
 		int count = 0;
 		int j;
 		int currentExl = d_exclusionsList[d_i];
@@ -20,7 +20,7 @@ __global__ void countL1Pairs_kernel(int* d_exclusionsCount, int* d_exclusionsLis
 		for(j = 0; j < N; j++){
 			if(j != currentExl){
 				if(j != d_i){
-					float4 rj = tex1Dfetch(t_coord, j);
+					float4 rj = c_mdd.d_coord[j];
 					rj.x -= ri.x;
 					rj.y -= ri.y;
 					rj.z -= ri.z;
@@ -48,7 +48,7 @@ __global__ void updateL1Pairs_kernel(int* d_exclusionsCount, int* d_exclusionsLi
 		float4* d_old_coord, float cutoffSq, int N){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < N){
-		float4 ri = tex1Dfetch(t_coord, d_i);
+		float4 ri = c_mdd.d_coord[d_i];
 		int count = 0;
 		int j;
 		int currentExl = d_exclusionsList[d_i];
@@ -56,7 +56,7 @@ __global__ void updateL1Pairs_kernel(int* d_exclusionsCount, int* d_exclusionsLi
 		for(j = 0; j < N; j++){
 			if(j != currentExl){
 				if(j != d_i){
-					float4 rj = tex1Dfetch(t_coord, j);
+					float4 rj = c_mdd.d_coord[j];
 					rj.x -= ri.x;
 					rj.y -= ri.y;
 					rj.z -= ri.z;
@@ -85,12 +85,12 @@ __global__ void updateL1Pairs_kernel(int* d_exclusionsCount, int* d_exclusionsLi
 __global__ void countL2Pairs_kernel(int* d_pairsL1Count, int* d_pairsL1List, int* d_pairsCount, float cutoffSq, int N){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < N){
-		float4 ri = tex1Dfetch(t_coord, d_i);
+		float4 ri = c_mdd.d_coord[d_i];
 		int count = 0;
 		int j, pj;
 		for(pj = 0; pj < d_pairsL1Count[d_i]; pj++){
 			j = d_pairsL1List[pj*c_mdd.widthTot + d_i];
-			float4 rj = tex1Dfetch(t_coord, j);
+			float4 rj = c_mdd.d_coord[j];
 			rj.x -= ri.x;
 			rj.y -= ri.y;
 			rj.z -= ri.z;
@@ -113,12 +113,12 @@ __global__ void updateL2Pairlist_kernel(int* d_pairsL1Count, int* d_pairsL1List,
 		float4* d_old_coord, float cutoffSq, int N){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < N){
-		float4 ri = tex1Dfetch(t_coord, d_i);
+		float4 ri = c_mdd.d_coord[d_i];
 		int count = 0;
 		int j, pj;
 		for(pj = 0; pj < d_pairsL1Count[d_i]; pj++){
 			j = d_pairsL1List[pj*c_mdd.widthTot + d_i];
-			float4 rj = tex1Dfetch(t_coord, j);
+			float4 rj = c_mdd.d_coord[j];
 			rj.x -= ri.x;
 			rj.y -= ri.y;
 			rj.z -= ri.z;
@@ -176,7 +176,7 @@ void PairlistUpdater::update(){
 	}
 }
 
-__global__ void calc_displacement_kernal(float4* d_r1, float4* d_r2, float *d_drsq, int N)
+__global__ void calcDisplacement_kernal(float4* d_r1, float4* d_r2, float *d_drsq, int N)
 {
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if (d_i < N){
@@ -198,7 +198,7 @@ __global__ void calc_displacement_kernal(float4* d_r1, float4* d_r2, float *d_dr
 
 float PairlistUpdater::rmax_displacement(float4* d_r1, float4* d_r2, int N)
 {
-	calc_displacement_kernal<<<this->blockCount, this->blockSize>>>(d_r1, d_r2, d_drsq, N);
+	calcDisplacement_kernal<<<this->blockCount, this->blockSize>>>(d_r1, d_r2, d_drsq, N);
 
 	return reduction->rmax(d_drsq);
 }

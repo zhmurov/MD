@@ -13,7 +13,7 @@ class VelocityVerlet : public IIntegrator {
 public:
 	VelocityVerlet(MDData *mdd);
 	~VelocityVerlet();
-	void integrate_step_one ();
-	void integrate_step_two ();
+	void integrateStepOne();
+	void integrateStepTwo();
 private:
 };

@@ -20,10 +20,10 @@ public:
 	PPPM(MDData *mdd, float dielectric, float cutoff);
 	~PPPM();
 	void compute();
-	int get_energy_count() {return 1;}
-	std::string get_energy_name(int energy_id) {return "PPPM";}
-	float get_energies(int energy_id, int timestep);
-	double get_alpha() {return alpha;};
+	int getEnergyCount(){return 1;}
+	std::string getEnergyName(int energyId){return "PPPM";}
+	float getEnergies(int energyId, int timestep);
+	double get_alpha(){return alpha;};
 private:
 	int order;  // B-Spline order
 	double alpha; // Spliting parameter
