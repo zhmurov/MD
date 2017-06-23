@@ -11,13 +11,13 @@
 
 class LeapFrogNoseHoover : public IIntegrator {
 public:
-	LeapFrogNoseHoover(MDData *mdd, float tau, float T0, int* h_fixatoms);
+	LeapFrogNoseHoover(MDData *mdd, float tau, float T0, int* h_fixAtoms);
 	~LeapFrogNoseHoover();
 	void integrateStepOne();
 	void integrateStepTwo();
 private:
-	int* h_fixatoms;
-	int* d_fixatoms;
+	int* h_fixAtoms;
+	int* d_fixAtoms;
 
 	float* h_T;
 	float* d_T;

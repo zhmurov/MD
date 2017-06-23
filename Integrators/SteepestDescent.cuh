@@ -11,19 +11,18 @@
 
 class SteepestDescent : public IIntegrator {
 public:
-	SteepestDescent(MDData *mdd, float T, float seed, int* h_fixatoms, float maxForce);
+	SteepestDescent(MDData *mdd, float T, float seed, float maxForce, int* h_fixAtoms);
 	~SteepestDescent();
 	void integrateStepOne();
 	void integrateStepTwo();
 private:
-
 	float maxForce;
 	
-	int* h_fixatoms;
-	int* d_fixatoms;
+	int* h_fixAtoms;
+	int* d_fixAtoms;
 
-	float* h_gama;
-	float* d_gama;
+	float* h_gamma;
+	float* d_gamma;
 
 	float* h_var;
 	float* d_var;

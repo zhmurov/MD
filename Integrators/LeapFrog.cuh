@@ -11,8 +11,11 @@
 
 class LeapFrog : public IIntegrator {
 public:
-	LeapFrog(MDData *mdd);
+	LeapFrog(MDData *mdd, int* h_fixAtoms);
 	~LeapFrog();
 	void integrateStepOne();
 	void integrateStepTwo();
+private:
+	int* h_fixAtoms;
+	int* d_fixAtoms;
 };

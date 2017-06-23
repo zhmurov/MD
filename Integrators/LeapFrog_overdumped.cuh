@@ -11,16 +11,16 @@
 
 class LeapFrog_overdumped : public IIntegrator {
 public:
-	LeapFrog_overdumped(MDData *mdd, float T, float seed, int* h_fixatoms);
+	LeapFrog_overdumped(MDData *mdd, float T, float seed, int* h_fixAtoms);
 	~LeapFrog_overdumped();
 	void integrateStepOne();
 	void integrateStepTwo();
 private:
-	int* h_fixatoms;
-	int* d_fixatoms;
+	int* h_fixAtoms;
+	int* d_fixAtoms;
 
-	float* h_gama;
-	float* d_gama;
+	float* h_gamma;
+	float* d_gamma;
 
 	float* h_var;
 	float* d_var;

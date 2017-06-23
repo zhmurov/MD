@@ -15,7 +15,6 @@
 #define PARAMETER_TOPOLOGY_FILENAME				"topology_file"
 #define PARAMETER_PARAMETERS_FILENAME				"parameter_file"
 #define PARAMETER_COORDINATES_FILENAME				"coordinates_file"
-#define PARAMETER_STRUCTURE_FILENAME				"structure_file"
 #define PARAMETER_PDB_REFERENCE_FILENAME			"pdbref_file"
 
 #define PARAMETER_POTENTIAL_FENE				"fene"
@@ -63,7 +62,6 @@
 
 #define PARAMETER_FIX						"fixation"
 #define DEFAULT_FIX						0
-#define PARAMETER_FIX_ATOMTYPE					"fix_atomtype"
 
 #define PARAMETER_NOSE_HOOVER_TAU				"nose-hoover-tau"
 #define PARAMETER_NOSE_HOOVER_T0				"nose-hoover-T0"
@@ -77,7 +75,7 @@
 #define PARAMETER_LANGEVIN_SEED					"langevin_seed"
 #define PARAMETER_DAMPING					"damping"
 
-#define PARAMETER_STEEPEST_DESCENT_MAXFORCE			"max_force"
+#define PARAMETER_STEEPEST_DESCENT_MAXFORCE			"maxforce"
 
 #define PARAMETER_EXCLUDE_BOND_TYPES				"exclude_bond_types"
 #define PARAMETER_PAIRLIST_CUTOFF				"pairs_cutoff"
@@ -93,7 +91,6 @@
 #define DEFAULT_PUSHING_SPHERE					0
 #define PARAMETER_PUSHING_SPHERE_RADIUS0			"ps_radius0"
 #define PARAMETER_PUSHING_SPHERE_RADIUS				"ps_radius"
-#define PARAMETER_PUSHING_SPHERE_SPEED				"ps_speed"
 #define PARAMETER_PUSHING_SPHERE_CENTER_POINT			"ps_center_of_sphere"
 #define PARAMETER_PUSHING_SPHERE_UPDATE_FREQ			"ps_update_freq"
 #define PARAMETER_PUSHING_SPHERE_SIGMA				"ps_sigma"

@@ -8,22 +8,24 @@
 #include "LeapFrog.cuh"
 #include "../md.cuh"
 
-LeapFrog::LeapFrog(MDData *mdd){
+LeapFrog::LeapFrog(MDData *mdd, int* h_fixAtoms){
 	this->mdd = mdd;
 	this->dt = mdd->dt;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->blockCount = (mdd->N-1)/this->blockSize + 1;
+
+	cudaMalloc((void**)&d_fixAtoms, mdd->N*sizeof(int));
+	cudaMemcpy(d_fixAtoms, h_fixAtoms, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 }
 
 LeapFrog::~LeapFrog(){
-
 }
 
 void LeapFrog::integrateStepOne(){
 	// Do nothing
 }
 
-__global__ void integrateLeapFrogStepTwo_kernel(){
+__global__ void integrateLeapFrogStepTwo_kernel(int* d_fixAtoms){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
 		float4 coord = c_mdd.d_coord[d_i];
@@ -40,9 +42,11 @@ __global__ void integrateLeapFrogStepTwo_kernel(){
 
 		vel.w += vel.x*vel.x + vel.y*vel.y + vel.z*vel.z;
 
-		coord.x += vel.x*c_mdd.dt;
-		coord.y += vel.y*c_mdd.dt;
-		coord.z += vel.z*c_mdd.dt;
+		if(d_fixAtoms[d_i] == 0){
+			coord.x += vel.x*c_mdd.dt;
+			coord.y += vel.y*c_mdd.dt;
+			coord.z += vel.z*c_mdd.dt;
+		}
 
 		if(coord.x > c_mdd.bc.rhi.x){
 			coord.x -= c_mdd.bc.len.x;
@@ -93,7 +97,5 @@ __global__ void integrateLeapFrogStepTwo_kernel(){
 }
 
 void LeapFrog::integrateStepTwo(){
-	integrateLeapFrogStepTwo_kernel<<<this->blockCount, this->blockSize>>>();
+	integrateLeapFrogStepTwo_kernel<<<this->blockCount, this->blockSize>>>(d_fixAtoms);
 }
-
-

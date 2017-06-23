@@ -9,17 +9,20 @@
 #include "VelocityVerlet.cuh"
 #include "../md.cuh"
 
-VelocityVerlet::VelocityVerlet(MDData *mdd){
+VelocityVerlet::VelocityVerlet(MDData *mdd, int* h_fixAtoms){
 	this->mdd = mdd;
 	this->dt = mdd->dt;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 	this->blockCount = (mdd->N-1)/this->blockSize + 1;
+
+	cudaMalloc((void**)&d_fixAtoms, mdd->N*sizeof(int));
+	cudaMemcpy(d_fixAtoms, h_fixAtoms, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 }
 
 VelocityVerlet::~VelocityVerlet(){
 }
 
-__global__ void integrateVelocityVerletStepOne_kernel(float dt){
+__global__ void integrateVelocityVerletStepOne_kernel(float dt, int* d_fixAtoms){
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if(d_i < c_mdd.N){
 
@@ -39,9 +42,11 @@ __global__ void integrateVelocityVerletStepOne_kernel(float dt){
 //		v.y*=0.5f;
 //		v.z*=0.5f;
 
-		coord.x += v.x*dt;
-		coord.y += v.y*dt;
-		coord.z += v.z*dt;
+		if(d_fixAtoms[d_i] == 0){
+			coord.x += v.x*dt;
+			coord.y += v.y*dt;
+			coord.z += v.z*dt;
+		}
 
 		if(coord.x > c_mdd.bc.rhi.x){
 			coord.x -= c_mdd.bc.len.x;
@@ -93,7 +98,7 @@ __global__ void integrateVelocityVerletStepOne_kernel(float dt){
 
 
 void VelocityVerlet::integrateStepOne(){
-	integrateVelocityVerletStepOne_kernel<<<this->blockCount, this->blockSize>>>(dt);
+	integrateVelocityVerletStepOne_kernel<<<this->blockCount, this->blockSize>>>(dt, d_fixAtoms);
 }
 
 __global__ void integrateVelocityVerletStepTwo_kernel(float dt){

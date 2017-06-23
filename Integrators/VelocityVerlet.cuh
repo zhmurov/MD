@@ -11,9 +11,11 @@
 
 class VelocityVerlet : public IIntegrator {
 public:
-	VelocityVerlet(MDData *mdd);
+	VelocityVerlet(MDData *mdd, int* h_fixAtoms);
 	~VelocityVerlet();
 	void integrateStepOne();
 	void integrateStepTwo();
 private:
+	int* h_fixAtoms;
+	int* d_fixAtoms;
 };
