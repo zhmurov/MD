@@ -91,6 +91,7 @@
 #define DEFAULT_PUSHING_SPHERE					0
 #define PARAMETER_PUSHING_SPHERE_RADIUS0			"ps_radius0"
 #define PARAMETER_PUSHING_SPHERE_RADIUS				"ps_radius"
+#define PARAMETER_PUSHING_SPHERE_SPEED				"ps_speed"
 #define PARAMETER_PUSHING_SPHERE_CENTER_POINT			"ps_center_of_sphere"
 #define PARAMETER_PUSHING_SPHERE_UPDATE_FREQ			"ps_update_freq"
 #define PARAMETER_PUSHING_SPHERE_SIGMA				"ps_sigma"
