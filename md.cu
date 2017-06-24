@@ -41,7 +41,7 @@
 #include "Integrators/LeapFrogNoseHoover.cu"
 
 #include "Integrators/LeapFrog_new.cu"
-#include "Integrators/LeapFrog_overdumped.cu"
+#include "Integrators/LeapFrogOverdumped.cu"
 #include "Integrators/SteepestDescent.cu"
 
 void dumpPSF(char* filename, TOPData &top){

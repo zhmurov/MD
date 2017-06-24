@@ -1,5 +1,5 @@
 /*
- * LeapFrog_overdumped.cuh
+ * LeapFrogOverdumped.cuh
  *
  *  Created on: 11.07.2016
  *
@@ -9,10 +9,10 @@
 
 #include <Common/interfaces.h>
 
-class LeapFrog_overdumped : public IIntegrator {
+class LeapFrogOverdumped : public IIntegrator {
 public:
-	LeapFrog_overdumped(MDData *mdd, float T, float seed, int* h_fixAtoms);
-	~LeapFrog_overdumped();
+	LeapFrogOverdumped(MDData *mdd, float T, float seed, int* h_fixAtoms);
+	~LeapFrogOverdumped();
 	void integrateStepOne();
 	void integrateStepTwo();
 private:

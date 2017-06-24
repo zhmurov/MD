@@ -1,14 +1,14 @@
 /*
- * LeapFrog_overdumped.cu
+ * LeapFrogOverdumped.cu
  *
  * Created on: 11.07.2016
  *
  */
 
-#include "LeapFrog_overdumped.cuh"
+#include "LeapFrogOverdumped.cuh"
 #include "../md.cuh"
 
-LeapFrog_overdumped::LeapFrog_overdumped(MDData *mdd, float T, float seed, int* h_fixAtoms){
+LeapFrog_overdumped::LeapFrogOverdumped(MDData *mdd, float T, float seed, int* h_fixAtoms){
 
 	this->mdd = mdd;
 	this->dt = mdd->dt;
@@ -36,7 +36,7 @@ LeapFrog_overdumped::LeapFrog_overdumped(MDData *mdd, float T, float seed, int* 
 	cudaMemcpy(d_var, h_var, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 }
 
-LeapFrog_overdumped::~LeapFrog_overdumped(){
+LeapFrog_overdumped::~LeapFrogOverdumped(){
 
 	free(h_fixAtoms);
 	free(h_gamma);
@@ -113,10 +113,10 @@ __global__ void integrateLeapFrogOverdumped_kernel(float* d_gamma, float* d_var,
 	}
 }
 
-void LeapFrog_overdumped::integrateStepOne(){
+void LeapFrogOverdumped::integrateStepOne(){
 	//Do nothing
 }
 
-void LeapFrog_overdumped::integrateStepTwo(){
+void LeapFrogOverdumped::integrateStepTwo(){
 	integrateLeapFrogOverdumped_kernel<<<this->blockCount, this->blockSize>>>(d_gamma, d_var, d_fixAtoms);
 }
