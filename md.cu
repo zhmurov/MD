@@ -41,7 +41,7 @@
 #include "Integrators/LeapFrogNoseHoover.cu"
 
 #include "Integrators/LeapFrog_new.cu"
-#include "Integrators/LeapFrogOverdumped.cu"
+#include "Integrators/LeapFrogOverdamped.cu"
 #include "Integrators/SteepestDescent.cu"
 
 void dumpPSF(char* filename, TOPData &top){
@@ -245,7 +245,7 @@ void MDGPU::init()
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED) == 0){
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
-		integrator = new LeapFrog_overdumped(&mdd, temperature, seed, fixedAtomsMask);
+		integrator = new LeapFrogOverdamped(&mdd, temperature, seed, fixedAtomsMask);
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0){
 		integrator = new VelocityVerlet(&mdd, fixedAtomsMask);
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0){

@@ -5,10 +5,10 @@
  *
  */
 
-#include "LeapFrogOverdumped.cuh"
+#include "LeapFrogOverdamped.cuh"
 #include "../md.cuh"
 
-LeapFrog_overdumped::LeapFrogOverdumped(MDData *mdd, float T, float seed, int* h_fixAtoms){
+LeapFrogOverdamped::LeapFrogOverdamped(MDData *mdd, float T, float seed, int* h_fixAtoms){
 
 	this->mdd = mdd;
 	this->dt = mdd->dt;
@@ -36,7 +36,7 @@ LeapFrog_overdumped::LeapFrogOverdumped(MDData *mdd, float T, float seed, int* h
 	cudaMemcpy(d_var, h_var, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 }
 
-LeapFrog_overdumped::~LeapFrogOverdumped(){
+LeapFrogOverdamped::~LeapFrogOverdamped(){
 
 	free(h_fixAtoms);
 	free(h_gamma);
@@ -46,7 +46,7 @@ LeapFrog_overdumped::~LeapFrogOverdumped(){
 	cudaFree(d_var);
 }
 
-__global__ void integrateLeapFrogOverdumped_kernel(float* d_gamma, float* d_var, int* d_fixAtoms){
+__global__ void integrateLeapFrogOverdamped_kernel(float* d_gamma, float* d_var, int* d_fixAtoms){
 
 	int d_i = blockIdx.x*blockDim.x + threadIdx.x;
 	if (d_i < c_mdd.N){
@@ -113,10 +113,10 @@ __global__ void integrateLeapFrogOverdumped_kernel(float* d_gamma, float* d_var,
 	}
 }
 
-void LeapFrogOverdumped::integrateStepOne(){
+void LeapFrogOverdamped::integrateStepOne(){
 	//Do nothing
 }
 
-void LeapFrogOverdumped::integrateStepTwo(){
-	integrateLeapFrogOverdumped_kernel<<<this->blockCount, this->blockSize>>>(d_gamma, d_var, d_fixAtoms);
+void LeapFrogOverdamped::integrateStepTwo(){
+	integrateLeapFrogOverdamped_kernel<<<this->blockCount, this->blockSize>>>(d_gamma, d_var, d_fixAtoms);
 }

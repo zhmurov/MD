@@ -9,10 +9,10 @@
 
 #include <Common/interfaces.h>
 
-class LeapFrogOverdumped : public IIntegrator {
+class LeapFrogOverdamped : public IIntegrator {
 public:
-	LeapFrogOverdumped(MDData *mdd, float T, float seed, int* h_fixAtoms);
-	~LeapFrogOverdumped();
+	LeapFrogOverdamped(MDData *mdd, float T, float seed, int* h_fixAtoms);
+	~LeapFrogOverdamped();
 	void integrateStepOne();
 	void integrateStepTwo();
 private:
