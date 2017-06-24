@@ -16,12 +16,7 @@
 #define SMALL 0.0001f
 
 typedef struct {
-	int4* angles;
-	int4* refs;
-	float4* pars;
-	int* count;
-	float4* forces;
-	float* energies;
+
 } AngleData;
 
 class AngleClass2 : public IPotential {
@@ -33,8 +28,21 @@ public:
 	std::string getEnergyName(int energyId){return "Angle";}
 	float getEnergies(int energyId, int timestep);
 private:
-	AngleData h_ad;
-	AngleData d_ad;
+
+	int4* h_angles;
+	int4* h_refs;
+	float4* h_pars;
+	int* h_count;
+	float4* h_forces;
+	float* h_energies;
+
+	int4* d_angles;
+	int4* d_refs;
+	float4* d_pars;
+	int* d_count;
+	float4* d_forces;
+	float* d_energies;
+
 	int angleCount;
 	int widthTot;
 	int lastAngled;

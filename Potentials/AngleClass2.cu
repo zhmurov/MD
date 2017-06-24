@@ -20,13 +20,13 @@ AngleClass2::AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4
 
 	int i;
 
-	h_ad.pars = (float4*)calloc(atCount, sizeof(float4));
-	cudaMalloc((void**)&d_ad.pars, atCount*sizeof(float4));
+	h_pars = (float4*)calloc(atCount, sizeof(float4));
+	cudaMalloc((void**)&d_pars, atCount*sizeof(float4));
 	for(i = 0; i < atCount; i++){
-		h_ad.pars[i].x = angleCoeffs[i].x*M_PI/180.0f; // theta0
-		h_ad.pars[i].y = 2.0f*angleCoeffs[i].y; // 2*k2
-		h_ad.pars[i].z = 3.0f*angleCoeffs[i].z; // 3*k3
-		h_ad.pars[i].w = 4.0f*angleCoeffs[i].w; // 4*k4
+		h_pars[i].x = angleCoeffs[i].x*M_PI/180.0f; // theta0
+		h_pars[i].y = 2.0f*angleCoeffs[i].y; // 2*k2
+		h_pars[i].z = 3.0f*angleCoeffs[i].z; // 3*k3
+		h_pars[i].w = 4.0f*angleCoeffs[i].w; // 4*k4
 	}
 
 	// Angles
@@ -48,26 +48,26 @@ AngleClass2::AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4
 		}
 	}
 
-	h_ad.angles = (int4*)calloc(angleCount, sizeof(int4));
-	cudaMalloc((void**)&d_ad.angles, angleCount*sizeof(int4));
-	h_ad.refs = (int4*)calloc(angleCount, sizeof(int4));
-	cudaMalloc((void**)&d_ad.refs, angleCount*sizeof(int4));
-	h_ad.count = (int*)calloc(lastAngled + 1, sizeof(int));
-	cudaMalloc((void**)&d_ad.count, (lastAngled + 1)*sizeof(int));
+	h_angles = (int4*)calloc(angleCount, sizeof(int4));
+	cudaMalloc((void**)&d_angles, angleCount*sizeof(int4));
+	h_refs = (int4*)calloc(angleCount, sizeof(int4));
+	cudaMalloc((void**)&d_refs, angleCount*sizeof(int4));
+	h_count = (int*)calloc(lastAngled + 1, sizeof(int));
+	cudaMalloc((void**)&d_count, (lastAngled + 1)*sizeof(int));
 	for(i = 0; i < angleCount; i++){
 		int a1 = angle[i].x;
 		int a2 = angle[i].y;
 		int a3 = angle[i].z;
-		h_ad.angles[i].x = a1;
-		h_ad.angles[i].y = a2;
-		h_ad.angles[i].z = a3;
-		h_ad.angles[i].w = angle[i].w;
-		h_ad.refs[i].x = h_ad.count[a1];
-		h_ad.refs[i].y = h_ad.count[a2];
-		h_ad.refs[i].z = h_ad.count[a3];
-		h_ad.count[a1]++;
-		h_ad.count[a2]++;
-		h_ad.count[a3]++;
+		h_angles[i].x = a1;
+		h_angles[i].y = a2;
+		h_angles[i].z = a3;
+		h_angles[i].w = angle[i].w;
+		h_refs[i].x = h_count[a1];
+		h_refs[i].y = h_count[a2];
+		h_refs[i].z = h_count[a3];
+		h_count[a1]++;
+		h_count[a2]++;
+		h_count[a3]++;
 	}
 
 	blockCount = (angleCount - 1)/DEFAULT_BLOCK_SIZE + 1;
@@ -75,44 +75,44 @@ AngleClass2::AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4
 
 	int maxAngles = 0;
 	for(i = 0; i <= lastAngled; i++){
-		if(h_ad.count[i] > maxAngles){
-			maxAngles = h_ad.count[i];
+		if(h_count[i] > maxAngles){
+			maxAngles = h_count[i];
 		}
 	}
 
 	widthTot = ((lastAngled)/DEFAULT_DATA_ALLIGN + 1)*DEFAULT_DATA_ALLIGN;
 
-	h_ad.forces = (float4*)calloc(maxAngles*widthTot, sizeof(float4));
-	cudaMalloc((void**)&d_ad.forces, maxAngles*widthTot*sizeof(float4));
+	h_forces = (float4*)calloc(maxAngles*widthTot, sizeof(float4));
+	cudaMalloc((void**)&d_forces, maxAngles*widthTot*sizeof(float4));
 
 	blockCountSum = lastAngled/DEFAULT_BLOCK_SIZE + 1;
 	blockSizeSum = DEFAULT_BLOCK_SIZE;
 
-	h_ad.energies = (float*)calloc(angleCount, sizeof(float));
-	cudaMalloc((void**)&d_ad.energies, angleCount*sizeof(float));
+	h_energies = (float*)calloc(angleCount, sizeof(float));
+	cudaMalloc((void**)&d_energies, angleCount*sizeof(float));
 
-	cudaMemcpy(d_ad.angles, h_ad.angles, angleCount*sizeof(int4), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ad.refs, h_ad.refs, angleCount*sizeof(int4), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ad.count, h_ad.count, (lastAngled + 1)*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ad.energies, h_ad.energies, angleCount*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_ad.pars, h_ad.pars, atCount*sizeof(float4), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_angles, h_angles, angleCount*sizeof(int4), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_refs, h_refs, angleCount*sizeof(int4), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_count, h_count, (lastAngled + 1)*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_energies, h_energies, angleCount*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_pars, h_pars, atCount*sizeof(float4), cudaMemcpyHostToDevice);
 
 	printf("Done initializing AngleClass2 potential\n");
 }
 
 AngleClass2::~AngleClass2(){
-	free(h_ad.angles);
-	free(h_ad.refs);
-	free(h_ad.pars);
-	free(h_ad.count);
-	free(h_ad.forces);
-	free(h_ad.energies);
-	cudaFree(d_ad.angles);
-	cudaFree(d_ad.refs);
-	cudaFree(d_ad.pars);
-	cudaFree(d_ad.count);
-	cudaFree(d_ad.forces);
-	cudaFree(d_ad.energies);
+	free(h_angles);
+	free(h_refs);
+	free(h_pars);
+	free(h_count);
+	free(h_forces);
+	free(h_energies);
+	cudaFree(d_angles);
+	cudaFree(d_refs);
+	cudaFree(d_pars);
+	cudaFree(d_count);
+	cudaFree(d_forces);
+	cudaFree(d_energies);
 }
 
 __global__ void angleClass2Compute_kernel(int4* d_angles, int4* d_refs, float4* d_pars, float4* d_forces, int widthTot, int angleCount){
@@ -219,9 +219,9 @@ __global__ void angleClass2Sum_kernel(int* d_count, float4* d_forces, int widthT
 }
 
 void AngleClass2::compute(){
-	angleClass2Compute_kernel<<<this->blockCount, this->blockSize>>>(d_ad.angles, d_ad.refs, d_ad.pars, d_ad.forces, widthTot, angleCount);
+	angleClass2Compute_kernel<<<this->blockCount, this->blockSize>>>(d_angles, d_refs, d_pars, d_forces, widthTot, angleCount);
 	//cudaThreadSynchronize();
-	angleClass2Sum_kernel<<<blockCountSum, blockSizeSum>>>(d_ad.count, d_ad.forces, widthTot, lastAngled);
+	angleClass2Sum_kernel<<<blockCountSum, blockSizeSum>>>(d_count, d_forces, widthTot, lastAngled);
 }
 
 
@@ -279,13 +279,13 @@ __global__ void angleClass2Energy_kernel(int4* d_angles, float4* d_pars, float* 
 
 
 float AngleClass2::getEnergies(int energyId, int timestep){
-	angleClass2Energy_kernel<<<this->blockCount, this->blockSize>>>(d_ad.angles, d_ad.pars, d_ad.energies, angleCount);
+	angleClass2Energy_kernel<<<this->blockCount, this->blockSize>>>(d_angles, d_pars, d_energies, angleCount);
 	//cudaThreadSynchronize();
-	cudaMemcpy(h_ad.energies, d_ad.energies, angleCount*sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_energies, d_energies, angleCount*sizeof(float), cudaMemcpyDeviceToHost);
 	int i;
 	float energy = 0.0f;
 	for(i = 0; i < angleCount; i++){
-		energy += h_ad.energies[i];
+		energy += h_energies[i];
 	}
 	return energy;
 }
