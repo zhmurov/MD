@@ -11,13 +11,6 @@
 #include "../Updaters/PairlistUpdater.cuh"
 
 typedef struct {
-	float2* exclPar;
-	float3* gaussPar;
-	int* gaussCount;
-	float2* energies;
-} GEData;
-
-typedef struct {
 	float A;
 	int l;
 	int numberGaussians;
@@ -41,8 +34,17 @@ public:
 	float getEnergies(int energyId, int timestep);
 private:
 	PairlistUpdater *plist;
-	GEData h_ged;
-	GEData d_ged;
+
+	float2* h_exclPar;
+	float3* h_gaussPar;
+	int* h_gaussCount;
+	float2* h_energies;
+
+	float2* d_exclPar;
+	float3* d_gaussPar;
+	int* d_gaussCount;
+	float2* d_energies;
+
 	float energyValues[2];
 	int maxGaussCount;
 	int atomTypesCount;

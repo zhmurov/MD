@@ -11,28 +11,27 @@
 
 #define BOND_CLASS2_STRING "class2"
 
-typedef struct {
-	int* bondCount;
-	int2* bonds;
-	float4* bondPar;
-	float* energies;
-} BondData;
-
 class BondsClass2Atom : public IPotential {
 public:
 	BondsClass2Atom(MDData *mdd, int bondCount, int bondCountTop, int4* pair, float4* bondCoeffs);
 	~BondsClass2Atom();
 	void compute();
 	int getEnergyCount() {return 1;}
-	std::string getEnergyName(int energyId) {return "Bond";}
+	std::string getEnergyName(int energyId){return "Bond";}
 	float getEnergies(int energyId, int timestep);
 private:
-	//Coeffs* getBondCoeffs(int type, ReadParameters &par);
-	//bool checkBondClass2(int type, ReadParameters &par);
-	BondData h_bd;
-	BondData d_bd;
+
+	int* h_bondCount;
+	int2* h_bonds;
+	float4* h_bondPar;
+	float* h_energies;
+
+	int* d_bondCount;
+	int2* d_bonds;
+	float4* d_bondPar;
+	float* d_energies;
+
 	int bondedCount;
 	int widthTot;
 	int maxBonds;
-	//int step;
 };

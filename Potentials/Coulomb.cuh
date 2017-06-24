@@ -9,9 +9,6 @@
 
 #include "../Updaters/PairlistUpdater.cuh"
 
-typedef struct {
-} CoulombData;
-
 class Coulomb : public IPotential {
 public:
 	Coulomb(MDData *mdd, PairlistUpdater *pl, float alpha, float dielectric, float cutoff);
