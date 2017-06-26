@@ -1,10 +1,11 @@
 # Makefile
 # Generic Makefile for making cuda programs
 #
-BIN					:= mrg-cg2
+BINDIR					:= ../bin
+BIN					:= $(BINDIR)/mrg-cg2
 # flags
 CUDA_INSTALL_PATH	:= /usr/local/cuda
-OBJDIR				:= obj
+OBJDIR				:= $(BINDIR)/obj
 INCLUDES			+= -I$(CUDA_INSTALL_PATH)/include -I.
 LIBS				:= -L$(CUDA_INSTALL_PATH)/lib64
 CFLAGS				:= -O3
@@ -36,7 +37,7 @@ CU_SOURCES			:= \
 CPP_OBJS				:= $(patsubst %.cpp, $(OBJDIR)/%.cpp.o, $(CPP_SOURCES))
 CU_OBJS				:= $(patsubst %.cu, $(OBJDIR)/%.cu.o, $(CU_SOURCES))
  
-$(BIN): makedirs clean $(CU_OBJS)
+$(BIN): clean makedirs $(CU_OBJS)
 	$(LINKER) -o $(BIN) $(CU_OBJS) $(CPP_SOURCES) $(LDFLAGS) $(INCLUDES) $(LIBS)
  
 $(OBJDIR)/%.c.o: $(CPP_SOURCES)
@@ -46,17 +47,14 @@ $(OBJDIR)/%.cu.o: $(CU_SOURCES)
 	$(NVCC) $(INCLUDES) -o $@ -c $<
  
 makedirs:
+	mkdir -p $(BINDIR)
 	mkdir -p $(OBJDIR)
-	mkdir -p $(OBJDIR)/Common
-	mkdir -p $(OBJDIR)/Potentials
-	mkdir -p $(OBJDIR)/Updaters
-	mkdir -p $(OBJDIR)/Integrators
 
 run: $(BIN)
 	LD_LIBRARY_PATH=$(CUDA_INSTALL_PATH)/lib ./$(BIN)
  
 clean:
-	rm -f $(BIN) $(OBJDIR)/*.o
+	rm -rf $(BINDIR)
 	
 install:
 	cp $(BIN) /usr/bin/$(BIN)
