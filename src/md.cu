@@ -26,6 +26,7 @@
 #include "Potentials/Repulsive.cu"
 #include "Potentials/PushingSphere.cu"
 #include "Potentials/Indentation.cu"
+#include "Potentials/Pulling.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
