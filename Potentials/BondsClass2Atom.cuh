@@ -16,7 +16,7 @@ public:
 	BondsClass2Atom(MDData *mdd, int bondCount, int bondCountTop, int4* pair, float4* bondCoeffs);
 	~BondsClass2Atom();
 	void compute();
-	int getEnergyCount() {return 1;}
+	int getEnergyCount(){return 1;}
 	std::string getEnergyName(int energyId){return "Bond";}
 	float getEnergies(int energyId, int timestep);
 private:

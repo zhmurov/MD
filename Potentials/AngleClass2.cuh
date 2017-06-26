@@ -15,10 +15,6 @@
 
 #define SMALL 0.0001f
 
-typedef struct {
-
-} AngleData;
-
 class AngleClass2 : public IPotential {
 public:
 	AngleClass2(MDData *mdd, int angleCountPar, int angleCountTop, int4* angle, float4* angleCoeffs);
