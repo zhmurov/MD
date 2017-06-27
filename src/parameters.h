@@ -57,6 +57,8 @@
 #define VALUE_INTEGRATOR_VELOCITY_VERLET			"velocity-verlet"
 #define VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER			"leap-frog-nose-hoover"
 #define VALUE_INTEGRATOR_LEAP_FROG_NEW				"leap-frog-new"
+#define VALUE_INTEGRATOR_LEAP_FROG_LANGEVIN			"leap-frog-langevin"
+#define PARAMETER_LEAP_FROG_LANGEVIN_DAMPING		"leap-frog-langevin-damping"
 #define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
 #define VALUE_INTEGRATOR_STEEPEST_DESCENT			"steepest-descent"
 
