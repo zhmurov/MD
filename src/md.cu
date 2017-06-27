@@ -125,6 +125,7 @@ void MDGPU::init()
 
 	initTimer();
 
+	PDB pdbref;
 	TOPData top;
 	PARAMData par;
 
@@ -223,7 +224,7 @@ void MDGPU::init()
 	}
 
 	if(getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX) || getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING)){
-		PDB pdbref;
+
 		getMaskedParameter(filename, PARAMETER_PDB_REFERENCE_FILENAME);
 		readPDB(filename, &pdbref);
 
@@ -634,21 +635,18 @@ void MDGPU::init()
 	}
 
 	//Pulling potential
-/*
+
 	if(getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING)){
 
 		getMaskedParameter(filename, PARAMETER_PDB_REFERENCE_FILENAME);
-		readPDB(filename, &pdbref);
 		if(mdd.N != pdbref.atomCount){
 			printf("Error: number of atoms in top is not equal the number of atoms in pdbref\n");
 		}
 
 		float3* pull_base_r0;
-		//TODO
 		pull_base_r0 = (float3*)calloc(pdbref.atomCount, sizeof(float3));
 		int pull_base_freq = getIntegerParameter(PARAMETER_PULLING_BASE_DISPLACEMENT_FREQUENCY);
 		float3* pull_n;
-		//TODO
 		pull_n = (float3*)calloc(pdbref.atomCount, sizeof(float3));
 		float pull_vel = getFloatParameter(PARAMETER_PULLING_VELOCITY);
 		float* pull_ks;
@@ -673,10 +671,9 @@ void MDGPU::init()
 		}
 
 		checkCUDAError("CUDA ERROR: before Pulling potential\n");
-		potentials.push_back(new Pulling(&mdd, pull_base_r0, pull_base_freq, pull_n, pull_vel, pull_ks, dcd_freq));
+		potentials.push_back(new Pulling(&mdd, pull_base_r0, pull_base_freq, pull_vel, pull_n, pull_ks, dcd_freq));
 		checkCUDAError("CUDA ERROR: after Pulling potential\n");
 	}
-*/
 
 	//Indentation potential
 	if(getYesNoParameter(PARAMETER_INDENTATION, DEFAULT_INDENTATION)){
