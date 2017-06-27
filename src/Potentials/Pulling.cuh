@@ -5,7 +5,7 @@ public:
 	Pulling(MDData* mdd, float3* h_base_r0, int base_freq, float vel, float3* h_n, float* h_ks, int dcd_freq);
 	~Pulling();
 	void compute();
-	int getEnergyCount(){return 0;}
+	int getEnergyCount(){return 1;}
 	std::string getEnergyName(int energyId){return "Pulling";}
 	float getEnergies(int energyId, int timestep);
 private:

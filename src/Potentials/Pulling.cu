@@ -45,15 +45,14 @@ Pulling::~Pulling(){
 	cudaFree(d_energy);
 }
 
-
 __global__ void Pulling_kernel(float3* d_base_r0, float base_displacement, float3* d_n, float* d_ks, float* d_fmod){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if(i < c_mdd.N){
 
+		float3 r0 = d_base_r0[i];
 		float4 ri = c_mdd.d_coord[i];
 		float4 f = c_mdd.d_force[i];
-		float3 r0 = d_base_r0[i];
 
 		float ks = d_ks[i];
 		float3 n = d_n[i];
@@ -125,19 +124,34 @@ void Pulling::compute(){
 	}
 }
 
-/*
-void PullingEnergykernel(){
+__global__ void PullingEnergykernel(float3* d_base_r0, float base_displacement, float3* d_n, float* d_ks, float* d_energy){
 
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if(i < c_mdd.N){
-		;
+
+		float3 r0 = d_base_r0[i];	// initial coordinates of base
+		float4 ri = c_mdd.d_coord[i];
+
+		float ks = d_ks[i];
+		float3 n = d_n[i];
+
+		float4 rij;
+		// ri - current coordinates of 'i' atom
+		// rj - current coordinates of base
+		// rij - distance between 'i' atom and base
+		rij.x = r0.x + n.x*base_displacement - ri.x;
+		rij.y = r0.y + n.y*base_displacement - ri.y;
+		rij.z = r0.z + n.z*base_displacement - ri.z;
+
+		rij.w = sqrtf(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
+
+		d_energy[i] = ks*(rij.w-0.0f)*(rij.w-0.0f)/2.0f;
 	}
 }
-*/
 
 float Pulling::getEnergies(int energyId, int timestep){
 
-	//PullingEnergykernel<<<this->blockCount, this->blockSize>>>();
+	PullingEnergykernel<<<this->blockCount, this->blockSize>>>(d_base_r0, base_displacement, d_n, d_ks, d_energy);
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0f;
