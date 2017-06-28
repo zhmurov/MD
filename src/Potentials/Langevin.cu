@@ -5,6 +5,8 @@
  *      Author: zhmurov
  *  Changes: 12.07.2016
  *	Author: kir_min
+  *  Changes: 28.06.2017
+ *	Author: IlyaKir
 */
 
 #include "Langevin.cuh"
@@ -19,7 +21,7 @@ Langevin::Langevin(MDData *mdd, float damping, int seed, float temperature){
 	this->damping = damping;
 	this->temperature = temperature;
 	initRand(seed, mdd->N);
-	this->var = sqrtf(2.0f*BOLTZMANN_CONSTANT*temperature/mdd->dt);
+	this->var = sqrtf(2.0f*BOLTZMANN_CONSTANT*temperature*damping/mdd->dt);
 	printf("Done initializing langevin potential\n");
 }
 
