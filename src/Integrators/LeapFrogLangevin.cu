@@ -2,7 +2,9 @@
  * LeapFrogLangevin.cuh
  *
  *  Created on: 27.06.2017
- *      Author: kir_min
+ *      Author: zhmurov
+	Author: ilya_kir
+	Author: kir_min
  */
 
 #include "LeapFrogLangevin.cuh"

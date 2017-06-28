@@ -6,7 +6,7 @@
  *  Changes: 12.07.2016
  *	Author: kir_min
   *  Changes: 28.06.2017
- *	Author: IlyaKir
+ *	Author: ilya_kir
 */
 
 #include "Langevin.cuh"
