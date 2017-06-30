@@ -141,7 +141,8 @@ void MDGPU::init()
 	getMaskedParameter(filename, PARAMETER_PSF_OUTPUT_FILENAME);
 	dumpPSF(filename, top);
 
-	int func_fene, func_ljp, func_rep; //protein
+	//TODO
+	int feneFunc, func_ljp, func_rep; //protein
 	int func_bc2a, func_ac2; //dna
 
 	cudaSetDevice(getIntegerParameter(PARAMETER_GPU_DEVICE));
@@ -476,33 +477,35 @@ void MDGPU::init()
 	//FENE potential
 	if(getYesNoParameter(PARAMETER_POTENTIAL_FENE, DEFAULT_POTENTIAL_FENE)){
 
-		func_fene = getIntegerParameter(PARAMETER_FUNCTIONTYPE_FENE, DEFAULT_FUNCTIONTYPE_FENE);
+		feneFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_FENE, DEFAULT_FUNCTIONTYPE_FENE);
+		float feneKs = getFloatParameter(PARAMETER_KS_FENE);	//spring constant					[kJ/(mol*nm^2)]
+		float feneR = getFloatParameter(PARAMETER_R_FENE);	//tolerance to the change of the covalent bond length	[nm]
 
-		int bondCount = 0;
-		for (b = 0; b < top.bondCount; b++){
-			if (top.bonds[b].func == func_fene){
-				bondCount++;
+		int feneCount = 0;
+		for(b = 0; b < top.bondCount; b++){
+			if(top.bonds[b].func == feneFunc){
+				feneCount++;
 			}
 		}
 
-		int2* bondsFENE;
-		bondsFENE = (int2*)calloc(bondCount, sizeof(int2));
-		
-		float* bondsFENE_C0;
-		bondsFENE_C0 = (float*)calloc(bondCount, sizeof(float));
+		int2* feneBonds;
+		feneBonds = (int2*)calloc(feneCount, sizeof(int2));
 
-		bondCount = 0;
-		for (b = 0; b < top.bondCount; b++){
-			if(top.bonds[b].func == func_fene){
-				bondsFENE[bondCount].x = getIndexInTOP(top.bonds[b].i, &top);
-				bondsFENE[bondCount].y = getIndexInTOP(top.bonds[b].j, &top);
-				bondsFENE_C0[bondCount] = top.bonds[b].c0/10.0; // [angstr]->[nm]
-				bondCount++;
+		float* feneBonds_r0;
+		feneBonds_r0 = (float*)calloc(feneCount, sizeof(float));
+
+		feneCount = 0;
+		for(b = 0; b < top.bondCount; b++){
+			if(top.bonds[b].func == feneFunc){
+				feneBonds[feneCount].x = getIndexInTOP(top.bonds[b].i, &top);
+				feneBonds[feneCount].y = getIndexInTOP(top.bonds[b].j, &top);
+				feneBonds_r0[feneCount] = top.bonds[b].c0/10.0f; 		// [angstr]->[nm]
+				feneCount++;
 			}
 		}
 
 		checkCUDAError("CUDA ERROR: before FENE potential\n");
-		potentials.push_back(new FENE(&mdd, bondCount, bondsFENE, bondsFENE_C0));
+		potentials.push_back(new FENE(&mdd, feneKs, feneR, feneCount, feneBonds, feneBonds_r0));
 		checkCUDAError("CUDA ERROR: after FENE potential\n");
 	}
 
