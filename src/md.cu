@@ -142,7 +142,7 @@ void MDGPU::init()
 	dumpPSF(filename, top);
 
 	//TODO
-	int feneFunc, func_ljp, func_rep; //protein
+	int feneFunc, ljFunc, func_rep; //protein
 	int func_bc2a, func_ac2; //dna
 
 	cudaSetDevice(getIntegerParameter(PARAMETER_GPU_DEVICE));
@@ -512,36 +512,36 @@ void MDGPU::init()
 	//LennardJones potential
 	if(getYesNoParameter(PARAMETER_POTENTIAL_LENNARDJONES, DEFAULT_POTENTIAL_LENNARDJONES)){
 
-		func_ljp = getIntegerParameter(PARAMETER_FUNCTIONTYPE_LENNARDJONES, DEFAULT_FUNCTIONTYPE_LENNARDJONES);
+		ljFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_LENNARDJONES, DEFAULT_FUNCTIONTYPE_LENNARDJONES);
 
-		int pairsCount = 0;
-		for (p = 0; p < top.pairsCount; p++){
-			if(top.pairs[p].func == func_ljp){
-				pairsCount++;
+		int ljCount = 0;
+		for(p = 0; p < top.pairsCount; p++){
+			if(top.pairs[p].func == ljFunc){
+				ljCount++;
 			}
 		}
 
-		int2* pairsLJP;
-		pairsLJP = (int2*)calloc(pairsCount, sizeof(int2));
+		int2* ljPairs;
+		ljPairs = (int2*)calloc(ljCount, sizeof(int2));
 
-		float* pairsLJP_C0;
-		pairsLJP_C0 = (float*)calloc(pairsCount, sizeof(float)); // equilibrium distance
+		float* ljPairsR0;
+		ljPairsR0 = (float*)calloc(ljCount, sizeof(float));		// equilibrium distance
 
-		float* pairsLJP_C1;
-		pairsLJP_C1 = (float*)calloc(pairsCount, sizeof(float)); // epsilon
+		float* ljPairsEps;
+		ljPairsEps = (float*)calloc(ljCount, sizeof(float));		// epsilon
 
-		pairsCount = 0;
-		for (p = 0; p < top.pairsCount; p++){
-			if (top.pairs[p].func == func_ljp){
-				pairsLJP[pairsCount].x = getIndexInTOP(top.pairs[p].i, &top);
-				pairsLJP[pairsCount].y = getIndexInTOP(top.pairs[p].j, &top);
-				pairsLJP_C0[pairsCount] = top.pairs[p].c0/10.0; // [angstr]->[nm]
-				pairsLJP_C1[pairsCount] = top.pairs[p].c1*4.184; // [KCal/mol]->[KJ/mol]
-				pairsCount++;
+		ljCount = 0;
+		for(p = 0; p < top.pairsCount; p++){
+			if(top.pairs[p].func == ljFunc){
+				ljPairs[ljCount].x = getIndexInTOP(top.pairs[p].i, &top);
+				ljPairs[ljCount].y = getIndexInTOP(top.pairs[p].j, &top);
+				ljPairsR0[ljCount] = top.pairs[p].c0/10.0; 	// [angstr]->[nm]
+				ljPairsEps[ljCount] = top.pairs[p].c1*4.184; 	// [kCal/mol]->[kJ/mol]
+				ljCount++;
 			}
 		}
 		checkCUDAError("CUDA ERROR: before LennardJones potential\n");
-		potentials.push_back(new LJP(&mdd, pairsCount, pairsLJP, pairsLJP_C0, pairsLJP_C1));
+		potentials.push_back(new LJP(&mdd, ljCount, ljPairs, ljPairsR0, ljPairsEps));
 		checkCUDAError("CUDA ERROR: after LennardJones potential\n");
 	}
 

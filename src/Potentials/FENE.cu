@@ -110,7 +110,6 @@ __global__ void fene_kernel(float ks, float R, int* d_bondCount, int* d_bondMap,
 			f.y += df*rij.y;
 			f.z += df*rij.z;
 		}
-
 		c_mdd.d_force[i] = f;
 	}
 }
@@ -130,7 +129,6 @@ __global__ void feneEnergy_kernel(float ks, float R, int* d_bondCount, int* d_bo
 		ri = c_mdd.d_coord[i];
 
 		for(int b = 0; b < d_bondCount[i]; b++){
-
 			j = d_bondMap[i + b*c_mdd.N];
 			r0 = d_bondMapR0[i + b*c_mdd.N];
 
@@ -150,7 +148,6 @@ __global__ void feneEnergy_kernel(float ks, float R, int* d_bondCount, int* d_bo
 			temp1 = (rij_mod - r0)*(rij_mod - r0);
 			energy += -ks*R*R*logf(1.0 - temp1/(R*R))/2;
 		}
-
 		d_energy[i] = energy;
 	}
 }
