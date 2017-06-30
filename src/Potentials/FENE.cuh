@@ -4,14 +4,14 @@
 
 class FENE : public IPotential {
 public:
-	FENE(MDData *mdd, float Ks, float R, int Count, int2* Bonds, float* BondsR0);
+	FENE(MDData *mdd, float ks, float R, int count, int2* bonds, float* bondsR0);
 	~FENE();
 	void compute();
 	int getEnergyCount(){return 1;}
 	std::string getEnergyName(int energyId){return "FENE";}
 	float getEnergies(int energyId, int timestep);
 private:
-	float Ks;
+	float ks;
 	float R;
 
 	int maxBonds;

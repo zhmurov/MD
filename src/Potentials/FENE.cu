@@ -2,9 +2,9 @@
 
 //[bonds] func = 1
 
-FENE::FENE(MDData *mdd, float Ks, float R, int Count, int2* Bonds, float* BondsR0){
+FENE::FENE(MDData *mdd, float ks, float R, int count, int2* bonds, float* bondsR0){
 	this->mdd = mdd;
-	this->Ks = Ks;
+	this->ks = ks;
 	this->R = R;
 
 	blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
@@ -12,12 +12,12 @@ FENE::FENE(MDData *mdd, float Ks, float R, int Count, int2* Bonds, float* BondsR
 
 	int i, j, b;
 
-// maxN
+// maxBonds
 	h_bondCount = (int*)calloc(mdd->N, sizeof(int));
 	cudaMalloc((void**)&d_bondCount, mdd->N*sizeof(int));
-	for(b = 0; b < Count; b++){
-		i = Bonds[b].x;
-		j = Bonds[b].y;
+	for(b = 0; b < count; b++){
+		i = bonds[b].x;
+		j = bonds[b].y;
 
 		h_bondCount[i]++;
 		h_bondCount[j]++;
@@ -37,16 +37,16 @@ FENE::FENE(MDData *mdd, float Ks, float R, int Count, int2* Bonds, float* BondsR
 	h_bondMapR0 = (float*)calloc((mdd->N*maxBonds), sizeof(float));
 	cudaMalloc((void**)&d_bondMapR0, (mdd->N*maxBonds)*sizeof(float));
 
-	for (b = 0; b < Count; b++){
-		i = Bonds[b].x;
-		j = Bonds[b].y;
+	for (b = 0; b < count; b++){
+		i = bonds[b].x;
+		j = bonds[b].y;
 
 		h_bondMap[i + h_bondCount[i]*mdd->N] = j;
-		h_bondMapR0[i + h_bondCount[i]*mdd->N] = BondsR0[b];
+		h_bondMapR0[i + h_bondCount[i]*mdd->N] = bondsR0[b];
 		h_bondCount[i]++;
 
 		h_bondMap[j + h_bondCount[j]*mdd->N] = i;
-		h_bondMapR0[j + h_bondCount[j]*mdd->N] = BondsR0[b];
+		h_bondMapR0[j + h_bondCount[j]*mdd->N] = bondsR0[b];
 		h_bondCount[j]++;
 	}
 	cudaMemcpy(d_bondCount, h_bondCount, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
@@ -157,12 +157,12 @@ __global__ void feneEnergy_kernel(float ks, float R, int* d_bondCount, int* d_bo
 
 //================================================================================================
 void FENE::compute(){
-	fene_kernel<<<this->blockCount, this->blockSize>>>(Ks, R, d_bondCount, d_bondMap, d_bondMapR0);
+	fene_kernel<<<this->blockCount, this->blockSize>>>(ks, R, d_bondCount, d_bondMap, d_bondMapR0);
 }
 
 //================================================================================================
 float FENE::getEnergies(int energyId, int timestep){
-	feneEnergy_kernel<<<this->blockCount, this->blockSize>>>(Ks, R, d_bondCount, d_bondMap, d_bondMapR0, d_energy);
+	feneEnergy_kernel<<<this->blockCount, this->blockSize>>>(ks, R, d_bondCount, d_bondMap, d_bondMapR0, d_energy);
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0;
