@@ -491,21 +491,21 @@ void MDGPU::init()
 		int2* feneBonds;
 		feneBonds = (int2*)calloc(feneCount, sizeof(int2));
 
-		float* feneBonds_r0;
-		feneBonds_r0 = (float*)calloc(feneCount, sizeof(float));
+		float* feneBondsR0;
+		feneBondsR0 = (float*)calloc(feneCount, sizeof(float));
 
 		feneCount = 0;
 		for(b = 0; b < top.bondCount; b++){
 			if(top.bonds[b].func == feneFunc){
 				feneBonds[feneCount].x = getIndexInTOP(top.bonds[b].i, &top);
 				feneBonds[feneCount].y = getIndexInTOP(top.bonds[b].j, &top);
-				feneBonds_r0[feneCount] = top.bonds[b].c0/10.0f; 		// [angstr]->[nm]
+				feneBondsR0[feneCount] = top.bonds[b].c0/10.0f; 			// [angstr]->[nm]
 				feneCount++;
 			}
 		}
 
 		checkCUDAError("CUDA ERROR: before FENE potential\n");
-		potentials.push_back(new FENE(&mdd, feneKs, feneR, feneCount, feneBonds, feneBonds_r0));
+		potentials.push_back(new FENE(&mdd, feneKs, feneR, feneCount, feneBonds, feneBondsR0));
 		checkCUDAError("CUDA ERROR: after FENE potential\n");
 	}
 
