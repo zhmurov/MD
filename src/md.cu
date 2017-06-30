@@ -550,7 +550,7 @@ void MDGPU::init()
 		std::vector<int2> exclusions(top.exclusionCount);
 
 		for (i = 0; i < top.exclusionCount; i++){
-			if(top.exclusions[i].func = func_rep){
+			if(top.exclusions[i].func == func_rep){
 				if(getIndexInTOP(top.exclusions[i].i, &top) < getIndexInTOP(top.exclusions[i].j, &top)){
 					exclusions[i].x = getIndexInTOP(top.exclusions[i].i, &top);
 					exclusions[i].y = getIndexInTOP(top.exclusions[i].j, &top);
