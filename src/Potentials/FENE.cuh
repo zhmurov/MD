@@ -4,7 +4,7 @@
 
 class FENE : public IPotential {
 public:
-	FENE(MDData *mdd, float feneKs, float feneR, int feneCount, int2* feneBonds, float* feneBonds_r0);
+	FENE(MDData *mdd, float Ks, float R, int Count, int2* Bonds, float* BondsR0);
 	~FENE();
 	void compute();
 	int getEnergyCount(){return 1;}
