@@ -142,7 +142,7 @@ void MDGPU::init()
 	dumpPSF(filename, top);
 
 	//TODO
-	int feneFunc, ljFunc, func_rep; //protein
+	int feneFunc, ljFunc, repFunc; //protein
 	int func_bc2a, func_ac2; //dna
 
 	cudaSetDevice(getIntegerParameter(PARAMETER_GPU_DEVICE));
@@ -548,16 +548,16 @@ void MDGPU::init()
 	//Repulsive potential (PPPM and Coulumb have to be off)
 	if(getYesNoParameter(PARAMETER_POTENTIAL_REPULSIVE, DEFAULT_POTENTIAL_REPULSIVE) && !getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED) && !getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB)){
 
-		func_rep = getIntegerParameter(PARAMETER_FUNCTIONTYPE_REPULSIVE, DEFAULT_FUNCTIONTYPE_REPULSIVE);
+		repFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_REPULSIVE, DEFAULT_FUNCTIONTYPE_REPULSIVE);
 
 		std::vector<int2> exclusions(top.exclusionCount);
 
-		for (i = 0; i < top.exclusionCount; i++){
-			if(top.exclusions[i].func == func_rep){
+		for(i = 0; i < top.exclusionCount; i++){
+			if(top.exclusions[i].func == repFunc){
 				if(getIndexInTOP(top.exclusions[i].i, &top) < getIndexInTOP(top.exclusions[i].j, &top)){
 					exclusions[i].x = getIndexInTOP(top.exclusions[i].i, &top);
 					exclusions[i].y = getIndexInTOP(top.exclusions[i].j, &top);
-				} else {
+				}else{
 					exclusions[i].x = getIndexInTOP(top.exclusions[i].j, &top);
 					exclusions[i].y = getIndexInTOP(top.exclusions[i].i, &top);
 				}
@@ -580,11 +580,11 @@ void MDGPU::init()
 		updaters.push_back(plistL1);
 		updaters.push_back(plistL2);
 
-		float rep_eps = getFloatParameter(PARAMETER_REPULSIVE_EPSILON);
-		float rep_sigm = getFloatParameter(PARAMETER_REPULSIVE_SIGMA);
+		float repEps = getFloatParameter(PARAMETER_REPULSIVE_EPSILON);
+		float repSigm = getFloatParameter(PARAMETER_REPULSIVE_SIGMA);
 
 		checkCUDAError("CUDA ERROR: before Repulsive potential\n");
-		potentials.push_back(new Repulsive(&mdd, plistL2, nbCutoff, rep_eps, rep_sigm));
+		potentials.push_back(new Repulsive(&mdd, plistL2, nbCutoff, repEps, repSigm));
 		checkCUDAError("CUDA ERROR: after Repulsive potential\n");
 	}
 
@@ -643,7 +643,6 @@ void MDGPU::init()
 	}
 
 	//Pulling potential
-
 	if(getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING)){
 
 		getMaskedParameter(filename, PARAMETER_PDB_REFERENCE_FILENAME);

@@ -1,6 +1,6 @@
 #include "LJP.cuh"
 
-//[pairs] func = 1
+// top.pairs
 
 LJP::LJP(MDData *mdd, int count, int2* pairs, float* pairsR0, float* pairsEps){
 	this->mdd = mdd;

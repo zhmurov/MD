@@ -4,7 +4,7 @@
 
 class Repulsive : public IPotential {
 public:
-	Repulsive(MDData *mdd, PairlistUpdater *plist, float nbCutoff, float rep_eps, float rep_sigm);
+	Repulsive(MDData *mdd, PairlistUpdater *plist, float nbCutoff, float eps, float sigm);
 	~Repulsive();
 	void compute();
 	int getEnergyCount(){return 1;}
@@ -13,8 +13,9 @@ public:
 private:
 	PairlistUpdater* plist;
 	float nbCutoff;
-	float rep_eps;
-	float rep_sigm;
+	float eps;
+	float sigm;
+
 	float* h_energy;
 	float* d_energy;
 };
