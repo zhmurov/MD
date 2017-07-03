@@ -650,35 +650,35 @@ void MDGPU::init()
 			printf("Error: number of atoms in top is not equal the number of atoms in pdbref\n");
 		}
 
-		float3* pull_base_r0;
-		pull_base_r0 = (float3*)calloc(pdbref.atomCount, sizeof(float3));
-		int pull_base_freq = getIntegerParameter(PARAMETER_PULLING_BASE_DISPLACEMENT_FREQUENCY);
-		float3* pull_n;
-		pull_n = (float3*)calloc(pdbref.atomCount, sizeof(float3));
-		float pull_vel = getFloatParameter(PARAMETER_PULLING_VELOCITY);
-		float* pull_ks;
-		pull_ks = (float*)calloc(pdbref.atomCount, sizeof(float));
-		int dcd_freq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+		float3* pullBaseR0;
+		pullBaseR0 = (float3*)calloc(pdbref.atomCount, sizeof(float3));
+		int pullBaseFreq = getIntegerParameter(PARAMETER_PULLING_BASE_DISPLACEMENT_FREQUENCY);
+		float3* pullN;
+		pullN = (float3*)calloc(pdbref.atomCount, sizeof(float3));
+		float pullVel = getFloatParameter(PARAMETER_PULLING_VELOCITY);
+		float* pullKs;
+		pullKs = (float*)calloc(pdbref.atomCount, sizeof(float));
+		int dcdFreq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
 
 		//pdbref.atoms.occupancy - spring constant
 		//pdbref.atoms.x(y,z) - force vector
 
 		for(i = 0; i < pdbref.atomCount; i++){
 			if(pdbref.atoms[i].occupancy != 0.0f){
-				pull_base_r0[i].x = mdd.h_coord[i].x;
-				pull_base_r0[i].y = mdd.h_coord[i].y;
-				pull_base_r0[i].z = mdd.h_coord[i].z;
+				pullBaseR0[i].x = mdd.h_coord[i].x;
+				pullBaseR0[i].y = mdd.h_coord[i].y;
+				pullBaseR0[i].z = mdd.h_coord[i].z;
 
-				pull_n[i].x = pdbref.atoms[i].x;
-				pull_n[i].y = pdbref.atoms[i].y;
-				pull_n[i].z = pdbref.atoms[i].z;
+				pullN[i].x = pdbref.atoms[i].x;
+				pullN[i].y = pdbref.atoms[i].y;
+				pullN[i].z = pdbref.atoms[i].z;
 
-				pull_ks[i] = pdbref.atoms[i].occupancy;
+				pullKs[i] = pdbref.atoms[i].occupancy;
 			}
 		}
 
 		checkCUDAError("CUDA ERROR: before Pulling potential\n");
-		potentials.push_back(new Pulling(&mdd, pull_base_r0, pull_base_freq, pull_vel, pull_n, pull_ks, dcd_freq));
+		potentials.push_back(new Pulling(&mdd, pullBaseR0, pullBaseFreq, pullVel, pullN, pullKs, dcdFreq));
 		checkCUDAError("CUDA ERROR: after Pulling potential\n");
 	}
 

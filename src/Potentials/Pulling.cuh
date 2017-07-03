@@ -2,21 +2,21 @@
 
 class Pulling : public IPotential {
 public:
-	Pulling(MDData* mdd, float3* h_base_r0, int base_freq, float vel, float3* h_n, float* h_ks, int dcd_freq);
+	Pulling(MDData* mdd, float3* h_baseR0, int baseFreq, float vel, float3* h_n, float* h_ks, int dcdFreq);
 	~Pulling();
 	void compute();
 	int getEnergyCount(){return 1;}
 	std::string getEnergyName(int energyId){return "Pulling";}
 	float getEnergies(int energyId, int timestep);
 private:
-	float base_displacement;
+	float baseDisplacement;
 
-	int base_freq;
+	int baseFreq;
 	float vel;
-	int dcd_freq;
+	int dcdFreq;
 
-	float3* h_base_r0;
-	float3* d_base_r0;
+	float3* h_baseR0;
+	float3* d_baseR0;
 
 	float3* h_n;
 	float3* d_n;
@@ -27,7 +27,7 @@ private:
 	float* h_fmod;
 	float* d_fmod;
 
-	float aver_fmod;
+	float averFmod;
 
 	float* h_energy;
 	float* d_energy;

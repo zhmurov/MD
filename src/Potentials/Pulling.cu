@@ -1,40 +1,42 @@
 #include "Pulling.cuh"
 
-Pulling::Pulling(MDData* mdd, float3* h_base_r0, int base_freq, float vel, float3* h_n, float* h_ks, int dcd_freq){
-
+Pulling::Pulling(MDData* mdd, float3* h_baseR0, int baseFreq, float vel, float3* h_n, float* h_ks, int dcdFreq){
 	this->mdd = mdd;
-	this->h_base_r0 = h_base_r0;
-	this->base_freq = base_freq;
+	this->h_baseR0 = h_baseR0;
+	this->baseFreq = baseFreq;
 	this->vel = vel;
 	this->h_n = h_n;
 	this->h_ks = h_ks;
-	this->dcd_freq = dcd_freq;
+	this->dcdFreq = dcdFreq;
 
-	cudaMalloc((void**)&d_base_r0, mdd->N*sizeof(float3));
-	cudaMemcpy(d_base_r0, h_base_r0, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
+	cudaMalloc((void**)&d_baseR0, mdd->N*sizeof(float3));
 	cudaMalloc((void**)&d_n, mdd->N*sizeof(float3));
-	cudaMemcpy(d_n, h_n, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
 	cudaMalloc((void**)&d_ks, mdd->N*sizeof(float));
+	cudaMemcpy(d_baseR0, h_baseR0, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_n, h_n, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_ks, h_ks, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 
-	this->base_displacement = base_displacement;
-	base_displacement = 0.0f;
+	//TODO
+	//this->baseDisplacement = baseDisplacement;
+	baseDisplacement = 0.0f;
 
-	this->aver_fmod = aver_fmod;
-	aver_fmod = 0.0f;		// average fmod
+	// average Fmod
+	//this->averFmod = averFmod;
+	averFmod = 0.0f;
 
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 
+	//TODO
 	FILE* data = fopen("force_extension.out", "w");
 	fclose(data);
 
-//FORCE
+// force
 	h_fmod = (float*)calloc(mdd->N, sizeof(float));
 	cudaMalloc((void**)&d_fmod, mdd->N*sizeof(float));
 	cudaMemcpy(d_fmod, h_fmod, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 
-//ENERGY
+// energy
 	h_energy = (float*)calloc(mdd->N, sizeof(float));
 	cudaMalloc((void**)&d_energy, mdd->N*sizeof(float));
 	cudaMemcpy(d_energy, h_energy, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
@@ -43,14 +45,16 @@ Pulling::Pulling(MDData* mdd, float3* h_base_r0, int base_freq, float vel, float
 Pulling::~Pulling(){
 	free(h_energy);
 	cudaFree(d_energy);
+	cudaFree(d_baseR0);
+	cudaFree(d_n);
+	cudaFree(d_ks);
 }
 
-__global__ void Pulling_kernel(float3* d_base_r0, float base_displacement, float3* d_n, float* d_ks, float* d_fmod){
-
+__global__ void pulling_kernel(float3* d_baseR0, float baseDisplacement, float3* d_n, float* d_ks, float* d_fmod){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if(i < c_mdd.N){
 
-		float3 r0 = d_base_r0[i];
+		float3 r0 = d_baseR0[i];
 		float4 ri = c_mdd.d_coord[i];
 		float4 f = c_mdd.d_force[i];
 
@@ -59,9 +63,9 @@ __global__ void Pulling_kernel(float3* d_base_r0, float base_displacement, float
 
 		float4 dr;
 
-		dr.x = r0.x + n.x*base_displacement - ri.x;
-		dr.y = r0.y + n.y*base_displacement - ri.y;
-		dr.z = r0.z + n.z*base_displacement - ri.z;
+		dr.x = r0.x + n.x*baseDisplacement - ri.x;
+		dr.y = r0.y + n.y*baseDisplacement - ri.y;
+		dr.z = r0.z + n.z*baseDisplacement - ri.z;
 
 		f.x += ks*dr.x;
 		f.y += ks*dr.y;
@@ -75,61 +79,54 @@ __global__ void Pulling_kernel(float3* d_base_r0, float base_displacement, float
 }
 
 void Pulling::compute(){
-
-	if(mdd->step % base_freq == 0){
-		base_displacement = vel*mdd->dt*mdd->step;
-	}
-	if(mdd->step % dcd_freq == 0){
-		printf("base_displacement = %f\n", base_displacement);
+	if(mdd->step % baseFreq == 0){
+		baseDisplacement = vel*mdd->dt*mdd->step;
 	}
 
-	Pulling_kernel<<<this->blockCount, this->blockSize>>>(d_base_r0, base_displacement, d_n, d_ks, d_fmod);
+	pulling_kernel<<<this->blockCount, this->blockSize>>>(d_baseR0, baseDisplacement, d_n, d_ks, d_fmod);
 
 	cudaMemcpy(h_fmod, d_fmod, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
-
 	for(int i = 0; i < mdd->N; i++){
-		aver_fmod += h_fmod[i];
+		averFmod += h_fmod[i];
 	}
 
-	// OUTPUT
-	if(mdd->step % dcd_freq == 0){
-
+// output
+	if(mdd->step % dcdFreq == 0){
 		float dx, dy, dz, dr;
 		cudaMemcpy(mdd->h_coord, mdd->d_coord, mdd->N*sizeof(float4), cudaMemcpyDeviceToHost);
 
 		for(int i = 0; i < mdd->N; i++){
 			if(h_ks[i] > 0.0f){
-				dx = mdd->h_coord[i].x - h_base_r0[i].x;
-				dy = mdd->h_coord[i].y - h_base_r0[i].y;
-				dz = mdd->h_coord[i].z - h_base_r0[i].z;
+				dx = mdd->h_coord[i].x - h_baseR0[i].x;
+				dy = mdd->h_coord[i].y - h_baseR0[i].y;
+				dz = mdd->h_coord[i].z - h_baseR0[i].z;
 				dr = sqrtf(dx*dx + dy*dy + dz*dz);
 			}
 		}
-		aver_fmod /= float(dcd_freq);
+		averFmod /= float(dcdFreq);
 
 		FILE* data = fopen("force_extension.out", "a");
 		fprintf(data, "%12d\t", mdd->step);
 
 		for(int i = 0; i < mdd->N; i++){
 			if(h_ks[i] > 0.0f){
-				fprintf(data, "%4.6f\t", base_displacement);
-				fprintf(data, "%4.6f\t", aver_fmod);
+				fprintf(data, "%4.6f\t", baseDisplacement);
+				fprintf(data, "%4.6f\t", averFmod);
 				fprintf(data, "%4.6f", dr);
 			}
 		}
 		fprintf(data, "\n");
 		fclose(data);
 
-		aver_fmod = 0.0f;
+		averFmod = 0.0f;
 	}
 }
 
-__global__ void PullingEnergykernel(float3* d_base_r0, float base_displacement, float3* d_n, float* d_ks, float* d_energy){
-
+__global__ void PullingEnergykernel(float3* d_baseR0, float baseDisplacement, float3* d_n, float* d_ks, float* d_energy){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if(i < c_mdd.N){
 
-		float3 r0 = d_base_r0[i];	// initial coordinates of base
+		float3 r0 = d_baseR0[i];	// initial coordinates of base
 		float4 ri = c_mdd.d_coord[i];
 
 		float ks = d_ks[i];
@@ -139,9 +136,9 @@ __global__ void PullingEnergykernel(float3* d_base_r0, float base_displacement, 
 		// ri - current coordinates of 'i' atom
 		// rj - current coordinates of base
 		// rij - distance between 'i' atom and base
-		rij.x = r0.x + n.x*base_displacement - ri.x;
-		rij.y = r0.y + n.y*base_displacement - ri.y;
-		rij.z = r0.z + n.z*base_displacement - ri.z;
+		rij.x = r0.x + n.x*baseDisplacement - ri.x;
+		rij.y = r0.y + n.y*baseDisplacement - ri.y;
+		rij.z = r0.z + n.z*baseDisplacement - ri.z;
 
 		rij.w = sqrtf(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
 
@@ -150,8 +147,7 @@ __global__ void PullingEnergykernel(float3* d_base_r0, float base_displacement, 
 }
 
 float Pulling::getEnergies(int energyId, int timestep){
-
-	PullingEnergykernel<<<this->blockCount, this->blockSize>>>(d_base_r0, base_displacement, d_n, d_ks, d_energy);
+	PullingEnergykernel<<<this->blockCount, this->blockSize>>>(d_baseR0, baseDisplacement, d_n, d_ks, d_energy);
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0f;
