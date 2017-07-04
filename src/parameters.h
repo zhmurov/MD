@@ -123,8 +123,8 @@
 
 #define PARAMETER_PULLING					"pulling"
 #define DEFAULT_PULLING						0
-#define PARAMETER_PULLING_BASE_DISPLACEMENT_FREQUENCY		"pull_base_freq"
-#define PARAMETER_PULLING_VELOCITY				"pull_vel"
+#define PARAMETER_PULLING_BASE_DISPLACEMENT_FREQUENCY		"pulling_base_freq"
+#define PARAMETER_PULLING_VELOCITY				"pulling_vel"
 
 #define PARAMETER_SURFACE_COORD					"sf_coord"
 #define PARAMETER_SURFACE_N					"sf_n"
@@ -140,6 +140,7 @@
 
 #define PARAMETER_PSF_OUTPUT_FILENAME				"psf_filename"
 #define PARAMETER_DCD_OUTPUT_FILENAME				"dcd_filename"
+#define PARAMETER_PULLING_OUTPUT_FILENAME			"pulling_filename"
 #define PARAMETER_PDB_CANTILEVER_OUTPUT_FILENAME		"pdb_cant_filename"
 #define PARAMETER_DCD_CANTILEVER_OUTPUT_FILENAME		"dcd_cant_filename"
 #define PARAMETER_DCD_OUTPUT_FREQUENCY				"dcd_freq"

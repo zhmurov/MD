@@ -1,14 +1,17 @@
 #include "Pulling.cuh"
 
-Pulling::Pulling(MDData* mdd, float3* h_baseR0, int baseFreq, float vel, float3* h_n, float* h_ks, int dcdFreq){
+Pulling::Pulling(MDData* mdd, float3* baseR0, int baseFreq, float vel, float3* n, float* ks, int dcdFreq, char* pullingFilename){
 	this->mdd = mdd;
-	this->h_baseR0 = h_baseR0;
 	this->baseFreq = baseFreq;
 	this->vel = vel;
-	this->h_n = h_n;
-	this->h_ks = h_ks;
 	this->dcdFreq = dcdFreq;
 
+	h_baseR0 = (float3*)calloc(mdd->N, sizeof(float3));
+	h_n = (float3*)calloc(mdd->N, sizeof(float3));
+	h_ks = (float*)calloc(mdd->N, sizeof(float));
+	memcpy(h_baseR0, baseR0, mdd->N*sizeof(float3));
+	memcpy(h_n, n, mdd->N*sizeof(float3));
+	memcpy(h_ks, ks, mdd->N*sizeof(float));
 	cudaMalloc((void**)&d_baseR0, mdd->N*sizeof(float3));
 	cudaMalloc((void**)&d_n, mdd->N*sizeof(float3));
 	cudaMalloc((void**)&d_ks, mdd->N*sizeof(float));
@@ -16,20 +19,15 @@ Pulling::Pulling(MDData* mdd, float3* h_baseR0, int baseFreq, float vel, float3*
 	cudaMemcpy(d_n, h_n, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_ks, h_ks, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 
-	//TODO
-	//this->baseDisplacement = baseDisplacement;
-	baseDisplacement = 0.0f;
+	sprintf(filename, "%s", pullingFilename);
 
-	// average Fmod
-	//this->averFmod = averFmod;
-	averFmod = 0.0f;
+	averFmod = 0.0f;		// average Fmod
 
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 
-	//TODO
-	FILE* data = fopen("force_extension.out", "w");
-	fclose(data);
+	FILE* output = fopen(filename, "w");
+	fclose(output);
 
 // force
 	h_fmod = (float*)calloc(mdd->N, sizeof(float));
@@ -43,6 +41,9 @@ Pulling::Pulling(MDData* mdd, float3* h_baseR0, int baseFreq, float vel, float3*
 }
 
 Pulling::~Pulling(){
+	free(h_baseR0);
+	free(h_n);
+	free(h_ks);
 	free(h_energy);
 	cudaFree(d_energy);
 	cudaFree(d_baseR0);
@@ -79,6 +80,7 @@ __global__ void pulling_kernel(float3* d_baseR0, float baseDisplacement, float3*
 }
 
 void Pulling::compute(){
+
 	if(mdd->step % baseFreq == 0){
 		baseDisplacement = vel*mdd->dt*mdd->step;
 	}
@@ -105,18 +107,17 @@ void Pulling::compute(){
 		}
 		averFmod /= float(dcdFreq);
 
-		FILE* data = fopen("force_extension.out", "a");
-		fprintf(data, "%12d\t", mdd->step);
-
+		FILE* output = fopen(filename, "a");
+		fprintf(output, "%12d\t", mdd->step);
 		for(int i = 0; i < mdd->N; i++){
 			if(h_ks[i] > 0.0f){
-				fprintf(data, "%4.6f\t", baseDisplacement);
-				fprintf(data, "%4.6f\t", averFmod);
-				fprintf(data, "%4.6f", dr);
+				fprintf(output, "%4.6f\t", baseDisplacement);
+				fprintf(output, "%4.6f\t", averFmod);
+				fprintf(output, "%4.6f", dr);
 			}
 		}
-		fprintf(data, "\n");
-		fclose(data);
+		fprintf(output, "\n");
+		fclose(output);
 
 		averFmod = 0.0f;
 	}

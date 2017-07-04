@@ -645,7 +645,9 @@ void MDGPU::init()
 	//Pulling potential
 	if(getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING)){
 
-		getMaskedParameter(filename, PARAMETER_PDB_REFERENCE_FILENAME);
+		char pullingFilename[FILENAME_LENGTH];
+		getMaskedParameter(pullingFilename, PARAMETER_PULLING_OUTPUT_FILENAME);
+
 		if(mdd.N != pdbref.atomCount){
 			printf("Error: number of atoms in top is not equal the number of atoms in pdbref\n");
 		}
@@ -678,7 +680,7 @@ void MDGPU::init()
 		}
 
 		checkCUDAError("CUDA ERROR: before Pulling potential\n");
-		potentials.push_back(new Pulling(&mdd, pullBaseR0, pullBaseFreq, pullVel, pullN, pullKs, dcdFreq));
+		potentials.push_back(new Pulling(&mdd, pullBaseR0, pullBaseFreq, pullVel, pullN, pullKs, dcdFreq, pullingFilename));
 		checkCUDAError("CUDA ERROR: after Pulling potential\n");
 	}
 
