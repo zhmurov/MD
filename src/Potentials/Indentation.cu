@@ -1,88 +1,77 @@
 #include "Indentation.cuh"
 
-Indentation::Indentation(MDData *mdd, int N, int tip_radius, float3 tip_coord, float3 base_coord, int base_freq, float3 n, float vel, float ks, float eps, float sigm, float3 sf_coord, float3 sf_n, float sf_eps, float sf_sigm, int dcd_freq, char* dcd_cant_filename){
-
+Indentation::Indentation(MDData *mdd, int atomCount, int tipRadius, float3 tipCoord, float tipFriction, float3 baseCoord, int baseFreq, float3 baseDir, float baseVel, float ks, float eps, float sigm, float3 sfCoord, float3 sfN, float sfEps, float sfSigm, int dcdFreq, char* dcdCantFilename, char* indOutputFilename){
 	this->mdd = mdd;
-	this->tip_radius = tip_radius;
-	this->tip_coord = tip_coord;
-	this->base_coord = base_coord;
-	this->base_freq = base_freq;
-	this->n = n;
-	this->vel = vel;
+	this->atomCount = atomCount;
+	this->tipRadius = tipRadius;
+	this->tipCoord = tipCoord;
+	this->tipFriction = tipFriction;
+	this->baseCoord = baseCoord;
+	this->baseFreq = baseFreq;
+	this->baseDir = baseDir;
+	this->baseVel = baseVel;
 	this->ks = ks;
 	this->eps = eps;
 	this->sigm = sigm;
-	this->sf_coord = sf_coord;
-	this->sf_n = sf_n;
-	this->sf_eps = sf_eps;
-	this->sf_sigm = sf_sigm;
-	this->dcd_freq = dcd_freq;
-	this->dcd_cant_filename = dcd_cant_filename;
+	this->sfCoord = sfCoord;
+	this->sfN = sfN;
+	this->sfEps = sfEps;
+	this->sfSigm = sfSigm;
+	this->dcdFreq = dcdFreq;
 
-	this->const1 = const1;
-	this->const2 = const2;
+	const1 = -sfN.x*sfCoord.x - sfN.y*sfCoord.y - sfN.z*sfCoord.z;
+	const2 = sqrt(sfN.x*sfN.x + sfN.y*sfN.y + sfN.z*sfN.z);
 
-	const1 = -sf_n.x*sf_coord.x - sf_n.y*sf_coord.y - sf_n.z*sf_coord.z;
-	const2 = sqrt(sf_n.x*sf_n.x + sf_n.y*sf_n.y + sf_n.z*sf_n.z);
+	tipDisplacement = 0.0f;
+	baseDisplacement = 0.0f;
 
-	this->tip_displacement = tip_displacement;
-	tip_displacement = 0.0;
-	this->base_displacement = base_displacement;
-	base_displacement = 0.0;
+	tipCurrentCoord = tipCoord;
 
-	this->tip_current_coord = tip_current_coord;
-	tip_current_coord = tip_coord;
-	this->current_step = current_step;
-	current_step = 0;
+	sprintf(outputFilename, "%s", indOutputFilename);
+	FILE* output = fopen(outputFilename, "w");
+	fclose(output);
 
-	FILE *txt = fopen("data.out", "w");
-	fclose(txt);
-//DCD
-
-	int frameCount = mdd->numsteps/dcd_freq + 1;
-	createDCD(&dcd_cant, 2, frameCount, 1, current_step, dcd_freq, 1, mdd->bc.len.x, mdd->bc.len.y, mdd->bc.len.z);
-	dcdOpenWrite(&dcd_cant, dcd_cant_filename);
+	// dcd
+	int frameCount = mdd->numsteps/dcdFreq + 1;
+	createDCD(&dcd_cant, 2, frameCount, 1, 0, dcdFreq, 1, mdd->bc.len.x, mdd->bc.len.y, mdd->bc.len.z);
+	dcdOpenWrite(&dcd_cant, dcdCantFilename);
 	dcdWriteHeader(dcd_cant);
 
-	this->blockCount = (N-1)/DEFAULT_BLOCK_SIZE + 1;
+	this->blockCount = (atomCount-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 
-//FORCE
-	h_forcetip = (float3*)calloc(N, sizeof(float3));
-	cudaMalloc((void**)&d_forcetip, N*sizeof(float3));
-	cudaMemcpy(d_forcetip, h_forcetip, N*sizeof(float3), cudaMemcpyHostToDevice);
+	// force
+	h_tipForce = (float3*)calloc(atomCount, sizeof(float3));
+	cudaMalloc((void**)&d_tipForce, atomCount*sizeof(float3));
+	cudaMemcpy(d_tipForce, h_tipForce, atomCount*sizeof(float3), cudaMemcpyHostToDevice);
 
-//ENERGY
-	h_energy = (float*)calloc(N, sizeof(float));
-	cudaMalloc((void**)&d_energy, N*sizeof(float));
-	cudaMemcpy(d_energy, h_energy, N*sizeof(float), cudaMemcpyHostToDevice);
-
-	printf("N = %d\n", N);
-	printf("FLAG1\n");
+	// energy
+	h_energy = (float*)calloc(atomCount, sizeof(float));
+	cudaMalloc((void**)&d_energy, atomCount*sizeof(float));
+	cudaMemcpy(d_energy, h_energy, atomCount*sizeof(float), cudaMemcpyHostToDevice);
 }
 
 Indentation::~Indentation(){
-	free(h_forcetip);
+	free(outputFilename);
+	free(h_tipForce);
 	free(h_energy);
-	cudaFree(d_forcetip);
+	cudaFree(d_tipForce);
 	cudaFree(d_energy);
-	//TODO destroyDCD(&dcd);
 }
 
-__global__ void indentation_kernel(int N, float tip_radius, float3 tip_current_coord, float eps, float sigm, float3 sf_n, float sf_eps, float sf_sigm, float const1, float const2, float3* d_forcetip){
-
+__global__ void indentation_kernel(int atomCount, float tipRadius, float3 tipCurrentCoord, float eps, float sigm, float3 sfN, float sfEps, float sfSigm, float const1, float const2, float3* d_tipForce){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
-	if (i < N){
+	if (i < atomCount){
 
-		float temp;
 		float rij_mod, df;
 		float3 rij, rj;
 		float4 ri, f;
-
-		ri = c_mdd.d_coord[i];
-		rj = tip_current_coord;
+		float temp;
 
 		f = c_mdd.d_force[i];
+
+		ri = c_mdd.d_coord[i];
+		rj = tipCurrentCoord;
 
 		rij.x = rj.x - ri.x;
 		rij.y = rj.y - ri.y;
@@ -90,112 +79,90 @@ __global__ void indentation_kernel(int N, float tip_radius, float3 tip_current_c
 
 		rij_mod = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
 
-	//REPULSIVE POTENTIAL
-	//BIDS
-		temp = 6.0f*pow(sigm, 6.0f)/pow((rij_mod - tip_radius), 7.0f);
-
+	// repulsive potential
+		temp = 6.0f*pow(sigm, 6.0f)/pow((rij_mod - tipRadius), 7.0f);
 		df = -eps*temp/rij_mod;
 
 		f.x += df*rij.x;
 		f.y += df*rij.y;
 		f.z += df*rij.z;
 
-	//TIP
-		d_forcetip[i].x = -df*rij.x;
-		d_forcetip[i].y = -df*rij.y;
-		d_forcetip[i].z = -df*rij.z;
+	// tip
+		d_tipForce[i].x = -df*rij.x;
+		d_tipForce[i].y = -df*rij.y;
+		d_tipForce[i].z = -df*rij.z;
 
-	//SURFACE
+	// surface
 		//rij_mod = abs(A*x + B*y + C*z + D)/sqrt(A^2 + B^2 + C^2)
 		//const1 = D = -A*x0 - B*y0 - C*z0
 		//const2 = sqrt(A^2 + B^2 + C^2)
-		rij_mod = abs(sf_n.x*ri.x + sf_n.y*ri.y + sf_n.z*ri.z + const1)/const2;
+		rij_mod = abs(sfN.x*ri.x + sfN.y*ri.y + sfN.z*ri.z + const1)/const2;
 
-		temp = 6.0f*pow(sf_sigm, 6.0f)/pow(rij_mod, 7.0f);
-
-		df = sf_eps*temp/rij_mod;
+		temp = 6.0f*pow(sfSigm, 6.0f)/pow(rij_mod, 7.0f);
+		df = sfEps*temp/rij_mod;
 
 		//TODO abs ?
-		f.x += df*rij_mod*sf_n.x;
-		f.y += df*rij_mod*sf_n.y;
-		f.z += df*rij_mod*sf_n.z;
-
+		f.x += df*rij_mod*sfN.x;
+		f.y += df*rij_mod*sfN.y;
+		f.z += df*rij_mod*sfN.z;
 
 		c_mdd.d_force[i] = f;
 	}
 }
 
-
 void Indentation::compute(){
-
-	current_step++;
-
-	tip_current_coord.x = tip_coord.x + tip_displacement*n.x;
-	tip_current_coord.y = tip_coord.y + tip_displacement*n.y;
-	tip_current_coord.z = tip_coord.z + tip_displacement*n.z;
-
-
-	indentation_kernel<<<this->blockCount, this->blockSize>>>(N, tip_radius, tip_current_coord, eps, sigm, sf_n, sf_eps, sf_sigm, const1, const2, d_forcetip);
-
-	float mult = 0.0;
-	float3 resforce = make_float3(0.0f, 0.0f, 0.0f);
-
-	//TODO current_step -> mdd->step
-
-	if (current_step % base_freq == 0){
-
-		base_displacement = vel*mdd->dt*current_step;
-
-		cudaMemcpy(h_forcetip, d_forcetip, N*sizeof(float3), cudaMemcpyDeviceToHost);
-
-		for(int i = 0; i < N; i++){
-			resforce.x += h_forcetip[i].x;
-			resforce.y += h_forcetip[i].y;
-			resforce.z += h_forcetip[i].z;
-		}
-
-		mult = -ks*(tip_displacement - base_displacement);
-
-		resforce.x += n.x*mult;
-		resforce.y += n.y*mult;
-		resforce.z += n.z*mult;
-
-		// FRICTION COEFFICIENT
-		// ksi = 6*pi*nu*r = 5.655E+4
-		// 1/ksi = 1.77E-5
-
-		tip_displacement += 0.0000029*mdd->dt*(resforce.x*n.x + resforce.y*n.y + resforce.z*n.z);
+	if(mdd->step % baseFreq == 0){
+		baseDisplacement = baseVel*mdd->dt*mdd->step;
 	}
 
-	//TODO current_step -> mdd->step
-	if (current_step % dcd_freq == 0){
+	tipCurrentCoord.x = tipCoord.x + tipDisplacement*baseDir.x;
+	tipCurrentCoord.y = tipCoord.y + tipDisplacement*baseDir.y;
+	tipCurrentCoord.z = tipCoord.z + tipDisplacement*baseDir.z;
 
-		FILE *txt = fopen("data.out", "a");
-		fprintf(txt, "%3.6f  ", (base_coord.z + base_displacement*n.z)*10.0);
-		fprintf(txt, "%3.6f  ", (tip_coord.z + tip_displacement*n.z)*10.0);
-		fprintf(txt, "%3.6f  ", base_displacement*n.z*10.0);
-		fprintf(txt, "%3.6f  ", tip_displacement*n.z*10.0);
-		fprintf(txt, "%f  ", mult*n.z);
-		fprintf(txt, "%f\n", (resforce.z - n.z*mult));
-		fclose(txt);
+	indentation_kernel<<<this->blockCount, this->blockSize>>>(atomCount, tipRadius, tipCurrentCoord, eps, sigm, sfN, sfEps, sfSigm, const1, const2, d_tipForce);
 
-		//printf("%3.6f\t%3.6f\n", (base_coord.z + base_displacement*n.z)*10.0, (tip_coord.z + tip_displacement*n.z)*10.0);
+	float mult = 0.0f;
+	float3 resForce = make_float3(0.0f, 0.0f, 0.0f);
+	cudaMemcpy(h_tipForce, d_tipForce, atomCount*sizeof(float3), cudaMemcpyDeviceToHost);
+	for(int i = 0; i < atomCount; i++){
+		resForce.x += h_tipForce[i].x;
+		resForce.y += h_tipForce[i].y;
+		resForce.z += h_tipForce[i].z;
+	}
+	mult = -ks*(tipDisplacement - baseDisplacement);
 
-		//tip
-		dcd_cant.frame.X[0] = (tip_coord.x + tip_displacement*n.x)*10.0;			// [nm] -> [angstr]
-		dcd_cant.frame.Y[0] = (tip_coord.y + tip_displacement*n.y)*10.0;			// [nm] -> [angstr]
-		dcd_cant.frame.Z[0] = (tip_coord.z + tip_displacement*n.z)*10.0;			// [nm] -> [angstr]
-		//base
-		dcd_cant.frame.X[1] = (base_coord.x + base_displacement*n.x)*10.0;	// [nm] -> [angstr]
-		dcd_cant.frame.Y[1] = (base_coord.y + base_displacement*n.y)*10.0;	// [nm] -> [angstr]
-		dcd_cant.frame.Z[1] = (base_coord.z + base_displacement*n.z)*10.0;	// [nm] -> [angstr]
+	resForce.x += baseDir.x*mult;
+	resForce.y += baseDir.y*mult;
+	resForce.z += baseDir.z*mult;
 
+	// FRICTION COEFFICIENT
+	// ksi = 6*pi*nu*r = 5.655E+4
+	// 1/ksi = 1.77E-5 = 0.0000029
+	tipDisplacement += tipFriction*mdd->dt*(resForce.x*baseDir.x + resForce.y*baseDir.y + resForce.z*baseDir.z);
+
+	if (mdd->step % dcdFreq == 0){
+		FILE* output = fopen(outputFilename, "a");
+		fprintf(output, "%3.6f  ", (baseCoord.z + baseDisplacement*baseDir.z)*10.0f);
+		fprintf(output, "%3.6f  ", (tipCoord.z + tipDisplacement*baseDir.z)*10.0f);
+		fprintf(output, "%3.6f  ", baseDisplacement*baseDir.z*10.0f);
+		fprintf(output, "%3.6f  ", tipDisplacement*baseDir.z*10.0f);
+		fprintf(output, "%f  ", mult*baseDir.z);
+		fprintf(output, "%f\n", (resForce.z - baseDir.z*mult));
+		fclose(output);
+
+		// base
+		dcd_cant.frame.X[0] = (baseCoord.x + baseDisplacement*baseDir.x)*10.0f;		// [nm]->[angstr]
+		dcd_cant.frame.Y[0] = (baseCoord.y + baseDisplacement*baseDir.y)*10.0f;		// [nm]->[angstr]
+		dcd_cant.frame.Z[0] = (baseCoord.z + baseDisplacement*baseDir.z)*10.0f;		// [nm]->[angstr]
+		// tip
+		dcd_cant.frame.X[1] = (tipCoord.x + tipDisplacement*baseDir.x)*10.0f;			// [nm]->[angstr]
+		dcd_cant.frame.Y[1] = (tipCoord.y + tipDisplacement*baseDir.y)*10.0f;			// [nm]->[angstr]
+		dcd_cant.frame.Z[1] = (tipCoord.z + tipDisplacement*baseDir.z)*10.0f;			// [nm]->[angstr]
 		dcdWriteFrame(dcd_cant);
 	}
 }
 
-__global__ void indentationEnergy_kernel(int N, float tip_radius, float3 tip_current_coord, float eps, float sigm, float* d_energy){
-
+__global__ void indentationEnergy_kernel(int N, float tipRadius, float3 tipCurrentCoord, float eps, float sigm, float* d_energy){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i < N){
 
@@ -204,7 +171,7 @@ __global__ void indentationEnergy_kernel(int N, float tip_radius, float3 tip_cur
 		float4 ri;
 
 		ri = c_mdd.d_coord[i];
-		rj = tip_current_coord;
+		rj = tipCurrentCoord;
 
 		rij.x = rj.x - ri.x;
 		rij.y = rj.y - ri.y;
@@ -212,9 +179,7 @@ __global__ void indentationEnergy_kernel(int N, float tip_radius, float3 tip_cur
 
 		rij_mod = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
 
-		//REPULSIVE POTENTIAL
-		energy = eps*pow(sigm, 6.0f)/pow((rij_mod - tip_radius), 6.0f);
-
+		energy = eps*pow(sigm, 6.0f)/pow((rij_mod - tipRadius), 6.0f);
 		d_energy[i] = energy;
 	}
 }
@@ -222,13 +187,12 @@ __global__ void indentationEnergy_kernel(int N, float tip_radius, float3 tip_cur
 
 
 float Indentation::getEnergies(int energyId, int Nstep){
+	indentationEnergy_kernel<<<this->blockCount, this->blockSize>>>(atomCount, tipRadius, tipCurrentCoord, eps, sigm, d_energy);
 
-	indentationEnergy_kernel<<<this->blockCount, this->blockSize>>>(N, tip_radius, tip_current_coord, eps, sigm, d_energy);
-
-	cudaMemcpy(h_energy, d_energy, N*sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_energy, d_energy, atomCount*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0;
 
-	for (int i = 0; i < N; i++){
+	for (int i = 0; i < atomCount; i++){
 		energy_sum += h_energy[i];
 	}
 	return energy_sum;

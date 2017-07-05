@@ -644,10 +644,6 @@ void MDGPU::init()
 
 	//Pulling potential
 	if(getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING)){
-
-		char pullingFilename[FILENAME_LENGTH];
-		getMaskedParameter(pullingFilename, PARAMETER_PULLING_OUTPUT_FILENAME);
-
 		if(mdd.N != pdbref.atomCount){
 			printf("Error: number of atoms in top is not equal the number of atoms in pdbref\n");
 		}
@@ -660,7 +656,10 @@ void MDGPU::init()
 		float pullVel = getFloatParameter(PARAMETER_PULLING_VELOCITY);
 		float* pullKs;
 		pullKs = (float*)calloc(pdbref.atomCount, sizeof(float));
+
 		int dcdFreq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+		char pullOutputFilename[FILENAME_LENGTH];
+		getMaskedParameter(pullOutputFilename, PARAMETER_PULLING_OUTPUT_FILENAME);
 
 		//pdbref.atoms.occupancy - spring constant
 		//pdbref.atoms.x(y,z) - force vector
@@ -680,89 +679,89 @@ void MDGPU::init()
 		}
 
 		checkCUDAError("CUDA ERROR: before Pulling potential\n");
-		potentials.push_back(new Pulling(&mdd, pullBaseR0, pullBaseFreq, pullVel, pullN, pullKs, dcdFreq, pullingFilename));
+		potentials.push_back(new Pulling(&mdd, pullBaseR0, pullBaseFreq, pullVel, pullN, pullKs, dcdFreq, pullOutputFilename));
 		checkCUDAError("CUDA ERROR: after Pulling potential\n");
 	}
 
 	//Indentation potential
 	if(getYesNoParameter(PARAMETER_INDENTATION, DEFAULT_INDENTATION)){
 
-		int atomCount = 0;
-		for (i = 0; i < top.atomCount; i++){
-			if (strcmp(top.atoms[i].type, "4") == 0){
-				atomCount++;
+		int indAtomCount = 0; 	// quantity of pushed atoms
+		char indAtomType[TOP_ATOMTYPE_LENGTH];
+		getMaskedParameter(indAtomType, PARAMETER_INDENTATION_ATOMTYPE);
+
+		for(i = 0; i < top.atomCount; i++){
+			if(strcmp(top.atoms[i].type, indAtomType) == 0){
+				indAtomCount++;
 			}
 		}
-		printf("Indentation atomCount = %d\n", atomCount);
+		printf("Quantity of pushed atoms(indentation): %d\n", indAtomCount);
 
-		float ind_tip_radius = getFloatParameter(PARAMETER_INDENTATION_TIP_RADIUS);
-		float3 ind_tip_coord;
-		getVectorParameter(PARAMETER_INDENTATION_TIP_COORD, &ind_tip_coord.x, &ind_tip_coord.y, &ind_tip_coord.z);
-		float3 ind_base_coord;
-		getVectorParameter(PARAMETER_INDENTATION_BASE_COORD, &ind_base_coord.x, &ind_base_coord.y, &ind_base_coord.z);
-		int ind_base_freq = getIntegerParameter(PARAMETER_INDENTATION_BASE_DISPLACEMENT_FREQUENCY);
-		float3 ind_n;
-		getVectorParameter(PARAMETER_INDENTATION_N, &ind_n.x, &ind_n.y, &ind_n.z);
-		float ind_vel = getFloatParameter(PARAMETER_INDENTATION_VELOCITY);
+		float indTipRadius = getFloatParameter(PARAMETER_INDENTATION_TIP_RADIUS);
+		float3 indTipCoord;
+		getVectorParameter(PARAMETER_INDENTATION_TIP_COORD, &indTipCoord.x, &indTipCoord.y, &indTipCoord.z);
+		float indTipFriction = getFloatParameter(PARAMETER_INDENTATION_TIP_FRICTION);
+		float3 indBaseCoord;
+		getVectorParameter(PARAMETER_INDENTATION_BASE_COORD, &indBaseCoord.x, &indBaseCoord.y, &indBaseCoord.z);
+		int indBaseFreq = getIntegerParameter(PARAMETER_INDENTATION_BASE_DISPLACEMENT_FREQUENCY);
+		float3 indBaseDir;
+		getVectorParameter(PARAMETER_INDENTATION_BASE_DIRECTION, &indBaseDir.x, &indBaseDir.y, &indBaseDir.z);
+		float indBaseVel = getFloatParameter(PARAMETER_INDENTATION_BASE_VELOCITY);
+		// TODO indVel = (float(indBaseFreq)/60.86)*indVel;
 
-		ind_vel = (float(ind_base_freq)/60.86)*ind_vel;
-		printf("vel = %f\n", ind_vel);	
-
-		float ind_ks = getFloatParameter(PARAMETER_INDENTATION_KSPRING);
-		float ind_eps = getFloatParameter(PARAMETER_INDENTATION_EPSILON);
-		float ind_sigm = getFloatParameter(PARAMETER_INDENTATION_SIGMA);
+		float indKs = getFloatParameter(PARAMETER_INDENTATION_KSPRING);
+		float indEps = getFloatParameter(PARAMETER_INDENTATION_EPSILON);
+		float indSigm = getFloatParameter(PARAMETER_INDENTATION_SIGMA);
 
 		//surface
-		float3 sf_coord;
-		getVectorParameter(PARAMETER_SURFACE_COORD, &sf_coord.x, &sf_coord.y, &sf_coord.z);
-		float3 sf_n;
-		getVectorParameter(PARAMETER_SURFACE_N, &sf_n.x, &sf_n.y, &sf_n.z);
-		float sf_eps = getFloatParameter(PARAMETER_SURFACE_EPSILON);
-		float sf_sigm = getFloatParameter(PARAMETER_SURFACE_SIGMA);
+		float3 sfCoord;
+		getVectorParameter(PARAMETER_SURFACE_COORD, &sfCoord.x, &sfCoord.y, &sfCoord.z);
+		float3 sfN;
+		getVectorParameter(PARAMETER_SURFACE_N, &sfN.x, &sfN.y, &sfN.z);
+		float sfEps = getFloatParameter(PARAMETER_SURFACE_EPSILON);
+		float sfSigm = getFloatParameter(PARAMETER_SURFACE_SIGMA);
 
+		int dcdFreq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+		char pdbCantFilename[FILENAME_LENGTH];
+		getMaskedParameter(pdbCantFilename, PARAMETER_PDB_CANTILEVER_OUTPUT_FILENAME);
+		char dcdCantFilename[FILENAME_LENGTH];
+		getMaskedParameter(dcdCantFilename, PARAMETER_DCD_CANTILEVER_OUTPUT_FILENAME);
+		char indOutputFilename[FILENAME_LENGTH];
+		getMaskedParameter(indOutputFilename, PARAMETER_INDENTATION_OUTPUT_FILENAME);
 
-		int dcd_freq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
-		char pdb_cant_filename[FILENAME_LENGTH];
-		getMaskedParameter(pdb_cant_filename, PARAMETER_PDB_CANTILEVER_OUTPUT_FILENAME);
-		char dcd_cant_filename[FILENAME_LENGTH];
-		getMaskedParameter(dcd_cant_filename, PARAMETER_DCD_CANTILEVER_OUTPUT_FILENAME);
-
-		//TODO TODO TODO
 		//cantilever
+		FILE* cant = fopen(pdbCantFilename, "w");
+		fclose(cant);
+
 		PDB pdb_cant;
-		readPDB(pdb_cant_filename, &pdb_cant);
-
-/*
-		int atomCount_cant = 2;
-
-		pdb_cant.atomCount = atomCount_cant;
+		int cantAtomCount = 2;
+		pdb_cant.atomCount = cantAtomCount;
 		pdb_cant.atoms = (PDBAtom*)calloc(pdb_cant.atomCount, sizeof(PDBAtom));
-		//tip
+
+		//base
 		pdb_cant.atoms[0].id = 1;
-		strcpy(pdb_cant.atoms[0].name, "TIP");
-		pdb_cant.atoms[0].chain = 'T';
-		strcpy(pdb_cant.atoms[0].resName, "tip");
+		strcpy(pdb_cant.atoms[0].name, "BASE");
+		pdb_cant.atoms[0].chain = 'B';
+		strcpy(pdb_cant.atoms[0].resName, "bas");
 		pdb_cant.atoms[0].altLoc = ' ';
 		pdb_cant.atoms[0].resid = 0;
-		pdb_cant.atoms[0].x = ind_tip_coord.x*10.0;	// [nm] -> [angstr]
-		pdb_cant.atoms[0].y = ind_tip_coord.y*10.0;	// [nm] -> [angstr]
-		pdb_cant.atoms[0].z = ind_tip_coord.z*10.0;	// [nm] -> [angstr]
-		//base
+		pdb_cant.atoms[0].x = indBaseCoord.x*10.0f;	// [nm]->[angstr]
+		pdb_cant.atoms[0].y = indBaseCoord.y*10.0f;	// [nm]->[angstr]
+		pdb_cant.atoms[0].z = indBaseCoord.z*10.0f;	// [nm]->[angstr]
+		//tip
 		pdb_cant.atoms[1].id = 2;
-		strcpy(pdb_cant.atoms[1].name, "BASE");
-		pdb_cant.atoms[1].chain = 'B';
-		strcpy(pdb_cant.atoms[1].resName, "bas");
+		strcpy(pdb_cant.atoms[1].name, "TIP");
+		pdb_cant.atoms[1].chain = 'T';
+		strcpy(pdb_cant.atoms[1].resName, "tip");
 		pdb_cant.atoms[1].altLoc = ' ';
 		pdb_cant.atoms[1].resid = 0;
-		pdb_cant.atoms[1].x = ind_base_coord.x*10.0;	// [nm] -> [angstr]
-		pdb_cant.atoms[1].y = ind_base_coord.y*10.0;	// [nm] -> [angstr]
-		pdb_cant.atoms[1].z = ind_base_coord.z*10.0;	// [nm] -> [angstr]
-
-		writePDB(pdb_cant_filename, &pdb_cant);
-*/
+		pdb_cant.atoms[1].x = indTipCoord.x*10.0f;	// [nm]->[angstr]
+		pdb_cant.atoms[1].y = indTipCoord.y*10.0f;	// [nm]->[angstr]
+		pdb_cant.atoms[1].z = indTipCoord.z*10.0f;	// [nm]->[angstr]
+		writePDB(pdbCantFilename, &pdb_cant);
 
 		checkCUDAError("CUDA ERROR: before Indentation potential\n");
-		potentials.push_back(new Indentation(&mdd, atomCount, ind_tip_radius, ind_tip_coord, ind_base_coord, ind_base_freq, ind_n, ind_vel, ind_ks, ind_eps, ind_sigm, sf_coord, sf_n, sf_eps, sf_sigm, dcd_freq, dcd_cant_filename));
+		potentials.push_back(new Indentation(&mdd, indAtomCount, indTipRadius, indTipCoord, indTipFriction, indBaseCoord, indBaseFreq, indBaseDir, indBaseVel, indKs, indEps, indSigm, sfCoord, sfN, sfEps, sfSigm, dcdFreq, dcdCantFilename, indOutputFilename));
 		checkCUDAError("CUDA ERROR: after Indentation potential\n");
 	}
 

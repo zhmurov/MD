@@ -111,12 +111,14 @@
 
 #define PARAMETER_INDENTATION					"indentation"
 #define DEFAULT_INDENTATION					0
+#define PARAMETER_INDENTATION_ATOMTYPE				"ind_atomtype"
 #define PARAMETER_INDENTATION_TIP_RADIUS			"ind_tip_radius"
-#define PARAMETER_INDENTATION_BASE_COORD			"ind_base_coord"
+#define PARAMETER_INDENTATION_TIP_FRICTION			"ind_tip_friction"
 #define PARAMETER_INDENTATION_TIP_COORD				"ind_tip_coord"
+#define PARAMETER_INDENTATION_BASE_COORD			"ind_base_coord"
 #define PARAMETER_INDENTATION_BASE_DISPLACEMENT_FREQUENCY	"ind_base_freq"
-#define PARAMETER_INDENTATION_N					"ind_n"
-#define PARAMETER_INDENTATION_VELOCITY				"ind_vel"
+#define PARAMETER_INDENTATION_BASE_DIRECTION			"ind_base_direction"
+#define PARAMETER_INDENTATION_BASE_VELOCITY			"ind_base_vel"
 #define PARAMETER_INDENTATION_KSPRING				"ind_ks"
 #define PARAMETER_INDENTATION_EPSILON				"ind_eps"
 #define PARAMETER_INDENTATION_SIGMA				"ind_sigm"
@@ -140,7 +142,8 @@
 
 #define PARAMETER_PSF_OUTPUT_FILENAME				"psf_filename"
 #define PARAMETER_DCD_OUTPUT_FILENAME				"dcd_filename"
-#define PARAMETER_PULLING_OUTPUT_FILENAME			"pulling_filename"
+#define PARAMETER_PULLING_OUTPUT_FILENAME			"pull_output_filename"
+#define PARAMETER_INDENTATION_OUTPUT_FILENAME			"ind_output_filename"
 #define PARAMETER_PDB_CANTILEVER_OUTPUT_FILENAME		"pdb_cant_filename"
 #define PARAMETER_DCD_CANTILEVER_OUTPUT_FILENAME		"dcd_cant_filename"
 #define PARAMETER_DCD_OUTPUT_FREQUENCY				"dcd_freq"

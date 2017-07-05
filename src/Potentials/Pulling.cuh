@@ -4,18 +4,19 @@
 
 class Pulling : public IPotential {
 public:
-	Pulling(MDData* mdd, float3* baseR0, int baseFreq, float vel, float3* n, float* ks, int dcdFreq, char* pullingFilename);
+	Pulling(MDData* mdd, float3* baseR0, int baseFreq, float vel, float3* n, float* ks, int dcdFreq, char* pullOutputFilename);
 	~Pulling();
 	void compute();
 	int getEnergyCount(){return 1;}
 	std::string getEnergyName(int energyId){return "Pulling";}
 	float getEnergies(int energyId, int timestep);
 private:
+	MDData* mdd;
 	int baseFreq;
 	float vel;
 	int dcdFreq;
 
-	char filename[FILENAME_LENGTH];
+	char outputFilename[FILENAME_LENGTH];
 	
 	float baseDisplacement;
 

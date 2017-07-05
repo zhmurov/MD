@@ -3,44 +3,47 @@
 #include "../IO/xyzio.h"
 #include "../IO/dcdio.h"
 
+#define FILENAME_LENGTH		256
+
 class Indentation : public IPotential {
 public:
-	Indentation(MDData *mdd, int N, int tip_radius, float3 tip_coord, float3 base_coord, int base_freq, float3 n, float vel, float ks, float eps, float sigm, float3 sf_coord, float3 sf_n, float sf_eps, float sf_sigm, int dcd_freq, char* dcd_cant_filename);
+	Indentation(MDData *mdd, int atomCount, int tipRadius, float3 tipCoord, float tipFriction, float3 baseCoord, int baseFreq, float3 baseDir, float baseVel, float ks, float eps, float sigm, float3 sfCoord, float3 sfN, float sfEps, float sfSigm, int dcdFreq, char* dcdCantFilename, char* indOutputFilename);
 	~Indentation();
 	void compute();
 	int getEnergyCount(){return 0;}
 	std::string getEnergyName(int energyId){return "Indentation";}
 	float getEnergies(int energyId, int timestep);
 private:
-	int N;
-
-	float tip_radius;
-	float3 tip_coord;
-	float3 base_coord;
-	int base_freq;
-	float3 n;
-	float vel;
+	MDData* mdd;
+	int atomCount;
+	float tipRadius;
+	float3 tipCoord;
+	float tipFriction;
+	float3 baseCoord;
+	int baseFreq;
+	float3 baseDir;
+	float baseVel;
 	float ks;
 	float eps;
 	float sigm;
-	float3 sf_coord;
-	float3 sf_n;
-	float sf_eps;
-	float sf_sigm;
-	int dcd_freq;
-	char* dcd_cant_filename;
+	float3 sfCoord;
+	float3 sfN;
+	float sfEps;
+	float sfSigm;
+	int dcdFreq;
+	char* dcdCantFilename;
+
+	char outputFilename[FILENAME_LENGTH];
 
 	float const1;		// -A*x0 - B*y0 - C*z0
 	float const2;		// sqrt(A^2 + B^2 + C^2)
 
-	float tip_displacement;
-	float base_displacement;
+	float tipDisplacement;
+	float baseDisplacement;
+	float3 tipCurrentCoord;
 
-	float3 tip_current_coord;
-	int current_step;
-
-	float3* h_forcetip;
-	float3* d_forcetip;
+	float3* h_tipForce;
+	float3* d_tipForce;
 
 	float* h_energy;
 	float* d_energy;

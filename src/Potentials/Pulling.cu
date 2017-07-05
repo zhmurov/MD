@@ -1,6 +1,6 @@
 #include "Pulling.cuh"
 
-Pulling::Pulling(MDData* mdd, float3* baseR0, int baseFreq, float vel, float3* n, float* ks, int dcdFreq, char* pullingFilename){
+Pulling::Pulling(MDData* mdd, float3* baseR0, int baseFreq, float vel, float3* n, float* ks, int dcdFreq, char* pullOutputFilename){
 	this->mdd = mdd;
 	this->baseFreq = baseFreq;
 	this->vel = vel;
@@ -19,14 +19,14 @@ Pulling::Pulling(MDData* mdd, float3* baseR0, int baseFreq, float vel, float3* n
 	cudaMemcpy(d_n, h_n, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_ks, h_ks, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 
-	sprintf(filename, "%s", pullingFilename);
+	sprintf(outputFilename, "%s", pullOutputFilename);
 
 	averFmod = 0.0f;		// average Fmod
 
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 
-	FILE* output = fopen(filename, "w");
+	FILE* output = fopen(outputFilename, "w");
 	fclose(output);
 
 // force
@@ -41,6 +41,7 @@ Pulling::Pulling(MDData* mdd, float3* baseR0, int baseFreq, float vel, float3* n
 }
 
 Pulling::~Pulling(){
+	free(outputFilename);
 	free(h_baseR0);
 	free(h_n);
 	free(h_ks);
@@ -107,7 +108,7 @@ void Pulling::compute(){
 		}
 		averFmod /= float(dcdFreq);
 
-		FILE* output = fopen(filename, "a");
+		FILE* output = fopen(outputFilename, "a");
 		fprintf(output, "%12d\t", mdd->step);
 		for(int i = 0; i < mdd->N; i++){
 			if(h_ks[i] > 0.0f){
