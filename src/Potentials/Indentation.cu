@@ -142,10 +142,10 @@ void Indentation::compute(){
 
 	if (mdd->step % dcdFreq == 0){
 		FILE* output = fopen(outputFilename, "a");
-		fprintf(output, "%3.6f  ", (baseCoord.z + baseDisplacement*baseDir.z)*10.0f);
-		fprintf(output, "%3.6f  ", (tipCoord.z + tipDisplacement*baseDir.z)*10.0f);
-		fprintf(output, "%3.6f  ", baseDisplacement*baseDir.z*10.0f);
-		fprintf(output, "%3.6f  ", tipDisplacement*baseDir.z*10.0f);
+		fprintf(output, "%3.6f  ", (baseCoord.z + baseDisplacement*baseDir.z));
+		fprintf(output, "%3.6f  ", (tipCoord.z + tipDisplacement*baseDir.z));
+		fprintf(output, "%3.6f  ", baseDisplacement*baseDir.z);
+		fprintf(output, "%3.6f  ", tipDisplacement*baseDir.z);
 		fprintf(output, "%f  ", mult*baseDir.z);
 		fprintf(output, "%f\n", (resForce.z - baseDir.z*mult));
 		fclose(output);
@@ -155,9 +155,9 @@ void Indentation::compute(){
 		dcd_cant.frame.Y[0] = (baseCoord.y + baseDisplacement*baseDir.y)*10.0f;		// [nm]->[angstr]
 		dcd_cant.frame.Z[0] = (baseCoord.z + baseDisplacement*baseDir.z)*10.0f;		// [nm]->[angstr]
 		// tip
-		dcd_cant.frame.X[1] = (tipCoord.x + tipDisplacement*baseDir.x)*10.0f;			// [nm]->[angstr]
-		dcd_cant.frame.Y[1] = (tipCoord.y + tipDisplacement*baseDir.y)*10.0f;			// [nm]->[angstr]
-		dcd_cant.frame.Z[1] = (tipCoord.z + tipDisplacement*baseDir.z)*10.0f;			// [nm]->[angstr]
+		dcd_cant.frame.X[1] = (tipCoord.x + tipDisplacement*baseDir.x)*10.0f;		// [nm]->[angstr]
+		dcd_cant.frame.Y[1] = (tipCoord.y + tipDisplacement*baseDir.y)*10.0f;		// [nm]->[angstr]
+		dcd_cant.frame.Z[1] = (tipCoord.z + tipDisplacement*baseDir.z)*10.0f;		// [nm]->[angstr]
 		dcdWriteFrame(dcd_cant);
 	}
 }

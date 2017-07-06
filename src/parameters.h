@@ -67,6 +67,7 @@
 #define VALUE_INTEGRATOR_LEAP_FROG_LANGEVIN			"leap-frog-langevin"
 #define PARAMETER_LEAP_FROG_LANGEVIN_DAMPING			"leap-frog-langevin-damping"
 #define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
+#define PARAMETER_LEAP_FROG_OVERDUMPED_FRICTION			"overdumped_friction"
 #define VALUE_INTEGRATOR_STEEPEST_DESCENT			"steepest-descent"
 
 #define PARAMETER_FIX						"fixation"

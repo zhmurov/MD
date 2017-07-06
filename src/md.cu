@@ -253,7 +253,8 @@ void MDGPU::init()
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED) == 0){
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
-		integrator = new LeapFrogOverdamped(&mdd, temperature, seed, fixedAtomsMask);
+		float gamma = getFloatParameter(PARAMETER_LEAP_FROG_OVERDUMPED_FRICTION);
+		integrator = new LeapFrogOverdamped(&mdd, temperature, gamma, seed, fixedAtomsMask);
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0){
 		integrator = new VelocityVerlet(&mdd, fixedAtomsMask);
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_NOSE_HOOVER) == 0){
