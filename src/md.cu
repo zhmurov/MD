@@ -265,7 +265,8 @@ void MDGPU::init()
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
 		float maxForce = getFloatParameter(PARAMETER_STEEPEST_DESCENT_MAXFORCE);
-		integrator = new SteepestDescent(&mdd, temperature, seed, maxForce, fixedAtomsMask);
+		float gamma = getFloatParameter(PARAMETER_STEEPEST_DESCENT_FRICTION);
+		integrator = new SteepestDescent(&mdd, temperature, gamma, seed, maxForce, fixedAtomsMask);
 	}else{
 		DIE("Integrator was set incorrectly!\n");
 	}

@@ -21,10 +21,4 @@ private:
 
 	int* h_fixAtoms;
 	int* d_fixAtoms;
-
-	float* h_gamma;
-	float* d_gamma;
-
-	float* h_var;
-	float* d_var;
 };

@@ -69,6 +69,8 @@
 #define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
 #define PARAMETER_LEAP_FROG_OVERDUMPED_FRICTION			"overdumped_friction"
 #define VALUE_INTEGRATOR_STEEPEST_DESCENT			"steepest-descent"
+#define PARAMETER_STEEPEST_DESCENT_FRICTION			"steepestdes_friction"
+#define PARAMETER_STEEPEST_DESCENT_MAXFORCE			"steepestdes_maxforce"
 
 #define PARAMETER_FIX						"fixation"
 #define DEFAULT_FIX						0
@@ -85,7 +87,7 @@
 #define PARAMETER_LANGEVIN_SEED					"langevin_seed"
 #define PARAMETER_DAMPING					"damping"
 
-#define PARAMETER_STEEPEST_DESCENT_MAXFORCE			"maxforce"
+
 
 #define PARAMETER_EXCLUDE_BOND_TYPES				"exclude_bond_types"
 #define PARAMETER_PAIRLIST_CUTOFF				"pairs_cutoff"
