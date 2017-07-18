@@ -8,7 +8,7 @@
 
 #include "PairListL2.cuh"
 
-PairListL2::PairListL2(MDData *mdd, PairlistData d_pairsL1, float cutoff, float cuton, int frequence) : PairlistUpdater(mdd)
+PairListL2::PairListL2(MDData *mdd, PairlistData d_pairsL1, float cutoff, float cuton, int frequence, int pairListExtension) : PairlistUpdater(mdd)
 {
 	this->frequence = frequence;
 	this->mdd = mdd;
@@ -33,7 +33,8 @@ PairListL2::PairListL2(MDData *mdd, PairlistData d_pairsL1, float cutoff, float 
 			maxPairsPerAtom = h_pairs.count[i];
 		}
 	}
-	maxPairsPerAtom += PAIRLIST_EXTENSION;
+	//maxPairsPerAtom += PAIRLIST_EXTENSION;
+	maxPairsPerAtom += pairListExtension;
 
 	h_pairs.list = (int*)calloc(mdd->widthTot*maxPairsPerAtom, sizeof(int));
 	cudaMalloc((void**)&d_pairs.list, mdd->widthTot*maxPairsPerAtom*sizeof(int));

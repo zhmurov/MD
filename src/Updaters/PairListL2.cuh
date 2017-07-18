@@ -11,7 +11,7 @@
 
 class PairListL2 : public PairlistUpdater {
 public:
-	PairListL2(MDData *mdd, PairlistData d_pairsL1, float cutoff, float cuton, int frequence);
+	PairListL2(MDData *mdd, PairlistData d_pairsL1, float cutoff, float cuton, int frequence, int pairListExtension);
 	~PairListL2();
 	inline void doUpdate(MDData *mdd);
 private:

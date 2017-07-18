@@ -11,7 +11,7 @@
 
 class PairListL1 : public PairlistUpdater {
 public:
-	PairListL1(MDData *mdd, std::vector<int2> exclusions, float cutoff, float cuton, int frequence);
+	PairListL1(MDData *mdd, std::vector<int2> exclusions, float cutoff, float cuton, int frequence, int pairListExtension);
 	~PairListL1();
 	inline void doUpdate(MDData *mdd);
 private:

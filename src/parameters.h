@@ -95,6 +95,8 @@
 #define PARAMETER_POSSIBLE_PAIRLIST_CUTOFF			"possible_pairs_cutoff"
 #define PARAMETER_POSSIBLE_PAIRLIST_FREQUENCE			"possible_pairs_freq"
 #define PARAMETER_NONBONDED_CUTOFF				"nb_cutoff"
+#define PARAMETER_PAIRLIST_EXTESION				"pairlist_extension"
+#define DEFAULT_PAIRLIST_EXTESION				2048
 
 #define PARAMETER_PUSHING_SPHERE				"push_sphere"
 #define DEFAULT_PUSHING_SPHERE					0

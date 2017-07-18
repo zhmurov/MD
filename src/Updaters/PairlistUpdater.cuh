@@ -7,7 +7,7 @@
 
 #pragma once
 
-#define PAIRLIST_EXTENSION	2048
+//#define PAIRLIST_EXTENSION	2048
 
 typedef struct {
 	int* count;

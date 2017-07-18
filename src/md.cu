@@ -377,6 +377,7 @@ void MDGPU::init()
 		float possiblePairsCutoff = getFloatParameter(PARAMETER_POSSIBLE_PAIRLIST_CUTOFF);
 		int possiblePairsFreq = getIntegerParameter(PARAMETER_POSSIBLE_PAIRLIST_FREQUENCE);
 		int pairsFreq = getIntegerParameter(PARAMETER_PAIRLIST_FREQUENCE);
+		int pairListExtension = getIntegerParameter(PARAMETER_PAIRLIST_EXTESION, DEFAULT_PAIRLIST_EXTESION);
 
 		std::vector<int2> exclusions(top.exclusionCount);
 		for (i = 0; i < top.exclusionCount; i++){
@@ -390,8 +391,8 @@ void MDGPU::init()
 		}
 		std::sort(exclusions.begin(), exclusions.end(), &int2_comparatorEx);
 
-		PairListL1* plistL1 = new PairListL1(&mdd, exclusions, possiblePairsCutoff, pairsCutoff, possiblePairsFreq);
-		PairListL2* plistL2 = new PairListL2(&mdd, plistL1->d_pairs, pairsCutoff, coulCutoff, pairsFreq);
+		PairListL1* plistL1 = new PairListL1(&mdd, exclusions, possiblePairsCutoff, pairsCutoff, possiblePairsFreq, pairListExtension);
+		PairListL2* plistL2 = new PairListL2(&mdd, plistL1->d_pairs, pairsCutoff, coulCutoff, pairsFreq, pairListExtension);
 		updaters.push_back(plistL1);
 		updaters.push_back(plistL2);
 
@@ -574,11 +575,12 @@ void MDGPU::init()
 		//pairList2
 		float pairsCutoff = getFloatParameter(PARAMETER_PAIRLIST_CUTOFF);
 		int pairsFreq = getIntegerParameter(PARAMETER_PAIRLIST_FREQUENCE);
+		int pairListExtension = getIntegerParameter(PARAMETER_PAIRLIST_EXTESION, DEFAULT_PAIRLIST_EXTESION);
 
 		float nbCutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
 
-		PairListL1* plistL1 = new PairListL1(&mdd, exclusions, possiblePairsCutoff, pairsCutoff, possiblePairsFreq);
-		PairListL2* plistL2 = new PairListL2(&mdd, plistL1->d_pairs, pairsCutoff, nbCutoff, pairsFreq);
+		PairListL1* plistL1 = new PairListL1(&mdd, exclusions, possiblePairsCutoff, pairsCutoff, possiblePairsFreq, pairListExtension);
+		PairListL2* plistL2 = new PairListL2(&mdd, plistL1->d_pairs, pairsCutoff, nbCutoff, pairsFreq, pairListExtension);
 		updaters.push_back(plistL1);
 		updaters.push_back(plistL2);
 

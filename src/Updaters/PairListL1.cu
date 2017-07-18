@@ -8,7 +8,7 @@
 #include "PairListL1.cuh"
 //#include "ComputationalArrays.h"
 
-PairListL1::PairListL1(MDData *mdd, std::vector<int2> exclusions, float cutoff, float cuton, int frequence) : PairlistUpdater(mdd)
+PairListL1::PairListL1(MDData *mdd, std::vector<int2> exclusions, float cutoff, float cuton, int frequence, int pairListExtension) : PairlistUpdater(mdd)
 {
 	this->mdd = mdd;
 	this->frequence = frequence;
@@ -93,7 +93,8 @@ PairListL1::PairListL1(MDData *mdd, std::vector<int2> exclusions, float cutoff, 
 			maxPairsPerAtom = h_pairs.count[i];
 		}
 	}
-	maxPairsPerAtom += PAIRLIST_EXTENSION;
+	//maxPairsPerAtom += PAIRLIST_EXTENSION;
+	maxPairsPerAtom += pairListExtension;
 
 	h_pairs.list = (int*)calloc(mdd->widthTot*maxPairsPerAtom, sizeof(int));
 	cudaMalloc((void**)&d_pairs.list, mdd->widthTot*maxPairsPerAtom*sizeof(int));
