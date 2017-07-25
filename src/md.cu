@@ -24,6 +24,7 @@
 #include "Potentials/FENE.cu"
 #include "Potentials/LJP.cu"
 #include "Potentials/Repulsive.cu"
+#include "Potentials/Motor.cu"
 #include "Potentials/PushingSphere.cu"
 #include "Potentials/Indentation.cu"
 #include "Potentials/Pulling.cu"
@@ -644,6 +645,49 @@ void MDGPU::init()
 		checkCUDAError("CUDA ERROR: before PushingSphere potential\n");
 		potentials.push_back(new PushingSphere(&mdd, psR0, psV, pscenterPoint, psUpdate, psSigma, psEpsilon, psFilename, lj_or_harmonic, push_mask));
 		checkCUDAError("CUDA ERROR: after PushingSphere potential\n");
+	}
+
+//Motor potential
+	if(getYesNoParameter(PARAMETER_MOTOR, DEFAULT_MOTOR)){
+
+		float mpR0 = getFloatParameter(PARAMETER_MOTOR_RADIUS0);
+
+		float mpForce = getFloatParameter(PARAMETER_MOTOR_FORCE);
+		float mpr = getFloatParameter(PARAMETER_MOTOR_RADIUS_HOLE);
+		float mph = getFloatParameter(PARAMETER_MOTOR_HEIGHT);
+
+		float4 mpCenterPoint;
+		getVectorParameter(PARAMETER_MOTOR_CENTER_POINT, &mpCenterPoint.x, &mpCenterPoint.y, &mpCenterPoint.z);
+		float mpUpdate = getIntegerParameter(PARAMETER_MOTOR_UPDATE_FREQ);
+		float mpSigma = getFloatParameter(PARAMETER_MOTOR_SIGMA);
+		float mpEpsilon = getFloatParameter(PARAMETER_MOTOR_EPSILON);
+		char mpFilename[1024];
+		getMaskedParameter(mpFilename, PARAMETER_MOTOR_OUTPUT_FILENAME);
+		
+		int* push_mask;
+		push_mask = (int*)calloc(top.atomCount, sizeof(int));
+
+		if(getYesNoParameter(PARAMETER_MOTOR_MASK, DEFAULT_MOTOR_MASK)){
+			char mpPDBFilename[1024];
+			getMaskedParameter(mpPDBFilename, PARAMETER_MOTOR_MASK_PDB_FILENAME);
+			PDB push_maskPDB;
+			readPDB(mpPDBFilename, &push_maskPDB);
+			for(i = 0; i < push_maskPDB.atomCount; i++){
+				if((int)push_maskPDB.atoms[i].occupancy == 1){
+					push_mask[i] = 1;	
+				}			
+			}
+		}else{
+			for(i = 0; i < top.atomCount; i++){
+				if(atoi(top.atoms[i].type) == 1){
+					push_mask[i] = 1;
+				}			
+			}		
+		}
+
+		checkCUDAError("CUDA ERROR: before Motor potential\n");
+		potentials.push_back(new Motor(&mdd, mpR0, mpCenterPoint, mpForce, mpr, mph, mpUpdate, mpSigma, mpEpsilon, mpFilename, push_mask));
+		checkCUDAError("CUDA ERROR: after Motor potential\n");
 	}
 
 	//Pulling potential

@@ -114,6 +114,21 @@
 #define DEFAULT_PUSHING_SPHERE_MASK				0
 #define PARAMETER_PUSHING_SPHERE_MASK_PDB_FILENAME		"ps_mask_pdb_filename"
 
+#define PARAMETER_MOTOR								"motor"
+#define DEFAULT_MOTOR								0
+#define PARAMETER_MOTOR_RADIUS0						"mp_radius0"
+#define PARAMETER_MOTOR_FORCE						"mp_force"
+#define PARAMETER_MOTOR_RADIUS_HOLE					"mp_radius_hole"
+#define PARAMETER_MOTOR_HEIGHT						"mp_height"
+#define PARAMETER_MOTOR_CENTER_POINT				"mp_center_of_sphere"
+#define PARAMETER_MOTOR_UPDATE_FREQ					"mp_update_freq"
+#define PARAMETER_MOTOR_SIGMA						"mp_sigma"
+#define PARAMETER_MOTOR_EPSILON						"mp_epsilon"
+#define PARAMETER_MOTOR_OUTPUT_FILENAME				"mp_presure_filename"
+#define PARAMETER_MOTOR_MASK						"mp_mask"
+#define DEFAULT_MOTOR_MASK							0
+#define PARAMETER_MOTOR_MASK_PDB_FILENAME			"mp_mask_pdb_filename"
+
 #define PARAMETER_INDENTATION					"indentation"
 #define DEFAULT_INDENTATION					0
 #define PARAMETER_INDENTATION_ATOMTYPE				"ind_atomtype"
