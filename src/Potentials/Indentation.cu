@@ -27,8 +27,8 @@ Indentation::Indentation(MDData *mdd, int atomCount, int tipRadius, float3 tipCo
 
 	tipCurrentCoord = tipCoord;
 
-	sprintf(outputFilename, "%s", indOutputFilename);
-	FILE* output = fopen(outputFilename, "w");
+	sprintf(this->outputFilename, "%s", indOutputFilename);
+	FILE* output = fopen(this->outputFilename, "w");
 	fclose(output);
 
 	// dcd
@@ -123,31 +123,47 @@ void Indentation::compute(){
 
 	float mult = 0.0f;
 	float3 resForce = make_float3(0.0f, 0.0f, 0.0f);
-	cudaMemcpy(h_tipForce, d_tipForce, atomCount*sizeof(float3), cudaMemcpyDeviceToHost);
-	for(int i = 0; i < atomCount; i++){
-		resForce.x += h_tipForce[i].x;
-		resForce.y += h_tipForce[i].y;
-		resForce.z += h_tipForce[i].z;
-	}
-	mult = -ks*(tipDisplacement - baseDisplacement);
+	float3 atomForce;
+	float3 cantForce;
+//	if(mdd->step % baseFreq == 0){
+		cudaMemcpy(h_tipForce, d_tipForce, atomCount*sizeof(float3), cudaMemcpyDeviceToHost);
+		for(int i = 0; i < atomCount; i++){
+			resForce.x += h_tipForce[i].x;
+			resForce.y += h_tipForce[i].y;
+			resForce.z += h_tipForce[i].z;
+		}
+		atomForce.x = resForce.x;
+		atomForce.y = resForce.y;
+		atomForce.z = resForce.z;
 
-	resForce.x += baseDir.x*mult;
-	resForce.y += baseDir.y*mult;
-	resForce.z += baseDir.z*mult;
+		mult = -ks*(tipDisplacement - baseDisplacement);
 
-	// FRICTION COEFFICIENT
-	// ksi = 6*pi*nu*r = 5.655E+4
-	// 1/ksi = 1.77E-5 = 0.0000029
-	tipDisplacement += tipFriction*mdd->dt*(resForce.x*baseDir.x + resForce.y*baseDir.y + resForce.z*baseDir.z);
+		cantForce.x = baseDir.x*mult;
+		cantForce.y = baseDir.y*mult;
+		cantForce.z = baseDir.z*mult;
+
+		resForce.x += cantForce.x;
+		resForce.y += cantForce.y;
+		resForce.z += cantForce.z;
+
+		// FRICTION COEFFICIENT
+		// ksi = 6*pi*nu*r = 5.655E+4
+		// 1/ksi = 1.77E-5 = 0.0000029
+		tipDisplacement += tipFriction*mdd->dt*(resForce.x*baseDir.x + resForce.y*baseDir.y + resForce.z*baseDir.z);
+//	}
 
 	if (mdd->step % dcdFreq == 0){
 		FILE* output = fopen(outputFilename, "a");
-		fprintf(output, "%3.6f  ", (baseCoord.z + baseDisplacement*baseDir.z));
-		fprintf(output, "%3.6f  ", (tipCoord.z + tipDisplacement*baseDir.z));
-		fprintf(output, "%3.6f  ", baseDisplacement*baseDir.z);
-		fprintf(output, "%3.6f  ", tipDisplacement*baseDir.z);
-		fprintf(output, "%f  ", mult*baseDir.z);
-		fprintf(output, "%f\n", (resForce.z - baseDir.z*mult));
+		fprintf(output, "%f\t", baseDisplacement);
+		fprintf(output, "%f\t", tipDisplacement);
+		fprintf(output, "%f\t", cantForce.x);
+		fprintf(output, "%f\t", cantForce.y);
+		fprintf(output, "%f\t", cantForce.z);
+		fprintf(output, "%f\t", sqrtf(cantForce.x*cantForce.x + cantForce.y*cantForce.y + cantForce.z*cantForce.z));
+		fprintf(output, "%f\t", atomForce.x);
+		fprintf(output, "%f\t", atomForce.y);
+		fprintf(output, "%f\t", atomForce.z);
+		fprintf(output, "%f\n", sqrtf(atomForce.x*atomForce.x + atomForce.y*atomForce.y + atomForce.z*atomForce.z));
 		fclose(output);
 
 		// base
