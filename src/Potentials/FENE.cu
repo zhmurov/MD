@@ -29,7 +29,7 @@ FENE::FENE(MDData *mdd, float ks, float R, int count, int2* bonds, float* bondsR
 		}
 		h_bondCount[i] = 0;
 	}
-	printf("Max bonds per atom = %2d\n", maxBonds);
+	printf("Max bonds per atom (FENE potential) = %2d\n", maxBonds);
 
 // bondMap
 	h_bondMap = (int*)calloc((mdd->N*maxBonds), sizeof(int));
@@ -37,7 +37,7 @@ FENE::FENE(MDData *mdd, float ks, float R, int count, int2* bonds, float* bondsR
 	h_bondMapR0 = (float*)calloc((mdd->N*maxBonds), sizeof(float));
 	cudaMalloc((void**)&d_bondMapR0, (mdd->N*maxBonds)*sizeof(float));
 
-	for (b = 0; b < count; b++){
+	for(b = 0; b < count; b++){
 		i = bonds[b].x;
 		j = bonds[b].y;
 
@@ -73,7 +73,7 @@ FENE::~FENE(){
 //================================================================================================
 __global__ void fene_kernel(float ks, float R, int* d_bondCount, int* d_bondMap, float* d_bondMapR0){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
-	if (i < c_mdd.N){
+	if(i < c_mdd.N){
 
 		int j;
 		float temp1, temp2;
@@ -117,7 +117,7 @@ __global__ void fene_kernel(float ks, float R, int* d_bondCount, int* d_bondMap,
 //================================================================================================
 __global__ void feneEnergy_kernel(float ks, float R, int* d_bondCount, int* d_bondMap, float* d_bondMapR0, float* d_energy){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
-	if (i < c_mdd.N){
+	if(i < c_mdd.N){
 
 		int j;
 		float temp1;
@@ -162,9 +162,8 @@ float FENE::getEnergies(int energyId, int timestep){
 	feneEnergy_kernel<<<this->blockCount, this->blockSize>>>(ks, R, d_bondCount, d_bondMap, d_bondMapR0, d_energy);
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
-	float energy_sum = 0.0;
-
-	for (int i = 0; i < mdd->N; i++){
+	float energy_sum = 0.0f;
+	for(int i = 0; i < mdd->N; i++){
 		energy_sum += h_energy[i];
 	}
 	return energy_sum;

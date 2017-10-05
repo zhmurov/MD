@@ -68,6 +68,7 @@
 #define PARAMETER_LEAP_FROG_LANGEVIN_DAMPING			"leap-frog-langevin-damping"
 #define VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED			"leap-frog-overdumped"
 #define PARAMETER_LEAP_FROG_OVERDUMPED_FRICTION			"overdumped_friction"
+#define DEFAULT_LEAP_FROG_OVERDUMPED_FRICTION			4300
 #define VALUE_INTEGRATOR_STEEPEST_DESCENT			"steepest-descent"
 #define PARAMETER_STEEPEST_DESCENT_FRICTION			"steepestdes_friction"
 #define PARAMETER_STEEPEST_DESCENT_MAXFORCE			"steepestdes_maxforce"
@@ -152,6 +153,12 @@
 #define PARAMETER_SURFACE_N					"sf_n"
 #define PARAMETER_SURFACE_EPSILON				"sf_eps"
 #define PARAMETER_SURFACE_SIGMA					"sf_sigm"
+
+#define PARAMETER_HARMONIC					"harmonic"
+#define DEFAULT_HARMONIC					0
+#define PARAMETER_FUNCTIONTYPE_HARMONIC				"harmonic_func"
+#define	DEFAULT_FUNCTIONTYPE_HARMONIC				40
+#define PARAMETER_HARMONIC_KS					"harmonic_ks"
 
 #define PARAMETER_DIELECTRIC					"dielectric"
 #define DEFAULT_DIELECTRIC					1.0

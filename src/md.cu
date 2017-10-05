@@ -28,6 +28,7 @@
 #include "Potentials/PushingSphere.cu"
 #include "Potentials/Indentation.cu"
 #include "Potentials/Pulling.cu"
+#include "Potentials/Harmonic.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
@@ -145,6 +146,7 @@ void MDGPU::init()
 	//TODO
 	int feneFunc, ljFunc, repFunc; //protein
 	int func_bc2a, func_ac2; //dna
+	int harmonicFunc;
 
 	cudaSetDevice(getIntegerParameter(PARAMETER_GPU_DEVICE));
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
@@ -254,7 +256,7 @@ void MDGPU::init()
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_LEAP_FROG_OVERDUMPED) == 0){
 		int seed = getIntegerParameter(PARAMETER_RSEED);
 		float temperature = getFloatParameter(PARAMETER_TEMPERATURE);
-		float gamma = getFloatParameter(PARAMETER_LEAP_FROG_OVERDUMPED_FRICTION);
+		float gamma = getFloatParameter(PARAMETER_LEAP_FROG_OVERDUMPED_FRICTION, DEFAULT_LEAP_FROG_OVERDUMPED_FRICTION);
 		integrator = new LeapFrogOverdamped(&mdd, temperature, gamma, seed, fixedAtomsMask);
 	}else if (strcmp(integ_str, VALUE_INTEGRATOR_VELOCITY_VERLET) == 0){
 		integrator = new VelocityVerlet(&mdd, fixedAtomsMask);
@@ -813,6 +815,39 @@ void MDGPU::init()
 		checkCUDAError("CUDA ERROR: after Indentation potential\n");
 	}
 
+	//Harmonic potential
+	if(getYesNoParameter(PARAMETER_HARMONIC, DEFAULT_HARMONIC)){
+
+		harmonicFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_HARMONIC, DEFAULT_FUNCTIONTYPE_HARMONIC);
+		float harmonicKs = getFloatParameter(PARAMETER_HARMONIC_KS);	//spring constant					[kJ/(mol*nm^2)]
+
+		int harmonicCount = 0;
+		for(b = 0; b < top.bondCount; b++){
+			if(top.bonds[b].func == harmonicFunc){
+				harmonicCount++;
+			}
+		}
+
+		int2* harmonicBonds;
+		harmonicBonds = (int2*)calloc(harmonicCount, sizeof(int2));
+
+		float* harmonicBondsR0;
+		harmonicBondsR0 = (float*)calloc(harmonicCount, sizeof(float));
+
+		harmonicCount = 0;
+		for(b = 0; b < top.bondCount; b++){
+			if(top.bonds[b].func == harmonicFunc){
+				harmonicBonds[harmonicCount].x = getIndexInTOP(top.bonds[b].i, &top);
+				harmonicBonds[harmonicCount].y = getIndexInTOP(top.bonds[b].j, &top);
+				harmonicBondsR0[harmonicCount] = top.bonds[b].c0/10.0f; 			// [angstr]->[nm]
+				harmonicCount++;
+			}
+		}
+
+		checkCUDAError("CUDA ERROR: before Harmonic potential\n");
+		potentials.push_back(new Harmonic(&mdd, harmonicKs, harmonicCount, harmonicBonds, harmonicBondsR0));
+		checkCUDAError("CUDA ERROR: after Harmonic potential\n");
+	}
 
 //UPDATERS
 	updaters.push_back(new CoordinatesOutputDCD(&mdd));
