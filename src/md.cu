@@ -8,6 +8,7 @@
  */
 
 #include "md.cuh"
+#include "IO/configreader.h"
 
 // Util
 #include "Util/ReductionAlgorithms.cu"
@@ -46,6 +47,18 @@
 #include "Integrators/LeapFrog_new.cu"
 #include "Integrators/LeapFrogOverdamped.cu"
 #include "Integrators/SteepestDescent.cu"
+
+int main(int argc, char *argv[])
+{
+	parseParametersFile(argv[1], argc, argv);
+	MDGPU mdgpu;
+	mdgpu.init();
+	mdgpu.compute();
+	cudaDeviceReset();
+	destroyConfigReader();
+	return 0;
+}
+
 
 void dumpPSF(char* filename, TOPData &top){
 	printf("Creating psf...\n");
@@ -970,11 +983,11 @@ MDGPU::~MDGPU()
 	cudaFree(mdd.d_atomTypes);
 }
 
-void compute(){
+/*void compute(){
 
 	MDGPU mdgpu;
 	mdgpu.init();
 	mdgpu.compute();
 	cudaDeviceReset();
-}
+}*/
 
