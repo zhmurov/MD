@@ -16,6 +16,7 @@
 
 #define PARAMETER_CGCONFIG			"cgconfig"
 #define PARAMETER_STRUCTURE			"structure"
+#define PARAMETER_COORDINATES		"coordinates"
 #define PARAMETER_ADDITIONAL_BONDS	"additional_bonds"
 #define PARAMETER_COORDINATES_PDB	"coordinates_pdb"
 #define PARAMETER_COORDINATES_XYZ	"coordinates_xyz"
@@ -30,23 +31,6 @@
 #define PARAMETER_USE_CHAINS		"use_chains"
 #define DEFAULT_USE_CHAINS			0
 
-/*
-PARAMETER_MANDATORY(structure, std::string, "path", "Path to the file with initial (all-atom) coordinates.")
-PARAMETER(additional_bonds, std::string, "NONE", "path", "Description of additional bonds (i.e. S-S, crosslinks), if needed.")
-
-PARAMETER_MANDATORY(coordinates, std::string, "path", "Path to save coarse-grained coordinates PDB (will be used by SOP-GPU).")
-PARAMETER_MANDATORY(topology, std::string, "path", "Path to save topology in Gromacs format (will be used by SOP-GPU).")
-
-PARAMETER(topology_psf, std::string, "NONE", "path", "Path to save topology inn PSF format (convinient for VMD).")
-PARAMETER(topology_natpsf, std::string, "NONE", "path", "Path to save native contact topology in PSF format (for visual inspection of contacts).")
-
-PARAMETER(R_limit_bond, float, 8.0f, "A", "Cutoff distance for Ca atoms to assume native contact")
-PARAMETER(SC_limit_bond, float, 5.0f, "A", "Cutoff distance for side-chain atoms to assume native contact")
-PARAMETER_MANDATORY(eh, std::string, "value/key", "Either value for eh or the 'O' ('B') key to take the value from occupancy(beta) column.")
-PARAMETER(Ks, float, 20.0f, "kcal/mol", "Covalent spring constant")
-
-PARAMETER(use_chains, bool, false, "true/false", "If YES, the structure will be split into chains according to the 'chain' column of the initial PDB file. By default done using segment. Chains are preferable for small systems.")
-*/
 CGConfig conf;
 PDB pdb;
 
@@ -184,7 +168,6 @@ int checkNatived(int i, int j);
 double getDistance(SOPBead bead1, SOPBead bead2);
 double getDistance(PDBAtom atom1, PDBAtom atom2);
 
-//using namespace configreader;
 
 int main(int argc, char* argv[]){
 
@@ -192,12 +175,15 @@ int main(int argc, char* argv[]){
 	printf("SOP-GPU Topology creator 2.0\n");
 	printf("==========================\n");
 
+	int i, b;
+	unsigned int j, k, l, m, n, o;
+
 	if(argc < 1){
 		printf("ERROR: Configuration file should be specified.\n");
 		exit(-1);
 	}
 
-	parseParametersFile(argv[1]); //, argc, argv);
+	parseParametersFile(argv[1]);
 
 	char filename[1024];
 	getMaskedParameter(filename, PARAMETER_CGCONFIG);
@@ -206,10 +192,23 @@ int main(int argc, char* argv[]){
 	getMaskedParameter(filename, PARAMETER_STRUCTURE);
 	readPDB(filename, &pdb);
 
-	printf("Building PDB tree...\n");
+	getMaskedParameter(filename, PARAMETER_COORDINATES, "NONE");
+	if(strncmp(filename, "NONE", 4) != 0){
+		printf("Taking coordinates from XYZ file '%s' instead of initial PDB.\n", filename);
+		XYZ xyz;
+		readXYZ(filename, &xyz);
+		if(xyz.atomCount != pdb.atomCount){
+			printf("Atom counts in provided XYZ and PDB files are not the same. Aborting.\n");
+			exit(0);
+		}
+		for(i = 0; i < xyz.atomCount; i++){
+			pdb.atoms[i].x = xyz.atoms[i].x;
+			pdb.atoms[i].y = xyz.atoms[i].y;
+			pdb.atoms[i].z = xyz.atoms[i].z;
+		}
+	}
 
-	int i, b;
-	unsigned int j, k, l, m, n, o;
+	printf("Building PDB tree...\n");
 
 	if(getYesNoParameter(PARAMETER_USE_CHAINS, DEFAULT_USE_CHAINS)){
 		printf("Using chain entries to separate polypeptide chains.\n");
@@ -353,8 +352,6 @@ int main(int argc, char* argv[]){
 		}
 	}
 
-//	if(strncmp(parameters::additional_bonds.get().c_str(), "NONE", 4) != 0){
-//		FILE* file = fopen(parameters::additional_bonds.get().c_str(), "r");
 	getMaskedParameter(filename, PARAMETER_ADDITIONAL_BONDS, "NONE");
 	if(strncmp(filename, "NONE", 4) != 0){
 		FILE* file = fopen(filename, "r");
@@ -421,9 +418,8 @@ int main(int argc, char* argv[]){
 	printf("Adding native contacts...\n");
 
 	float eh, cutoff, cutoffAtomistic;
-//	std::string ehstring;
-//	getMaskedParameter(ehstring, PARAMETER_EH);
-	getMaskedParameter(filename, PARAMETER_EH);
+	char ehstring[1024];
+	getMaskedParameter(ehstring, PARAMETER_EH);
 	cutoff = getFloatParameter(PARAMETER_R_LIMIT_BOND);
 	cutoffAtomistic = getFloatParameter(PARAMETER_SC_LIMIT_BOND);
 	for(j = 0; j < beads.size(); j++){
@@ -433,16 +429,12 @@ int main(int argc, char* argv[]){
 		for(k = j + 1; k < beads.size(); k++){
 			double r0 = getDistance(beads.at(j), beads.at(k));
 
-//			if(ehstring.compare("O") == 0){
-			if(strcmp(filename, "O") == 0){
+			if(strcmp(ehstring, "O") == 0){
 				eh = sqrt(beads.at(j).occupancy*beads.at(k).occupancy);
-//			} else if(ehstring.compare("B") == 0){
-			} else if(strcmp(filename, "B") == 0){
+			} else if(strcmp(ehstring, "B") == 0){
 				eh = sqrt(beads.at(j).beta*beads.at(k).beta);
-//			} else if(atof(ehstring.c_str()) != 0){
-//				eh = atof(ehstring.c_str());
-			} else if(atof(filename) != 0){
-				eh = atof(filename);
+			} else if(atof(ehstring) != 0){
+				eh = atof(ehstring);
 				//printf("%f\n", eh);
 			} else {
 				exit(0);
@@ -536,7 +528,6 @@ int main(int argc, char* argv[]){
 	writeXYZ(filename, &cgxyz);
 
 
-//	if(strncmp(parameters::topology_psf.get().c_str(), "NONE", 4) != 0){
 	getMaskedParameter(filename, PARAMETER_TOPOLOGY_PSF, "NONE");
 	if(strncmp(filename, "NONE", 4) != 0){
 		PSF cgpsf;
@@ -570,7 +561,6 @@ int main(int argc, char* argv[]){
 		writePSF(filename, &cgpsf);
 	}
 
-//	if(strncmp(parameters::topology_natpsf.get().c_str(), "NONE", 4) != 0){
 	getMaskedParameter(filename, PARAMETER_TOPOLOGY_NATPSF, "NONE");
 	if(strncmp(filename, "NONE", 4) != 0){
 		PSF cgpsfnat;
@@ -630,7 +620,7 @@ int main(int argc, char* argv[]){
 		cgtop.bonds[b].j = bonds.at(b).j;
 		cgtop.bonds[b].func = 40;
 		cgtop.bonds[b].c0 = bonds.at(b).b0;
-		cgtop.bonds[b].c1 = 0.0f;
+		cgtop.bonds[b].c1 = bonds.at(b).Kb;
 		cgtop.bonds[b].c2 = 0.0f;
 		cgtop.bonds[b].c3 = 0.0f;
 	}
@@ -666,7 +656,6 @@ void addConnection(char* segment1, int resid1, char* bead1,
 	printf("Connecting: %s-%d-%s to %s-%d-%s\n",
 			segment1, resid1, bead1, segment2, resid2, bead2);
 	if(i < beads.size() && j < beads.size()){
-//		addBond(i, j, parameters::Ks.get(), getDistance(beads.at(i), beads.at(j)));
 		addBond(i, j, getFloatParameter(PARAMETER_KS, DEFAULT_KS), getDistance(beads.at(i), beads.at(j)));
 		printf("Added: %d-%d\n", i, j);
 	}
@@ -711,7 +700,6 @@ void addConnection(SOPBead bead, Atom conn, unsigned int j){
 			l --;
 		}
 		if(l > 0 && strcmp(beads.at(j).segment, beads.at(l).segment) == 0){
-//			addBond(j, l, parameters::Ks.get(), getDistance(bead, beads.at(l)));
 			addBond(j, l, getFloatParameter(PARAMETER_KS, DEFAULT_KS), getDistance(bead, beads.at(l)));
 			printf("Added: - %d-%d\n", j, l);
 		}
@@ -724,7 +712,6 @@ void addConnection(SOPBead bead, Atom conn, unsigned int j){
 		}
 		if(l < beads.size() && strcmp(beads.at(j).segment, beads.at(l).segment) == 0 &&
 				beads.at(l).resid == bead.resid){
-//			addBond(j, l, parameters::Ks.get(), getDistance(bead, beads.at(l)));
 			addBond(j, l, getFloatParameter(PARAMETER_KS, DEFAULT_KS), getDistance(bead, beads.at(l)));
 			added = true;
 			printf("Added: %d-%d\n", j, l);
@@ -738,7 +725,6 @@ void addConnection(SOPBead bead, Atom conn, unsigned int j){
 				}
 				if(l >= 0 && strcmp(beads.at(j).segment, beads.at(l).segment) == 0 &&
 						beads.at(l).resid == bead.resid){
-//					addBond(j, l, parameters::Ks.get(), getDistance(bead, beads.at(l)));
 					addBond(j, l, getFloatParameter(PARAMETER_KS, DEFAULT_KS), getDistance(bead, beads.at(l)));
 					printf("Added: %d-%d\n", j, l);
 				}
