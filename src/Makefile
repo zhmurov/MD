@@ -49,7 +49,7 @@ CU_OBJS				:= $(patsubst %.cu, $(OBJDIR)/%.cu.o, $(CU_SOURCES))
  
 $(BIN): clean makedirs $(CU_OBJS)
 	$(LINKER) -o $(BIN) $(CU_OBJS) $(CPP_SOURCES) $(LDFLAGS) $(INCLUDES) $(LIBS)
-	$(CC)  -o $(BINDIR)/sop-top2 $(SOP_TOP_SOURCES)
+	$(CC)  -o $(BINDIR)/sop-top2 $(SOP_TOP_SOURCES) $(LIBS) $(INCLUDES)
  
 $(OBJDIR)/%.c.o: $(CPP_SOURCES)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
