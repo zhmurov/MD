@@ -11,7 +11,7 @@
 #include <sstream>
 #include <vector>
 #include <vector_types.h> // For float4
-#include "Util/mystl.h"
+#include "../Util/mystl.h"
 
 void parseParametersFile(const char* filename, int argc = 0, char *argv[] = NULL);
 void destroyConfigReader();

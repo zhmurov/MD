@@ -35,6 +35,7 @@ TOPPair readPairLineFromTOP(FILE* topFile);
 TOPAngle readAngleLineFromTOP(FILE* topFile);
 TOPDihedral readDihedralLineFromTOP(FILE* topFile);
 TOPExclusion readExclusionLineFromTOP(FILE* topFile);
+void savePair(FILE* topFile, TOPPair pair);
 
 //Added 28.03.17
 int getIndexInTOP(int nr, TOPData* topData){
@@ -175,6 +176,83 @@ int readTOP(const char* filename, TOPData* topData){
 	printf("Done reading the topology section.\n");
 	return count;
 }
+
+void writeTOP(const char* filename, TOPData* topData){
+	int i;
+	FILE* topFile = safe_fopen(filename, "w");
+	fprintf(topFile, "; Created by topio.c utility\n\n");
+	fprintf(topFile, "[ atoms ]\n");
+	fprintf(topFile, ";   nr       type  resnr residue  atom   cgnr     charge       mass\n");
+	for(i = 0; i < topData->atomCount; i++){
+		fprintf(topFile, "%6d", i);
+		fprintf(topFile, "%11s", topData->atoms[i].type);
+		fprintf(topFile, "%7d", topData->atoms[i].resid);
+		fprintf(topFile, "%7s", topData->atoms[i].resName);
+		fprintf(topFile, "%7s", topData->atoms[i].name);
+		fprintf(topFile, "%7c", topData->atoms[i].chain);
+		fprintf(topFile, "%11.2f", topData->atoms[i].charge);
+		fprintf(topFile, "%11.3f", topData->atoms[i].mass);
+		fprintf(topFile, "\n");
+	}
+
+	fprintf(topFile, "\n");
+
+	fprintf(topFile, "[ bonds ]\n");
+	fprintf(topFile, ";  ai    aj funct            c0            c1            c2            c3\n");
+	for(i = 0; i < topData->bondCount; i++){
+		savePair(topFile, topData->bonds[i]);
+	}
+
+	fprintf(topFile, "\n");
+
+	fprintf(topFile, "[ pairs ]\n");
+	fprintf(topFile, ";  ai    aj funct            c0            c1            c2            c3\n");
+	for(i = 0; i < topData->pairsCount; i++){
+		savePair(topFile, topData->pairs[i]);
+	}
+
+	fprintf(topFile, "\n");
+
+	fprintf(topFile, "[ exclusions ]\n");
+	fprintf(topFile, ";  ai    aj funct\n");
+	for(i = 0; i < topData->exclusionCount; i++){
+		fprintf(topFile, "%5d", topData->exclusions[i].i);
+		fprintf(topFile, " ");
+		fprintf(topFile, "%5d", topData->exclusions[i].j);
+		fprintf(topFile, " ");
+		fprintf(topFile, "%5d", topData->exclusions[i].func);
+		fprintf(topFile, "\n");
+	}
+
+	fclose(topFile);
+
+}
+
+void savePair(FILE* topFile, TOPPair pair){
+	fprintf(topFile, "%5d", pair.i);
+	fprintf(topFile, " ");
+	fprintf(topFile, "%5d", pair.j);
+	fprintf(topFile, " ");
+	fprintf(topFile, "%5d", pair.func);
+	if(pair.c0 != 0){
+		fprintf(topFile, " ");
+		fprintf(topFile, "%10.5f", pair.c0);
+		if(pair.c1 != 0){
+			fprintf(topFile, " ");
+			fprintf(topFile, "%10.5f", pair.c1);
+			if(pair.c2 != 0){
+				fprintf(topFile, " ");
+				fprintf(topFile, "%10.5f", pair.c2);
+				if(pair.c3 != 0){
+					fprintf(topFile, " ");
+					fprintf(topFile, "%10.5f", pair.c3);
+				}
+			}
+		}
+	}
+	fprintf(topFile, "\n");
+}
+
 
 /*void saveTOP(char* filename){
 	int i;
