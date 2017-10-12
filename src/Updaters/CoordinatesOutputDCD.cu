@@ -7,14 +7,12 @@
 
 #include "CoordinatesOutputDCD.cuh"
 
-CoordinatesOutputDCD::CoordinatesOutputDCD(MDData *mdd){
+CoordinatesOutputDCD::CoordinatesOutputDCD(MDData *mdd, int freq, char* filename){
 	this->mdd = mdd;
-	this->frequence = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+	this->frequence = freq;
 	int frameCount = mdd->numsteps/this->frequence + 1;
 	float timeStep = mdd->step;
 	createDCD(&dcd, mdd->N, frameCount, 1, timeStep, this->frequence, 1, mdd->bc.len.x, mdd->bc.len.y, mdd->bc.len.z);
-	char filename[FILENAME_LENGTH];
-	getMaskedParameter(filename, PARAMETER_DCD_OUTPUT_FILENAME);
 	dcdOpenWrite(&dcd, filename);
 	dcdWriteHeader(dcd);
 }

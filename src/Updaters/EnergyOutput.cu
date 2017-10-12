@@ -7,12 +7,12 @@
 
 #include "EnergyOutput.cuh"
 
-EnergyOutput::EnergyOutput(MDData *mdd, std::vector<IPotential*>* potentials){
+EnergyOutput::EnergyOutput(MDData *mdd, std::vector<IPotential*>* potentials, int freq, char* filename){
 	this->mdd = mdd;
-	this->frequence = getIntegerParameter(PARAMETER_ENERGY_OUTPUT_FREQUENCY);
+	this->frequence = freq;
 	this->potentials = potentials;
-	getMaskedParameter(filename, PARAMETER_ENERGY_OUTPUT_FILENAME);
-	FILE* file = fopen(filename, "w");
+	sprintf(this->filename, "%s", filename);
+	FILE* file = fopen(this->filename, "w");
 	fclose(file);
 }
 
@@ -21,7 +21,7 @@ EnergyOutput::~EnergyOutput(){
 
 void EnergyOutput::update(){
 
-	FILE* file = fopen(filename, "a");
+	FILE* file = fopen(this->filename, "a");
 
 	int p, i;
 	double temp = 0.0f;		//temperature [K]

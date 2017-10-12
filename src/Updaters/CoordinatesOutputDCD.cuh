@@ -11,7 +11,7 @@
 
 class CoordinatesOutputDCD : public IUpdater {
 public:
-	CoordinatesOutputDCD(MDData *mdd);
+	CoordinatesOutputDCD(MDData *mdd, int freq, char* filename);
 	~CoordinatesOutputDCD();
 	void update();
 private:
