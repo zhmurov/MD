@@ -863,8 +863,12 @@ void MDGPU::init()
 	}
 
 //UPDATERS
-	updaters.push_back(new CoordinatesOutputDCD(&mdd));
-	updaters.push_back(new EnergyOutput(&mdd, &potentials));
+	int dcd_output_freq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+	getMaskedParameter(filename, PARAMETER_DCD_OUTPUT_FILENAME);
+	updaters.push_back(new CoordinatesOutputDCD(&mdd, dcd_output_freq, filename));
+	int energy_output_freq = getIntegerParameter(PARAMETER_ENERGY_OUTPUT_FREQUENCY);
+	getMaskedParameter(filename, PARAMETER_ENERGY_OUTPUT_FILENAME);
+	updaters.push_back(new EnergyOutput(&mdd, &potentials, energy_output_freq, filename));
 	
 	if(getYesNoParameter(PARAMETER_FIX_MOMENTUM, DEFAULT_FIX_MOMENTUM)){
 		updaters.push_back(new FixMomentum(&mdd, getIntegerParameter(PARAMETER_FIX_MOMENTUM_FREQUENCE)));

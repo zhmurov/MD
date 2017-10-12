@@ -18,7 +18,7 @@
 
 class EnergyOutput : public IUpdater {
 public:
-	EnergyOutput(MDData *mdd, std::vector<IPotential*>* potentials);
+	EnergyOutput(MDData *mdd, std::vector<IPotential*>* potentials, int freq, char* filename);
 	~EnergyOutput();
 	void update();
 private:
