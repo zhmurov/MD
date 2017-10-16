@@ -111,6 +111,27 @@ bool pairs_comparator(SOPPair p1, SOPPair p2){
 	}
 }
 
+void trimString(char* string){
+	printf("'%s' -> ", string);
+	int i = 0;
+	int j = 0;
+	while(string[j] == ' '){
+		j++;
+	}
+	for(i = 0; i < strlen(string)-j; i++){
+		string[i] = string[i+j];
+	}
+	for(i = strlen(string)-j; i < strlen(string); i++){
+		string[i] = ' ';
+	}
+	i = 0;
+	while(string[i] != ' ' && i < strlen(string)){
+		i++;
+	}
+	string[i] = '\0';
+	printf("'%s'\n", string);
+}
+
 std::vector<SOPBond> bonds;
 std::vector<SOPNative> natives;
 
@@ -171,6 +192,26 @@ double getDistance(PDBAtom atom1, PDBAtom atom2);
 
 int main(int argc, char* argv[]){
 
+	/*char string[1024];
+	sprintf(string, "  A11  ");
+	trimString(string);
+	sprintf(string, " A11  ");
+	trimString(string);
+	sprintf(string, "A11  ");
+	trimString(string);
+	sprintf(string, "  A11 ");
+	trimString(string);
+	sprintf(string, "  A11");
+	trimString(string);
+	sprintf(string, " A11S  ");
+	trimString(string);
+	sprintf(string, "A11S  ");
+	trimString(string);
+	sprintf(string, "NZ");
+	trimString(string);
+	exit(0);*/
+
+
 	printf("==========================\n");
 	printf("SOP-GPU Topology creator 2.0\n");
 	printf("==========================\n");
@@ -214,9 +255,31 @@ int main(int argc, char* argv[]){
 		printf("Using chain entries to separate polypeptide chains.\n");
 		for(i = 0; i < pdb.atomCount; i++){
 			sprintf(pdb.atoms[i].segment, "%c", pdb.atoms[i].chain);
+			trimString(pdb.atoms[i].segment);
+		}
+	} else {
+		printf("Using segment entries to separate polypeptide chains.\n");
+		for(i = 0; i < pdb.atomCount; i++){
+			trimString(pdb.atoms[i].segment);
+		}
+		/*for(i = 0; i < pdb.atomCount; i++){
+			printf("'%s'-", pdb.atoms[i].segment);
+			sprintf(pdb.atoms[i].segment, "%s", pdb.atoms[i].segment);
+			printf("'%s'\n", pdb.atoms[i].segment);
+		}*/
+	}
+	for(i = 0; i < pdb.atomCount; i++){
+		trimString(pdb.atoms[i].name);
+		trimString(pdb.atoms[i].resName);
+	}
+	for(i = 0; i < conf.residues.size(); i++){
+		trimString(conf.residues.at(i).resname);
+		for(j = 0; j < conf.residues.at(i).beads.size(); j++){
+			trimString(conf.residues.at(i).beads.at(j).name);
+			trimString(conf.residues.at(i).beads.at(j).resname);
+			trimString(conf.residues.at(i).beads.at(j).type);
 		}
 	}
-	printf("Using segment entries to separate polypeptide chains.\n");
 	for(i = 0; i < pdb.atomCount; i++){
 		bool found = false;
 		for(j = 0; j < pdb_tree.size(); j++){
@@ -379,6 +442,10 @@ int main(int argc, char* argv[]){
 					resid2 = atoi(pch);
 					pch = strtok(NULL, " \t\n\r");
 					bead2 = pch;
+					trimString(segment1);
+					trimString(bead1);
+					trimString(segment2);
+					trimString(bead2);
 					addConnection(segment1, resid1, bead1, segment2, resid2, bead2);
 				}
 			}
@@ -666,7 +733,7 @@ unsigned findBead(const char* segment, int resid, const char* bead_name){
 	unsigned i = 0;
 	for(i = 0; i < beads.size(); i++){
 		SOPBead bead = beads.at(i);
-		if(strncmp(bead.segment, segment, 3) == 0 && bead.resid == resid && strncmp(bead.name, bead_name, 2) == 0){
+		if(strcmp(bead.segment, segment) == 0 && bead.resid == resid && strcmp(bead.name, bead_name) == 0){
 			return i;
 		}
 	}

@@ -14,7 +14,7 @@ void readCGConfiguration_pol(const char* filename, CGConfig *config){
 	FILE* file = fopen(filename, "r");
 	char buffer[BUF_SIZE];
 	if(file != NULL){
-		printf("Here!\n");
+		printf("Reading coarse-graining configuration from '%s'.\n", filename);
 		Residue resid;
 		Bead bead;
 		char* pch;
