@@ -30,6 +30,7 @@
 #include "Potentials/Indentation.cu"
 #include "Potentials/Pulling.cu"
 #include "Potentials/BondHarmonic.cu"
+#include "Potentials/AngleHarmonic.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
@@ -91,19 +92,19 @@ void dumpPSF(char* filename, TOPData &top){
 	func_bc2a = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BONDSCLASS2ATOM, DEFAULT_FUNCTIONTYPE_BONDSCLASS2ATOM);
 
 	for(int i = 0; i < top.bondCount; i++){
-		if ((top.bonds[i].func == bondFeneFunc) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
+		//if ((top.bonds[i].func == bondFeneFunc) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
 			psf.nbond ++;
-		}
+		//}
 	}
 	psf.bonds = (PSFBond*)calloc(psf.nbond, sizeof(PSFBond));
 	int currentBond = 0;
 
 	for(int i = 0; i < top.bondCount; i++){
-		if ((top.bonds[i].func == bondFeneFunc) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
+		//if ((top.bonds[i].func == bondFeneFunc) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
 			psf.bonds[currentBond].i = getIndexInTOP(top.bonds[i].i, &top) + 1;
 			psf.bonds[currentBond].j = getIndexInTOP(top.bonds[i].j, &top) + 1;
 			currentBond++;
-		}
+		//}
 	}
 
 	writePSF(filename, &psf);
@@ -136,7 +137,7 @@ void checkCUDAError(const char* msg) {
 
 void MDGPU::init()
 {
-	int i, j, b, p;
+	int i, j, b, a, p;
 
 	initTimer();
 
@@ -382,11 +383,11 @@ void MDGPU::init()
 		checkCUDAError("CUDA ERROR: after AngleClass2 potential\n");
 	}
 
-	float dielectric = getFloatParameter(PARAMETER_DIELECTRIC, DEFAULT_DIELECTRIC);
-	float coulCutoff = getFloatParameter(PARAMETER_COULOMB_CUTOFF);
-
 	//Initialization of pairLists
 	if(getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED) || getYesNoParameter(PARAMETER_POTENTIAL_COULOMB, DEFAULT_POTENTIAL_COULOMB)){
+
+		float dielectric = getFloatParameter(PARAMETER_DIELECTRIC, DEFAULT_DIELECTRIC);
+		float coulCutoff = getFloatParameter(PARAMETER_COULOMB_CUTOFF);
 
 		float gausExclCutoff = getFloatParameter(PARAMETER_NONBONDED_CUTOFF);
 		float pairsCutoff = getFloatParameter(PARAMETER_PAIRLIST_CUTOFF);
@@ -897,6 +898,40 @@ void MDGPU::init()
 		checkCUDAError("CUDA ERROR: after bondHarmonic potential\n");
 	}
 
+	if(getYesNoParameter(PARAMETER_ANGLE_HARMONIC, DEFAULT_ANGLE_HARMONIC)){
+
+		int angleHarmonicFunc = getIntegerParameter(PARAMETER_ANGLE_HARMONIC_FUNCTIONTYPE, DEFAULT_ANGLE_HARMONIC_FUNCTIONTYPE);
+
+		int angleHarmonicCount = 0;
+		for(a = 0; a < top.angleCount; a++){
+			if(top.angles[a].func == angleHarmonicFunc){
+				angleHarmonicCount++;
+			}
+		}
+
+		int3* angleHarmonic;
+		angleHarmonic = (int3*)calloc(angleHarmonicCount, sizeof(int3));
+
+		float2* angleHarmonicParameters;
+		angleHarmonicParameters = (float2*)calloc(angleHarmonicCount, sizeof(float2));
+
+		angleHarmonicCount = 0;
+		for(a = 0; a < top.angleCount; a++){
+			if(top.angles[a].func == angleHarmonicFunc){
+				angleHarmonic[angleHarmonicCount].x = getIndexInTOP(top.angles[a].i, &top);
+				angleHarmonic[angleHarmonicCount].y = getIndexInTOP(top.angles[a].j, &top);
+				angleHarmonic[angleHarmonicCount].z = getIndexInTOP(top.angles[a].k, &top);
+				angleHarmonicParameters[angleHarmonicCount].x = top.angles[a].c0; 			// theta0 (rad)
+				angleHarmonicParameters[angleHarmonicCount].y = top.angles[a].c1;			// Ktheta (KJ/mol/rad)
+				angleHarmonicCount++;
+			}
+		}
+
+		checkCUDAError("CUDA ERROR: before Harmonic Angle potential\n");
+		potentials.push_back(new AngleHarmonic(&mdd, angleHarmonicCount, angleHarmonic, angleHarmonicParameters));
+		checkCUDAError("CUDA ERROR: after Harmonic Angle potential\n");
+	}
+
 //UPDATERS
 	int dcd_output_freq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
 	getMaskedParameter(filename, PARAMETER_DCD_OUTPUT_FILENAME);
@@ -989,7 +1024,7 @@ void MDGPU::compute()
 		}
 	}
 	
-	//XYZ-File ending coord
+	//XYZ-File final coord
 	if(getYesNoParameter(PARAMETER_OUTPUT_XYZ, DEFAULT_OUTPUT_XYZ)){
 		char filename[FILENAME_LENGTH];
 		getMaskedParameter(filename, PARAMETER_OUTPUT_XYZ_FILENAME);

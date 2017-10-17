@@ -406,6 +406,10 @@ TOPAtom readAtomLineFromTOP(FILE* topFile){
 TOPPair readPairLineFromTOP(FILE* topFile){
 
 	TOPPair pair;
+	pair.c0 = 0.0f;
+	pair.c1 = 0.0f;
+	pair.c2 = 0.0f;
+	pair.c3 = 0.0f;
 	char buffer[BUF_SIZE];
 	char* pch;
 	safe_fgets(buffer, BUF_SIZE, topFile);
@@ -450,6 +454,10 @@ TOPPair readPairLineFromTOP(FILE* topFile){
 
 TOPAngle readAngleLineFromTOP(FILE* topFile){
 	TOPAngle angle;
+	angle.c0 = 0.0;
+	angle.c1 = 0.0;
+	angle.c2 = 0.0;
+	angle.c3 = 0.0;
 	char buffer[BUF_SIZE];
 	char* pch;
 	safe_fgets(buffer, BUF_SIZE, topFile);
@@ -497,6 +505,10 @@ TOPAngle readAngleLineFromTOP(FILE* topFile){
 
 TOPDihedral readDihedralLineFromTOP(FILE* topFile){
 	TOPDihedral dihedral;
+	dihedral.c0 = 0.0;
+	dihedral.c1 = 0.0;
+	dihedral.c2 = 0.0;
+	dihedral.c3 = 0.0;
 	char buffer[BUF_SIZE];
 	char* pch;
 	safe_fgets(buffer, BUF_SIZE, topFile);

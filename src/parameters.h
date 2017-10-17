@@ -162,6 +162,11 @@
 #define PARAMETER_BOND_HARMONIC_KS				"harmonic_ks"
 #define DEFAULT_BOND_HARMONIC_KS				-1
 
+#define PARAMETER_ANGLE_HARMONIC				"harmonic_angle"
+#define DEFAULT_ANGLE_HARMONIC					0
+#define PARAMETER_ANGLE_HARMONIC_FUNCTIONTYPE	"harmonic_angle_func"
+#define	DEFAULT_ANGLE_HARMONIC_FUNCTIONTYPE		1
+
 #define PARAMETER_DIELECTRIC					"dielectric"
 #define DEFAULT_DIELECTRIC					1.0
 #define PARAMETER_PPPM_ORDER					"pppm_order"
