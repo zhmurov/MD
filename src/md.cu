@@ -22,14 +22,14 @@
 #include "Potentials/Langevin.cu"
 #include "Potentials/PPPM.cu"
 #include "Potentials/Coulomb.cu"
-#include "Potentials/FENE.cu"
+#include "Potentials/BondFENE.cu"
 #include "Potentials/LJP.cu"
 #include "Potentials/Repulsive.cu"
 #include "Potentials/Motor.cu"
 #include "Potentials/PushingSphere.cu"
 #include "Potentials/Indentation.cu"
 #include "Potentials/Pulling.cu"
-#include "Potentials/Harmonic.cu"
+#include "Potentials/BondHarmonic.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
@@ -85,13 +85,13 @@ void dumpPSF(char* filename, TOPData &top){
 
 	psf.nbond = 0;
 
-	int func_fene, func_bc2a;
+	int bondFeneFunc, func_bc2a;
 
-	func_fene = getIntegerParameter(PARAMETER_FUNCTIONTYPE_FENE, DEFAULT_FUNCTIONTYPE_FENE);
+	bondFeneFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BOND_FENE, DEFAULT_FUNCTIONTYPE_BOND_FENE);
 	func_bc2a = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BONDSCLASS2ATOM, DEFAULT_FUNCTIONTYPE_BONDSCLASS2ATOM);
 
 	for(int i = 0; i < top.bondCount; i++){
-		if ((top.bonds[i].func == func_fene) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
+		if ((top.bonds[i].func == bondFeneFunc) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
 			psf.nbond ++;
 		}
 	}
@@ -99,7 +99,7 @@ void dumpPSF(char* filename, TOPData &top){
 	int currentBond = 0;
 
 	for(int i = 0; i < top.bondCount; i++){
-		if ((top.bonds[i].func == func_fene) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
+		if ((top.bonds[i].func == bondFeneFunc) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
 			psf.bonds[currentBond].i = getIndexInTOP(top.bonds[i].i, &top) + 1;
 			psf.bonds[currentBond].j = getIndexInTOP(top.bonds[i].j, &top) + 1;
 			currentBond++;
@@ -157,9 +157,9 @@ void MDGPU::init()
 	dumpPSF(filename, top);
 
 	//TODO
-	int feneFunc, ljFunc, repFunc; //protein
+	int bondFeneFunc, ljFunc, repFunc; //protein
 	int func_bc2a, func_ac2; //dna
-	int harmonicFunc;
+	int bondHarmonicFunc;
 
 	cudaSetDevice(getIntegerParameter(PARAMETER_GPU_DEVICE));
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
@@ -493,38 +493,57 @@ void MDGPU::init()
 //PROTEIN POTENTIALS
 //=====================================================================
 
-	//FENE potential
-	if(getYesNoParameter(PARAMETER_POTENTIAL_FENE, DEFAULT_POTENTIAL_FENE)){
+	//BondFENE potential
+	if(getYesNoParameter(PARAMETER_POTENTIAL_BOND_FENE, DEFAULT_POTENTIAL_BOND_FENE)){
 
-		feneFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_FENE, DEFAULT_FUNCTIONTYPE_FENE);
-		float feneKs = getFloatParameter(PARAMETER_KS_FENE);	//spring constant					[kJ/(mol*nm^2)]
-		float feneR = getFloatParameter(PARAMETER_R_FENE);	//tolerance to the change of the covalent bond length	[nm]
+		bondFeneFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BOND_FENE, DEFAULT_FUNCTIONTYPE_BOND_FENE);
+		float bondFeneR = getFloatParameter(PARAMETER_BOND_FENE_R);	//tolerance to the change of the covalent bond length	[nm]
 
-		int feneCount = 0;
+		int bondFeneCount = 0;
 		for(b = 0; b < top.bondCount; b++){
-			if(top.bonds[b].func == feneFunc){
-				feneCount++;
+			if(top.bonds[b].func == bondFeneFunc){
+				bondFeneCount++;
 			}
 		}
 
-		int2* feneBonds;
-		feneBonds = (int2*)calloc(feneCount, sizeof(int2));
+		float* bondFeneKs;
+		bondFeneKs = (float*)calloc(bondFeneCount, sizeof(float));
+		int2* bondFeneBonds;
+		bondFeneBonds = (int2*)calloc(bondFeneCount, sizeof(int2));
+		float* bondFeneBondsR0;
+		bondFeneBondsR0 = (float*)calloc(bondFeneCount, sizeof(float));
 
-		float* feneBondsR0;
-		feneBondsR0 = (float*)calloc(feneCount, sizeof(float));
+		bondFeneCount = 0;
+		float ks = getFloatParameter(PARAMETER_BOND_FENE_KS, DEFAULT_BOND_FENE_KS);		//spring constant				[kJ/(mol*nm^2)]
+		if(ks < 0.0f){
+			for(b = 0; b < top.bondCount; b++){
+				if(top.bonds[b].func == bondFeneFunc){
+					bondFeneKs[bondFeneCount] = top.bonds[b].c1;
+					bondFeneCount++;
+				}
+			}
+		}else{
+			for(b = 0; b < top.bondCount; b++){
+				if(top.bonds[b].func == bondFeneFunc){
+					bondFeneKs[bondFeneCount] = ks;
+					bondFeneCount++;
+				}
+			}
+		}
 
-		feneCount = 0;
+
+		bondFeneCount = 0;
 		for(b = 0; b < top.bondCount; b++){
-			if(top.bonds[b].func == feneFunc){
-				feneBonds[feneCount].x = getIndexInTOP(top.bonds[b].i, &top);
-				feneBonds[feneCount].y = getIndexInTOP(top.bonds[b].j, &top);
-				feneBondsR0[feneCount] = top.bonds[b].c0/10.0f; 			// [angstr]->[nm]
-				feneCount++;
+			if(top.bonds[b].func == bondFeneFunc){
+				bondFeneBonds[bondFeneCount].x = getIndexInTOP(top.bonds[b].i, &top);
+				bondFeneBonds[bondFeneCount].y = getIndexInTOP(top.bonds[b].j, &top);
+				bondFeneBondsR0[bondFeneCount] = top.bonds[b].c0/10.0f; 				// [angstr]->[nm]
+				bondFeneCount++;
 			}
 		}
 
 		checkCUDAError("CUDA ERROR: before FENE potential\n");
-		potentials.push_back(new FENE(&mdd, feneKs, feneR, feneCount, feneBonds, feneBondsR0));
+		potentials.push_back(new BondFENE(&mdd, bondFeneKs, bondFeneR, bondFeneCount, bondFeneBonds, bondFeneBondsR0));
 		checkCUDAError("CUDA ERROR: after FENE potential\n");
 	}
 
@@ -662,7 +681,7 @@ void MDGPU::init()
 		checkCUDAError("CUDA ERROR: after PushingSphere potential\n");
 	}
 
-//Motor potential
+	//Motor potential
 	if(getYesNoParameter(PARAMETER_MOTOR, DEFAULT_MOTOR)){
 
 		float mpR0 = getFloatParameter(PARAMETER_MOTOR_RADIUS0);
@@ -828,38 +847,54 @@ void MDGPU::init()
 		checkCUDAError("CUDA ERROR: after Indentation potential\n");
 	}
 
-	//Harmonic potential
-	if(getYesNoParameter(PARAMETER_HARMONIC, DEFAULT_HARMONIC)){
+	//BondHarmonic potential
+	if(getYesNoParameter(PARAMETER_BOND_HARMONIC, DEFAULT_BOND_HARMONIC)){
+		bondHarmonicFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BOND_HARMONIC, DEFAULT_FUNCTIONTYPE_BOND_HARMONIC);
 
-		harmonicFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_HARMONIC, DEFAULT_FUNCTIONTYPE_HARMONIC);
-		float harmonicKs = getFloatParameter(PARAMETER_HARMONIC_KS);	//spring constant					[kJ/(mol*nm^2)]
-
-		int harmonicCount = 0;
+		int bondHarmonicCount = 0;
 		for(b = 0; b < top.bondCount; b++){
-			if(top.bonds[b].func == harmonicFunc){
-				harmonicCount++;
+			if(top.bonds[b].func == bondHarmonicFunc){
+				bondHarmonicCount++;
 			}
 		}
 
-		int2* harmonicBonds;
-		harmonicBonds = (int2*)calloc(harmonicCount, sizeof(int2));
+		float* bondHarmonicKs;
+		bondHarmonicKs = (float*)calloc(bondHarmonicCount, sizeof(float));
+		int2* bondHarmonicBonds;
+		bondHarmonicBonds = (int2*)calloc(bondHarmonicCount, sizeof(int2));
+		float* bondHarmonicBondsR0;
+		bondHarmonicBondsR0 = (float*)calloc(bondHarmonicCount, sizeof(float));
 
-		float* harmonicBondsR0;
-		harmonicBondsR0 = (float*)calloc(harmonicCount, sizeof(float));
-
-		harmonicCount = 0;
-		for(b = 0; b < top.bondCount; b++){
-			if(top.bonds[b].func == harmonicFunc){
-				harmonicBonds[harmonicCount].x = getIndexInTOP(top.bonds[b].i, &top);
-				harmonicBonds[harmonicCount].y = getIndexInTOP(top.bonds[b].j, &top);
-				harmonicBondsR0[harmonicCount] = top.bonds[b].c0/10.0f; 			// [angstr]->[nm]
-				harmonicCount++;
+		bondHarmonicCount = 0;
+		float ks = getFloatParameter(PARAMETER_BOND_HARMONIC_KS, DEFAULT_BOND_HARMONIC_KS);	 //spring constant			[kJ/(mol*nm^2)]
+		if(ks < 0.0f){
+			for(b = 0; b < top.bondCount; b++){
+				if(top.bonds[b].func == bondHarmonicFunc){
+					bondHarmonicKs[bondHarmonicCount] = top.bonds[b].c1;
+					bondHarmonicCount++;
+				}
+			}
+		}else{
+			for(b = 0; b < top.bondCount; b++){
+				if(top.bonds[b].func == bondHarmonicFunc){
+					bondHarmonicKs[bondHarmonicCount] = ks;
+					bondHarmonicCount++;
+				}
 			}
 		}
 
-		checkCUDAError("CUDA ERROR: before Harmonic potential\n");
-		potentials.push_back(new Harmonic(&mdd, harmonicKs, harmonicCount, harmonicBonds, harmonicBondsR0));
-		checkCUDAError("CUDA ERROR: after Harmonic potential\n");
+		bondHarmonicCount = 0;
+		for(b = 0; b < top.bondCount; b++){
+			if(top.bonds[b].func == bondHarmonicFunc){
+				bondHarmonicBonds[bondHarmonicCount].x = getIndexInTOP(top.bonds[b].i, &top);
+				bondHarmonicBonds[bondHarmonicCount].y = getIndexInTOP(top.bonds[b].j, &top);
+				bondHarmonicBondsR0[bondHarmonicCount] = top.bonds[b].c0/10.0f; 			// [angstr]->[nm]
+			}
+		}
+
+		checkCUDAError("CUDA ERROR: before bondHarmonic potential\n");
+		potentials.push_back(new BondHarmonic(&mdd, bondHarmonicKs, bondHarmonicCount, bondHarmonicBonds, bondHarmonicBondsR0));
+		checkCUDAError("CUDA ERROR: after bondHarmonic potential\n");
 	}
 
 //UPDATERS

@@ -17,12 +17,13 @@
 #define PARAMETER_COORDINATES_FILENAME				"coordinates_file"
 #define PARAMETER_PDB_REFERENCE_FILENAME			"pdbref_file"
 
-#define PARAMETER_POTENTIAL_FENE				"fene"
-#define DEFAULT_POTENTIAL_FENE					0
-#define PARAMETER_FUNCTIONTYPE_FENE				"fene_func"
-#define	DEFAULT_FUNCTIONTYPE_FENE				40
-#define PARAMETER_KS_FENE					"fene_ks"
-#define PARAMETER_R_FENE					"fene_R"
+#define PARAMETER_POTENTIAL_BOND_FENE				"fene"
+#define DEFAULT_POTENTIAL_BOND_FENE				0
+#define PARAMETER_FUNCTIONTYPE_BOND_FENE			"fene_func"
+#define	DEFAULT_FUNCTIONTYPE_BOND_FENE				40
+#define PARAMETER_BOND_FENE_KS					"fene_ks"
+#define DEFAULT_BOND_FENE_KS					-1
+#define PARAMETER_BOND_FENE_R					"fene_R"
 
 #define PARAMETER_POTENTIAL_LENNARDJONES			"lennardjones"
 #define DEFAULT_POTENTIAL_LENNARDJONES				0
@@ -115,18 +116,18 @@
 #define DEFAULT_PUSHING_SPHERE_MASK				0
 #define PARAMETER_PUSHING_SPHERE_MASK_PDB_FILENAME		"ps_mask_pdb_filename"
 
-#define PARAMETER_MOTOR								"motor"
-#define DEFAULT_MOTOR								0
-#define PARAMETER_MOTOR_RADIUS0						"mp_radius0"
-#define PARAMETER_MOTOR_FORCE						"mp_force"
-#define PARAMETER_MOTOR_RADIUS_HOLE					"mp_radius_hole"
-#define PARAMETER_MOTOR_HEIGHT						"mp_height"
+#define PARAMETER_MOTOR						"motor"
+#define DEFAULT_MOTOR						0
+#define PARAMETER_MOTOR_RADIUS0					"mp_radius0"
+#define PARAMETER_MOTOR_FORCE					"mp_force"
+#define PARAMETER_MOTOR_RADIUS_HOLE				"mp_radius_hole"
+#define PARAMETER_MOTOR_HEIGHT					"mp_height"
 #define PARAMETER_MOTOR_CENTER_POINT				"mp_center_of_sphere"
-#define PARAMETER_MOTOR_UPDATE_FREQ					"mp_update_freq"
-#define PARAMETER_MOTOR_SIGMA						"mp_sigma"
-#define PARAMETER_MOTOR_EPSILON						"mp_epsilon"
+#define PARAMETER_MOTOR_UPDATE_FREQ				"mp_update_freq"
+#define PARAMETER_MOTOR_SIGMA					"mp_sigma"
+#define PARAMETER_MOTOR_EPSILON					"mp_epsilon"
 #define PARAMETER_MOTOR_OUTPUT_FILENAME				"mp_presure_filename"
-#define PARAMETER_MOTOR_MASK						"mp_mask"
+#define PARAMETER_MOTOR_MASK					"mp_mask"
 #define DEFAULT_MOTOR_MASK							0
 #define PARAMETER_MOTOR_MASK_PDB_FILENAME			"mp_mask_pdb_filename"
 
@@ -154,11 +155,12 @@
 #define PARAMETER_SURFACE_EPSILON				"sf_eps"
 #define PARAMETER_SURFACE_SIGMA					"sf_sigm"
 
-#define PARAMETER_HARMONIC					"harmonic"
-#define DEFAULT_HARMONIC					0
-#define PARAMETER_FUNCTIONTYPE_HARMONIC				"harmonic_func"
-#define	DEFAULT_FUNCTIONTYPE_HARMONIC				40
-#define PARAMETER_HARMONIC_KS					"harmonic_ks"
+#define PARAMETER_BOND_HARMONIC					"harmonic"
+#define DEFAULT_BOND_HARMONIC					0
+#define PARAMETER_FUNCTIONTYPE_BOND_HARMONIC			"harmonic_func"
+#define	DEFAULT_FUNCTIONTYPE_BOND_HARMONIC			40
+#define PARAMETER_BOND_HARMONIC_KS				"harmonic_ks"
+#define DEFAULT_BOND_HARMONIC_KS				-1
 
 #define PARAMETER_DIELECTRIC					"dielectric"
 #define DEFAULT_DIELECTRIC					1.0
