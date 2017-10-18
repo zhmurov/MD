@@ -91,7 +91,7 @@ AngleHarmonic::AngleHarmonic(MDData *mdd, int angleCount, int3* angles, float2* 
 	cudaMemcpy(d_pars, h_pars, angleCount*sizeof(float2), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_refs, h_refs, angleCount*sizeof(int4), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_count, h_count, (lastAngled + 1)*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_energies, h_energies, angleCount*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_energies, h_energies, angleCount*sizeof(float), cudaMemcpyHostToDevice);
 
 	printf("Done initializing Harmonic Angle potential\n");
 }

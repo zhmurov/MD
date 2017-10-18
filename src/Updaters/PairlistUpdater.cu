@@ -6,7 +6,6 @@
  */
 
 #include "PairlistUpdater.cuh"
-#include "ComputationalArrays.h"
 #include "../Util/ReductionAlgorithms.cuh"
 
 __global__ void countL1Pairs_kernel(int* d_exclusionsCount, int* d_exclusionsList, int* d_pairsCount, float cutoffSq, int N){

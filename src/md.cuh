@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include <algorithm>
 #include "parameters.h"
 #include "IO/configreader.h"
 #include "Common/interfaces.h"

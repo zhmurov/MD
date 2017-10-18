@@ -31,6 +31,7 @@
 #include "Potentials/Pulling.cu"
 #include "Potentials/BondHarmonic.cu"
 #include "Potentials/AngleHarmonic.cu"
+#include "Potentials/Dihedral.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
@@ -86,10 +87,10 @@ void dumpPSF(char* filename, TOPData &top){
 
 	psf.nbond = 0;
 
-	int bondFeneFunc, func_bc2a;
+	//int bondFeneFunc, func_bc2a;
 
-	bondFeneFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BOND_FENE, DEFAULT_FUNCTIONTYPE_BOND_FENE);
-	func_bc2a = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BONDSCLASS2ATOM, DEFAULT_FUNCTIONTYPE_BONDSCLASS2ATOM);
+	//bondFeneFunc = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BOND_FENE, DEFAULT_FUNCTIONTYPE_BOND_FENE);
+	//func_bc2a = getIntegerParameter(PARAMETER_FUNCTIONTYPE_BONDSCLASS2ATOM, DEFAULT_FUNCTIONTYPE_BONDSCLASS2ATOM);
 
 	for(int i = 0; i < top.bondCount; i++){
 		//if ((top.bonds[i].func == bondFeneFunc) || (top.bonds[i].c0 == 1 && top.bonds[i].func == func_bc2a)){
@@ -137,7 +138,7 @@ void checkCUDAError(const char* msg) {
 
 void MDGPU::init()
 {
-	int i, j, b, a, p;
+	int i, j, b, a, d, p;
 
 	initTimer();
 
@@ -921,8 +922,8 @@ void MDGPU::init()
 				angleHarmonic[angleHarmonicCount].x = getIndexInTOP(top.angles[a].i, &top);
 				angleHarmonic[angleHarmonicCount].y = getIndexInTOP(top.angles[a].j, &top);
 				angleHarmonic[angleHarmonicCount].z = getIndexInTOP(top.angles[a].k, &top);
-				angleHarmonicParameters[angleHarmonicCount].x = top.angles[a].c0; 			// theta0 (rad)
-				angleHarmonicParameters[angleHarmonicCount].y = top.angles[a].c1;			// Ktheta (KJ/mol/rad)
+				angleHarmonicParameters[angleHarmonicCount].x = top.angles[a].c0*M_PI/180.0; 			// theta0 (deg -> rad)
+				angleHarmonicParameters[angleHarmonicCount].y = top.angles[a].c1;						// Ktheta (KJ/mol)
 				angleHarmonicCount++;
 			}
 		}
@@ -930,6 +931,45 @@ void MDGPU::init()
 		checkCUDAError("CUDA ERROR: before Harmonic Angle potential\n");
 		potentials.push_back(new AngleHarmonic(&mdd, angleHarmonicCount, angleHarmonic, angleHarmonicParameters));
 		checkCUDAError("CUDA ERROR: after Harmonic Angle potential\n");
+	}
+
+	if(getYesNoParameter(PARAMETER_DIHEDRAL, DEFAULT_DIHEDRAL)){
+
+		int dihedralProperFunc = getIntegerParameter(PARAMETER_DIHEDRAL_PROPER_FUNCTIONTYPE, DEFAULT_DIHEDRAL_PROPER_FUNCTIONTYPE);
+		int dihedralImproperFunc = getIntegerParameter(PARAMETER_DIHEDRAL_IMPROPER_FUNCTIONTYPE, DEFAULT_DIHEDRAL_IMPROPER_FUNCTIONTYPE);
+
+		int dihedralCount = 0;
+		for(d = 0; d < top.dihedralCount; d++){
+			if(top.dihedrals[d].func == dihedralProperFunc || top.dihedrals[d].func == dihedralImproperFunc){
+				dihedralCount++;
+			}
+		}
+
+		int4* dihedrals = (int4*)calloc(dihedralCount, sizeof(int4));
+		float3* dihedralParameters = (float3*)calloc(dihedralCount, sizeof(float3));
+
+		dihedralCount = 0;
+		for(d = 0; d < top.dihedralCount; d++){
+			if(top.dihedrals[d].func == dihedralProperFunc || top.dihedrals[d].func == dihedralImproperFunc){
+				dihedrals[dihedralCount].x = getIndexInTOP(top.dihedrals[d].i, &top);
+				dihedrals[dihedralCount].y = getIndexInTOP(top.dihedrals[d].j, &top);
+				dihedrals[dihedralCount].z = getIndexInTOP(top.dihedrals[d].k, &top);
+				dihedrals[dihedralCount].w = getIndexInTOP(top.dihedrals[d].l, &top);
+				dihedralParameters[dihedralCount].x = top.dihedrals[d].c0*M_PI/180.0; 			// phi0/ksi0 (deg -> rad)
+				dihedralParameters[dihedralCount].y = top.dihedrals[d].c1;						// Kphi/Kksi (KJ/mol)
+				if(top.dihedrals[d].func == dihedralProperFunc){
+					dihedralParameters[dihedralCount].z = top.dihedrals[d].c2;					// multiplicity (integer)
+				} else {
+					dihedralParameters[dihedralCount].z = 0.0;									// multipicity is set to zero for impropers
+				}
+				printf("%f\t%f\t%f\n", dihedralParameters[dihedralCount].x, dihedralParameters[dihedralCount].y, dihedralParameters[dihedralCount].z);
+				dihedralCount++;
+			}
+		}
+
+		checkCUDAError("CUDA ERROR: before Dihedral potential\n");
+		potentials.push_back(new Dihedral(&mdd, dihedralCount, dihedrals, dihedralParameters));
+		checkCUDAError("CUDA ERROR: after Dihedral potential\n");
 	}
 
 //UPDATERS
@@ -1007,6 +1047,15 @@ void MDGPU::compute()
 	for(p = 0; p != potentials.size(); p++){
 		potentials[p]->compute();
 	}
+	/*
+	// This is handy for testing
+	cudaMemcpy(mdd.h_force, mdd.d_force, mdd.N*sizeof(float4), cudaMemcpyDeviceToHost);
+	FILE* out = fopen("forces.dat", "w");
+	for(i = 0; i < mdd.N; i++){
+		fprintf(out, "%d\t%f\t%f\t%f\n", i, mdd.h_force[i].x, mdd.h_force[i].y, mdd.h_force[i].z);
+	}
+	fclose(out);
+	exit(0);*/
 	while(mdd.step <= numsteps){
 		for(u = 0; u != updaters.size(); u++){
 			if(mdd.step % updaters[u]->getFrequence() == 0){

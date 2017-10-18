@@ -19,7 +19,6 @@ CC					:= g++
 LINKER				:= g++ -fPIC
 # files
 CPP_SOURCES			:= \
-  ComputationalArrays.cpp \
   IO/paramio.cpp \
   IO/configreader.cpp \
   IO/dcdio.cpp \
