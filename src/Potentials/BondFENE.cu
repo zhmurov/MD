@@ -2,7 +2,7 @@
 
 //[bonds] func = 1
 
-BondFENE::BondFENE(MDData *mdd, float* ks, float R, int count, int2* bonds, float* bondsR0){
+BondFENE::BondFENE(MDData *mdd, float R, int count, int2* bonds, float* bondsR0, float* bondsKs){
 	this->mdd = mdd;
 	this->R = R;
 
@@ -10,10 +10,6 @@ BondFENE::BondFENE(MDData *mdd, float* ks, float R, int count, int2* bonds, floa
 	blockSize = DEFAULT_BLOCK_SIZE;
 
 	int i, j, b;
-
-//spring constant
-	cudaMalloc((void**)&d_ks, mdd->N*sizeof(float));
-	cudaMemcpy(d_ks, ks, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 
 // maxBonds
 	h_bondCount = (int*)calloc(mdd->N, sizeof(int));
@@ -39,6 +35,8 @@ BondFENE::BondFENE(MDData *mdd, float* ks, float R, int count, int2* bonds, floa
 	cudaMalloc((void**)&d_bondMap, (mdd->N*maxBonds)*sizeof(int));
 	h_bondMapR0 = (float*)calloc((mdd->N*maxBonds), sizeof(float));
 	cudaMalloc((void**)&d_bondMapR0, (mdd->N*maxBonds)*sizeof(float));
+	h_bondMapKs = (float*)calloc((mdd->N*maxBonds), sizeof(float));
+	cudaMalloc((void**)&d_bondMapKs, (mdd->N*maxBonds)*sizeof(float));
 
 	for(b = 0; b < count; b++){
 		i = bonds[b].x;
@@ -46,15 +44,19 @@ BondFENE::BondFENE(MDData *mdd, float* ks, float R, int count, int2* bonds, floa
 
 		h_bondMap[i + h_bondCount[i]*mdd->N] = j;
 		h_bondMapR0[i + h_bondCount[i]*mdd->N] = bondsR0[b];
+		h_bondMapKs[i + h_bondCount[i]*mdd->N] = bondsKs[b];
 		h_bondCount[i]++;
 
 		h_bondMap[j + h_bondCount[j]*mdd->N] = i;
 		h_bondMapR0[j + h_bondCount[j]*mdd->N] = bondsR0[b];
+		h_bondMapKs[j + h_bondCount[j]*mdd->N] = bondsKs[b];
 		h_bondCount[j]++;
 	}
+
 	cudaMemcpy(d_bondCount, h_bondCount, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_bondMap, h_bondMap, (mdd->N*maxBonds)*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_bondMapR0, h_bondMapR0, (mdd->N*maxBonds)*sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_bondMapKs, h_bondMapKs, (mdd->N*maxBonds)*sizeof(float), cudaMemcpyHostToDevice);
 
 // energy
 	h_energy = (float*)calloc(mdd->N, sizeof(float));
@@ -66,15 +68,17 @@ BondFENE::~BondFENE(){
 	free(h_bondCount);
 	free(h_bondMap);
 	free(h_bondMapR0);
+	free(h_bondMapKs);
 	free(h_energy);
 	cudaFree(d_bondCount);
 	cudaFree(d_bondMap);
 	cudaFree(d_bondMapR0);
+	cudaFree(d_bondMapKs);
 	cudaFree(d_energy);
 }
 
 //================================================================================================
-__global__ void bondFene_kernel(float* d_ks, float R, int* d_bondCount, int* d_bondMap, float* d_bondMapR0){
+__global__ void bondFene_kernel(float R, int* d_bondCount, int* d_bondMap, float* d_bondMapR0, float* d_bondMapKs){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if(i < c_mdd.N){
 
@@ -107,7 +111,7 @@ __global__ void bondFene_kernel(float* d_ks, float R, int* d_bondCount, int* d_b
 			temp1 = rij_mod - r0;
 			temp2 = R*R - temp1*temp1;
 
-			df = d_ks[i]*R*R*(temp1/(temp2*rij_mod));
+			df = d_bondMapKs[i + b*c_mdd.N]*R*R*(temp1/(temp2*rij_mod));
 
 			f.x += df*rij.x;
 			f.y += df*rij.y;
@@ -118,7 +122,7 @@ __global__ void bondFene_kernel(float* d_ks, float R, int* d_bondCount, int* d_b
 }
 
 //================================================================================================
-__global__ void bondFeneEnergy_kernel(float* d_ks, float R, int* d_bondCount, int* d_bondMap, float* d_bondMapR0, float* d_energy){
+__global__ void bondFeneEnergy_kernel(float R, int* d_bondCount, int* d_bondMap, float* d_bondMapR0, float* d_bondMapKs, float* d_energy){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if(i < c_mdd.N){
 
@@ -149,7 +153,7 @@ __global__ void bondFeneEnergy_kernel(float* d_ks, float R, int* d_bondCount, in
 			rij_mod = sqrt(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
 
 			temp1 = (rij_mod - r0)*(rij_mod - r0);
-			energy += -d_ks[i]*R*R*logf(1.0 - temp1/(R*R))/2;
+			energy += -d_bondMapKs[i + b*c_mdd.N]*R*R*logf(1.0 - temp1/(R*R))/2;
 		}
 		d_energy[i] = energy;
 	}
@@ -157,17 +161,20 @@ __global__ void bondFeneEnergy_kernel(float* d_ks, float R, int* d_bondCount, in
 
 //================================================================================================
 void BondFENE::compute(){
-	bondFene_kernel<<<this->blockCount, this->blockSize>>>(d_ks, R, d_bondCount, d_bondMap, d_bondMapR0);
+	bondFene_kernel<<<this->blockCount, this->blockSize>>>(R, d_bondCount, d_bondMap, d_bondMapR0, d_bondMapKs);
 }
 
 //================================================================================================
 float BondFENE::getEnergies(int energyId, int timestep){
-	bondFeneEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_ks, R, d_bondCount, d_bondMap, d_bondMapR0, d_energy);
+	bondFeneEnergy_kernel<<<this->blockCount, this->blockSize>>>(R, d_bondCount, d_bondMap, d_bondMapR0, d_bondMapKs, d_energy);
 
 	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0f;
 	for(int i = 0; i < mdd->N; i++){
 		energy_sum += h_energy[i];
+		//if(isnan(h_energy[i])){
+			//printf("FENE energy is NaN on atom %d\n", i);
+		//}
 	}
 	return energy_sum;
 }

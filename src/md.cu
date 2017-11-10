@@ -147,15 +147,15 @@ void MDGPU::init()
 	PARAMData par;
 
 	char filename[FILENAME_LENGTH];
-	getMaskedParameter(filename, PARAMETER_TOPOLOGY_FILENAME);
+	getMaskedParameter(filename, PARAMETER_INPUT_TOP);
 	readTOP(filename, &top);
 
 	if(getYesNoParameter(PARAMETER_POTENTIAL_BONDSCLASS2ATOM, DEFAULT_POTENTIAL_BONDSCLASS2ATOM) || getYesNoParameter(PARAMETER_POTENTIAL_ANGLECLASS2, DEFAULT_POTENTIAL_ANGLECLASS2) || getYesNoParameter(PARAMETER_POTENTIAL_GAUSSEXCLUDED, DEFAULT_POTENTIAL_GAUSSEXCLUDED)){
-		getMaskedParameter(filename, PARAMETER_PARAMETERS_FILENAME);
+		getMaskedParameter(filename, PARAMETER_INPUT_PARAMETERS);
 		readPARAM(filename, &par);
 	}
 
-	getMaskedParameter(filename, PARAMETER_PSF_OUTPUT_FILENAME);
+	getMaskedParameter(filename, PARAMETER_OUTPUT_PSF);
 	dumpPSF(filename, top);
 
 	//TODO
@@ -194,7 +194,7 @@ void MDGPU::init()
 	mdd.h_atomTypes = (int*)calloc(mdd.N, sizeof(int));
 	mdd.h_boxids = (int4*)calloc(mdd.N, sizeof(int4));
 
-	getMaskedParameter(filename, PARAMETER_COORDINATES_FILENAME, "NONE");
+	getMaskedParameter(filename, PARAMETER_INPUT_XYZ, "NONE");
 
 	if(strncmp(filename, "NONE", 4) != 0){
 		readCoordinatesFromFile(filename, mdd);
@@ -244,7 +244,7 @@ void MDGPU::init()
 
 	if(getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX) || getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING)){
 
-		getMaskedParameter(filename, PARAMETER_PDB_REFERENCE_FILENAME);
+		getMaskedParameter(filename, PARAMETER_INPUT_PDB_REFERENCE);
 		readPDB(filename, &pdbref);
 
 		if(getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX)){
@@ -545,7 +545,7 @@ void MDGPU::init()
 		}
 
 		checkCUDAError("CUDA ERROR: before FENE potential\n");
-		potentials.push_back(new BondFENE(&mdd, bondFeneKs, bondFeneR, bondFeneCount, bondFeneBonds, bondFeneBondsR0));
+		potentials.push_back(new BondFENE(&mdd, bondFeneR, bondFeneCount, bondFeneBonds, bondFeneBondsR0, bondFeneKs));
 		checkCUDAError("CUDA ERROR: after FENE potential\n");
 	}
 
@@ -741,9 +741,9 @@ void MDGPU::init()
 		float* pullKs;
 		pullKs = (float*)calloc(pdbref.atomCount, sizeof(float));
 
-		int dcdFreq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+		int dcdFreq = getIntegerParameter(PARAMETER_DCD_FREQUENCY);
 		char pullOutputFilename[FILENAME_LENGTH];
-		getMaskedParameter(pullOutputFilename, PARAMETER_PULLING_OUTPUT_FILENAME);
+		getMaskedParameter(pullOutputFilename, PARAMETER_OUTPUT_PULLING);
 
 		//pdbref.atoms.occupancy - spring constant
 		//pdbref.atoms.x(y,z) - force vector
@@ -805,13 +805,13 @@ void MDGPU::init()
 		float sfEps = getFloatParameter(PARAMETER_SURFACE_EPSILON);
 		float sfSigm = getFloatParameter(PARAMETER_SURFACE_SIGMA);
 
-		int dcdFreq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
+		int dcdFreq = getIntegerParameter(PARAMETER_DCD_FREQUENCY);
 		char pdbCantFilename[FILENAME_LENGTH];
-		getMaskedParameter(pdbCantFilename, PARAMETER_PDB_CANTILEVER_OUTPUT_FILENAME);
+		getMaskedParameter(pdbCantFilename, PARAMETER_OUTPUT_PDB_CANTILEVER);
 		char dcdCantFilename[FILENAME_LENGTH];
-		getMaskedParameter(dcdCantFilename, PARAMETER_DCD_CANTILEVER_OUTPUT_FILENAME);
+		getMaskedParameter(dcdCantFilename, PARAMETER_OUTPUT_DCD_CANTILEVER);
 		char indOutputFilename[FILENAME_LENGTH];
-		getMaskedParameter(indOutputFilename, PARAMETER_INDENTATION_OUTPUT_FILENAME);
+		getMaskedParameter(indOutputFilename, PARAMETER_OUTPUT_INDENTATION);
 
 		//cantilever
 		FILE* cant = fopen(pdbCantFilename, "w");
@@ -973,11 +973,11 @@ void MDGPU::init()
 	}
 
 //UPDATERS
-	int dcd_output_freq = getIntegerParameter(PARAMETER_DCD_OUTPUT_FREQUENCY);
-	getMaskedParameter(filename, PARAMETER_DCD_OUTPUT_FILENAME);
+	int dcd_output_freq = getIntegerParameter(PARAMETER_DCD_FREQUENCY);
+	getMaskedParameter(filename, PARAMETER_OUTPUT_DCD);
 	updaters.push_back(new CoordinatesOutputDCD(&mdd, dcd_output_freq, filename));
-	int energy_output_freq = getIntegerParameter(PARAMETER_ENERGY_OUTPUT_FREQUENCY);
-	getMaskedParameter(filename, PARAMETER_ENERGY_OUTPUT_FILENAME);
+	int energy_output_freq = getIntegerParameter(PARAMETER_ENERGY_FREQUENCY);
+	getMaskedParameter(filename, PARAMETER_OUTPUT_ENERGY);
 	updaters.push_back(new EnergyOutput(&mdd, &potentials, energy_output_freq, filename));
 	
 	if(getYesNoParameter(PARAMETER_FIX_MOMENTUM, DEFAULT_FIX_MOMENTUM)){
@@ -1011,8 +1011,10 @@ void MDGPU::generateVelocities(float T, int * rseed){
 	}
 	float Temp = 0.0f;
 	float Vav = 0.0f;
-	int freq = getIntegerParameter(PARAMETER_ENERGY_OUTPUT_FREQUENCY);
-	FILE* file = fopen("vels.dat", "w");
+	int freq = getIntegerParameter(PARAMETER_ENERGY_FREQUENCY);
+	char filename[FILENAME_LENGTH];
+	getMaskedParameter(filename, PARAMETER_OUTPUT_VELOCITY);
+	FILE* file = fopen(filename, "w");
 	for(i = 0; i < mdd.N; i++){
 		mdd.h_vel[i].w = mdd.h_vel[i].x*mdd.h_vel[i].x + mdd.h_vel[i].y*mdd.h_vel[i].y + mdd.h_vel[i].z*mdd.h_vel[i].z;
 		Vav += sqrtf(mdd.h_vel[i].w);
@@ -1074,18 +1076,16 @@ void MDGPU::compute()
 	}
 	
 	//XYZ-File final coord
-	if(getYesNoParameter(PARAMETER_OUTPUT_XYZ, DEFAULT_OUTPUT_XYZ)){
-		char filename[FILENAME_LENGTH];
-		getMaskedParameter(filename, PARAMETER_OUTPUT_XYZ_FILENAME);
-		FILE * file;
-		file = fopen(filename, "w");
-		fprintf(file, "%d\n", mdd.N);
-		fprintf(file, "Created by mdd.cu\n");
-		for(i = 0; i < mdd.N; i++){
-			fprintf(file, "%s\t%f\t%f\t%f\n", "P", mdd.h_coord[i].x*10.0, mdd.h_coord[i].y*10.0, mdd.h_coord[i].z*10.0);
-		}
-		fclose(file);
+	char filename[FILENAME_LENGTH];
+	getMaskedParameter(filename, PARAMETER_OUTPUT_XYZ);
+	FILE* file;
+	file = fopen(filename, "w");
+	fprintf(file, "%d\n", mdd.N);
+	fprintf(file, "Created by mdd.cu\n");
+	for(i = 0; i < mdd.N; i++){
+		fprintf(file, "%s\t%f\t%f\t%f\n", "P", mdd.h_coord[i].x*10.0, mdd.h_coord[i].y*10.0, mdd.h_coord[i].z*10.0);
 	}
+	fclose(file);
 }
 
 MDGPU::~MDGPU()
@@ -1105,12 +1105,3 @@ MDGPU::~MDGPU()
 	cudaFree(mdd.d_charge);
 	cudaFree(mdd.d_atomTypes);
 }
-
-/*void compute(){
-
-	MDGPU mdgpu;
-	mdgpu.init();
-	mdgpu.compute();
-	cudaDeviceReset();
-}*/
-

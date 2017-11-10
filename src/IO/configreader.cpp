@@ -65,7 +65,7 @@ void parseParametersFile(const char* filename, int argc, char *argv[]){
 			pch = strtok(NULL, "#\n");
 			strcpy(paramValues[i], pch);
 #ifdef MDIS_IO_CONFIG_DEBUG
-			printf("%s\t%s\n", paramNames[i], paramValues[i]);
+			//printf("%s\t%s\n", paramNames[i], paramValues[i]);
 #endif
 			i++;
 		}

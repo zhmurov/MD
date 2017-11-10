@@ -1,0 +1,40 @@
+#!/bin/bash
+
+NAME=("$1")
+ITER=("$2")
+
+CONF_EQUIL="${NAME}_equil.conf"
+CONF_MIN="${NAME}_min.conf"
+
+TOP="${NAME}_CG.top"
+NEWTOP="new${NAME}_CG.top"
+XYZMIN="${NAME}_CG.min.xyz"
+DCD="${NAME}_CG.dcd"
+
+
+printf "name of structure: %s\n" "$NAME"
+printf "quantity of iterations: %d\n" "$ITER"
+printf "names of config(equil, min) files: %s, %s\n" "$CONF_EQUIL" "$CONF_MIN"
+printf "name of TOP file: %s\n" "$TOP"
+printf "name of newTOP file: %s\n" "$NEWTOP"
+
+cp $NAME/input/$TOP $NAME/input/$NEWTOP
+
+cd ../../
+make
+cd TopologyCreators/SOPParametrization/$NAME/
+
+./../../../../bin/mrg-cg2 $CONF_MIN
+cp -f output/$XYZMIN input/
+
+./../../../../bin/sop_par0 $CONF_EQUIL 0
+cp -f output/$NEWTOP input/
+
+for((i = 1; i < $ITER; i++))
+do
+	./../../../../bin/mrg-cg2 $CONF_EQUIL
+	cp -f output/$DCD input/
+
+	./../../../../bin/sop_par1 $CONF_EQUIL $i
+	cp -f output/$NEWTOP input/
+done

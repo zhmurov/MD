@@ -14,6 +14,7 @@
 #define TOP_ATOMTYPE_LENGTH 16
 #define TOP_ATOMNAME_LENGTH 8
 #define TOP_RESNAME_LENGTH 8
+#define TOP_SEGMENT_LENGTH 5
 
 #define TOP_SECTION_ATOMS		0
 #define TOP_SECTION_PAIRS		1
@@ -27,6 +28,7 @@ typedef struct {
 	char resName[TOP_RESNAME_LENGTH];
 	char name[TOP_ATOMNAME_LENGTH];
 	char chain;
+	char segment[TOP_SEGMENT_LENGTH];
 	float charge;
 	float mass;
 } TOPAtom;

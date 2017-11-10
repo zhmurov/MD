@@ -275,33 +275,33 @@ int dcdReadFrame(DCD* dcd){
 	FILE* dcd_file = dcd->file;
 	int iin;
 	double din;
-	fread(&iin, 4, 1, dcd_file);
 	if(dcd->hasUC){
-		fread(&dcd->uc.a, 4, 1, dcd_file);
-		fread(&dcd->uc.alpha, 4, 1, dcd_file);
-		fread(&dcd->uc.b, 4, 1, dcd_file);
-		fread(&dcd->uc.beta, 4, 1, dcd_file);
-		fread(&dcd->uc.gamma, 4, 1, dcd_file);
-		fread(&dcd->uc.c, 4, 1, dcd_file);
+		fread(&iin, 4, 1, dcd_file);
+		fread(&dcd->uc.a, 8, 1, dcd_file);
+		fread(&dcd->uc.alpha, 8, 1, dcd_file);
+		fread(&dcd->uc.b, 8, 1, dcd_file);
+		fread(&dcd->uc.beta, 8, 1, dcd_file);
+		fread(&dcd->uc.gamma, 8, 1, dcd_file);
+		fread(&dcd->uc.c, 8, 1, dcd_file);
 		/*for(int i = 0; i < 6; i++){
 			fread(&din, 8, 1, dcd_file);
 			printf("%d: %f\n", i+1, din);
 		}*/
+		fread(&iin, 4, 1, dcd_file);
 	}
 	fread(&iin, 4, 1, dcd_file);
-	fread(&iin, 4, 1, dcd_file);
 	//printf("%d\n", iin);
-	fread(&dcd->frame.X, 4*dcd->header.N, 1, dcd_file);
-	fread(&iin, 4, 1, dcd_file);
-	//printf("%d\n", iin);
-	fread(&iin, 4, 1, dcd_file);
-	//printf("%d\n", iin);
-	fread(&dcd->frame.Y, 4*dcd->header.N, 1, dcd_file);
+	fread(dcd->frame.X, 4*dcd->header.N, 1, dcd_file);
 	fread(&iin, 4, 1, dcd_file);
 	//printf("%d\n", iin);
 	fread(&iin, 4, 1, dcd_file);
 	//printf("%d\n", iin);
-	fread(&dcd->frame.Z, 4*dcd->header.N, 1, dcd_file);
+	fread(dcd->frame.Y, 4*dcd->header.N, 1, dcd_file);
+	fread(&iin, 4, 1, dcd_file);
+	//printf("%d\n", iin);
+	fread(&iin, 4, 1, dcd_file);
+	//printf("%d\n", iin);
+	fread(dcd->frame.Z, 4*dcd->header.N, 1, dcd_file);
 	fread(&iin, 4, 1, dcd_file);
 	//printf("%d\n", iin);
 	if(feof(dcd_file) == 0){
