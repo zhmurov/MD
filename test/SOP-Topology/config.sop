@@ -1,0 +1,19 @@
+
+name 1tit						# Name, assigned to the protein
+
+# Input
+structure	structure/<name>.pdb			# Initial (all-atom) pdb
+cgconfig	data/aa_to_cg_ca_v2.inp
+use_chains  yes
+
+# Output
+topology			top/<name>.top 		# Topology file to be created
+coordinates_pdb     pdb/<name>.pdb		# Coarse-grained pdb to be created
+coordinates_xyz     pdb/<name>.xyz		# Coarse-grained pdb to be created
+topology_psf		top/<name>_cacb.psf
+topology_natpsf		top/<name>_nat_cacb.psf
+
+# Native contacts definition
+R_limit_bond	8.0	# Cut-off for the distance between Calpha atoms for residues forming native contact (in A)
+SC_limit_bond	5.2	# Cut-off for the distance between side-chain heavy atoms for residues forming native contact (in A)
+eh		1.5	# Energy metrics for native contacts (in kcal/mol)
