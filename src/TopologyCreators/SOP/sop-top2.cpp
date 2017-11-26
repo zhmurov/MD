@@ -112,7 +112,7 @@ bool pairs_comparator(SOPPair p1, SOPPair p2){
 }
 
 void trimString(char* string){
-	printf("'%s' -> ", string);
+	//printf("'%s' -> ", string);
 	int i = 0;
 	int j = 0;
 	while(string[j] == ' '){
@@ -129,7 +129,7 @@ void trimString(char* string){
 		i++;
 	}
 	string[i] = '\0';
-	printf("'%s'\n", string);
+	//printf("'%s'\n", string);
 }
 
 std::vector<SOPBond> bonds;
@@ -379,26 +379,28 @@ int main(int argc, char* argv[]){
 					bead.x /= (double)count;
 					bead.y /= (double)count;
 					bead.z /= (double)count;
-				}
-				count = 0;
-				bead.beta = 0.0;
-				bead.occupancy = 0.0;
-				for(l = 0; l < pdb_tree_resid.atoms.size(); l++){
-					for(o = 0; o < resid.beads.at(n).atomsRepresents.size(); o++){
-						if(strcmp(pdb_tree_resid.atoms.at(l)->name,
-								resid.beads.at(n).atomsRepresents.at(o).name) == 0){
-							//PDBAtom atom;
-							//memcpy(&atom, &pdb_tree_resid.atoms.at(l), sizeof(PDBAtom));
-							bead.represents.push_back(*pdb_tree_resid.atoms.at(l));
-							bead.beta += pdb_tree_resid.atoms.at(l)->beta;
-							bead.occupancy += pdb_tree_resid.atoms.at(l)->occupancy;
-							count ++;
-						}
-					}
-				}
-				bead.beta /= count;
-				bead.occupancy /= count;
-				beads.push_back(bead);
+				    count = 0;
+				    bead.beta = 0.0;
+				    bead.occupancy = 0.0;
+				    for(l = 0; l < pdb_tree_resid.atoms.size(); l++){
+					    for(o = 0; o < resid.beads.at(n).atomsRepresents.size(); o++){
+						    if(strcmp(pdb_tree_resid.atoms.at(l)->name,
+								    resid.beads.at(n).atomsRepresents.at(o).name) == 0){
+							    //PDBAtom atom;
+							    //memcpy(&atom, &pdb_tree_resid.atoms.at(l), sizeof(PDBAtom));
+							    bead.represents.push_back(*pdb_tree_resid.atoms.at(l));
+							    bead.beta += pdb_tree_resid.atoms.at(l)->beta;
+							    bead.occupancy += pdb_tree_resid.atoms.at(l)->occupancy;
+							    count ++;
+						    }
+					    }
+				    }
+				    bead.beta /= count;
+				    bead.occupancy /= count;
+				    beads.push_back(bead);
+                } else {
+                    printf("WARNING: No coordinates for bead %s in residue %s-%s%d. Bead was not added.\n", resid.beads.at(n).name, pdb_tree.at(j).segment_name, pdb_tree_resid.res_name, pdb_tree_resid.resid);
+                }
 			}
 		}
 	}
@@ -513,7 +515,7 @@ int main(int argc, char* argv[]){
 					added = true;
 				}
 			}
-			if(!added){
+			if(!added && cutoffAtomistic > 0){
 				for(l = 0; l < beads.at(j).represents.size(); l++){
 					for(m = 0; m < beads.at(k).represents.size(); m++){
 						double r1 = getDistance(beads.at(j).represents.at(l), beads.at(k).represents.at(m));
