@@ -17,12 +17,14 @@ SteepestDescent::SteepestDescent(MDData *mdd, float temperature, float gamma, fl
 
 	initRand(seed, mdd->N);
 
+	this->maxForce = maxForce;
+
 	h_fixAtoms = (int*)calloc(mdd->N, sizeof(int));
 	memcpy(h_fixAtoms, fixAtoms, mdd->N*sizeof(int));
 	cudaMalloc((void**)&d_fixAtoms, mdd->N*sizeof(int));
 	cudaMemcpy(d_fixAtoms, h_fixAtoms, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 
-	var = sqrtf(2.0f*BOLTZMANN_CONSTANT*temperature*gamma/mdd->dt);
+	this->var = sqrtf(2.0f*BOLTZMANN_CONSTANT*temperature*gamma/mdd->dt);
 }
 
 SteepestDescent::~SteepestDescent(){
@@ -41,7 +43,8 @@ __global__ void integrateSteepestDescent_kernel(float gamma, float var, float ma
 		float tau = c_mdd.dt;
 
 		float4 rf = rforce(i);
-		float df = tau/gamma;
+		//float df = tau/gamma;
+		float df = tau/c_mdd.d_mass[i];
 
 		float modF = sqrtf(f.x*f.x + f.y*f.y + f.z*f.z);
 
@@ -58,9 +61,9 @@ __global__ void integrateSteepestDescent_kernel(float gamma, float var, float ma
 		vel.w += gamma*(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z)/(c_mdd.d_mass[i]*2.0f*tau);
 
 		if (d_fixAtoms[i] == 0){
-			coord.x += vel.x;
-			coord.y += vel.y;
-			coord.z += vel.z;
+			coord.x += vel.x*tau;
+			coord.y += vel.y*tau;
+			coord.z += vel.z*tau;
 		}
 
 		if(coord.x > c_mdd.bc.rhi.x){
