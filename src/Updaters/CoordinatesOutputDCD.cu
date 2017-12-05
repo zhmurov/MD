@@ -12,7 +12,7 @@ CoordinatesOutputDCD::CoordinatesOutputDCD(MDData *mdd, int freq, char* filename
 	this->frequence = freq;
 	int frameCount = mdd->numsteps/this->frequence + 1;
 	float timeStep = mdd->step;
-	createDCD(&dcd, mdd->N, frameCount, 1, timeStep, this->frequence, 1, mdd->bc.len.x, mdd->bc.len.y, mdd->bc.len.z);
+	createDCD(&dcd, mdd->N, frameCount, 1, timeStep, this->frequence, 1, mdd->bc.len.x*10.0, mdd->bc.len.y*10.0, mdd->bc.len.z*10.0);
 	dcdOpenWrite(&dcd, filename);
 	dcdWriteHeader(dcd);
 }
