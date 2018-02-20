@@ -13,13 +13,13 @@
 #include "../../../IO/topio.h"
 #include "../../../IO/dcdio.h"
 
-#define FIRST_FRAME				5001
+#define FIRST_FRAME				1
+//#define LAST_FRAME				100001
 #define STRIDE					10
 #define BUF_SIZE 				256
 
 #define T						300
-//#define BOLTZMANN_CONSTANT		0.008314462					// [kJ/(K*mol)]
-#define BOLTZMANN_CONSTANT	0.00198721					// [KCal/(K*mol)]
+#define BOLTZMANN_CONSTANT		0.00198721					// [KCal/(K*mol)]
 
 PDB pdb;
 TOPData top;
@@ -43,6 +43,7 @@ int main(int argc, char* argv[]){
 	getMaskedParameter(filename, PARAMETER_INPUT_FULLATOM_DCD);
 	dcdOpenRead(&dcd, filename);
 	dcdReadHeader(&dcd);
+
 	// path output
 	char path_output[BUF_SIZE];
 	getMaskedParameter(path_output, PARAMETER_PATH_OUTPUT);
@@ -115,6 +116,9 @@ int main(int argc, char* argv[]){
 				}
 				fprintf(dev, "\n");
 			}
+		}
+		if(totalFrames == LAST_FRAME){
+			break;
 		}
 	}
 
@@ -203,8 +207,11 @@ int main(int argc, char* argv[]){
 		newtop.exclusions[e].func = top.exclusions[e].func;
 	}
 	// coarse-grain newTOP
-	getMaskedParameter(filename, PARAMETER_OUTPUT_NEWTOP);
+	char newtop_filename[BUF_SIZE];
+	getMaskedParameter(newtop_filename, PARAMETER_OUTPUT_NEWTOP_FILENAME);
+	sprintf(filename, "%s%d.top", newtop_filename, iteration);
 	writeTOP(filename, &newtop);
 
+	printf("==========ITERATION 0 SUCCESS ==========\n");
 	return 0;
 }

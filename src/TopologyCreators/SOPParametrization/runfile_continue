@@ -1,7 +1,8 @@
 #!/bin/bash
 
 NAME=("$1")
-ITER=("$2")
+START=("$2")
+END=("$3")
 
 CONF_EQUIL="${NAME}_equil.conf"
 CONF_MIN="${NAME}_min.conf"
@@ -17,24 +18,9 @@ printf "names of config(equil, min) files: %s, %s\n" "$CONF_EQUIL" "$CONF_MIN"
 printf "name of TOP file: %s\n" "$TOP"
 printf "name of newTOP file: %s\n" "$NEWTOP"
 
-cd ../../
-make
-cd TopologyCreators/SOPParametrization/$NAME/
+cd $NAME/
 
-
-	#minimization of CG model
-./../../../../bin/mrg-cg2 $CONF_MIN
-cp -f output/$XYZMIN input/
-
-
-	#finding initial approximation of parameters and creating newtop
-cp -f input/$TOP input/$NEWTOP
-./../../../../bin/sop_par0 $CONF_EQUIL 0
-rm input/$NEWTOP
-cp -f output/"new${NAME}_CG0.top" input/$NEWTOP
-
-
-for((i = 1; i <= $ITER; i++))
+for((i = $START; i <= $END; i++))
 do
 	#simulation with new parameters
 	./../../../../bin/mrg-cg2 $CONF_EQUIL

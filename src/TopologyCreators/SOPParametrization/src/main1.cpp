@@ -17,8 +17,7 @@
 #define BUF_SIZE		256
 
 #define ALPHA			0.1
-#define T			300
-//#define BOLTZMANN_CONSTANT		0.008314462					// [kJ/(K*mol)]
+#define T				300
 #define BOLTZMANN_CONSTANT	0.00198721					// [KCal/(K*mol)]
 
 TOPData top;
@@ -39,6 +38,7 @@ int main(int argc, char* argv[]){
 	getMaskedParameter(filename, PARAMETER_INPUT_DCD);
 	dcdOpenRead(&dcd, filename);
 	dcdReadHeader(&dcd);
+	printf("I'm here; %s\n", filename);
 	// path output
 	char path_output[BUF_SIZE];
 	getMaskedParameter(path_output, PARAMETER_PATH_OUTPUT);
@@ -98,12 +98,13 @@ int main(int argc, char* argv[]){
 	}
 	for(i = 0; i < top.atomCount; i++){
 		Npairs[i] /= stotalFrames;
+
 	}
 
 	//read file
 	sprintf(filename, "%smeandev_disp0.dat", path_output);
 	FILE* meandev_disp_fread = fopen(filename, "r");
-	sprintf(filename, "%seh%d.dat", path_output, iteration);
+	sprintf(filename, "%seh%d.dat", path_output, (iteration-1));
 	FILE* eh_fread = fopen(filename, "r");
 
 	//write file
@@ -213,9 +214,13 @@ int main(int argc, char* argv[]){
 		newtop.exclusions[e].j = top.exclusions[e].j;
 		newtop.exclusions[e].func = top.exclusions[e].func;
 	}
-	// coarse-grain newTOP
-	getMaskedParameter(filename, PARAMETER_OUTPUT_NEWTOP);
-	readTOP(filename, &newtop);
 
+	// coarse-grain newTOP
+	char newtop_filename[BUF_SIZE];
+	getMaskedParameter(newtop_filename, PARAMETER_OUTPUT_NEWTOP_FILENAME);
+	sprintf(filename, "%s%d.top", newtop_filename, iteration);
+	writeTOP(filename, &newtop);
+
+	printf("==========ITERATION %d SUCCESS ==========\n", iteration);
 	return 0;
 }
