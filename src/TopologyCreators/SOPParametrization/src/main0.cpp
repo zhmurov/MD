@@ -117,9 +117,9 @@ int main(int argc, char* argv[]){
 				fprintf(dev, "\n");
 			}
 		}
-		if(totalFrames == LAST_FRAME){
-			break;
-		}
+		//if(totalFrames == LAST_FRAME){
+			//break;
+		//}
 	}
 
 	stotalFrames = float(totalFrames+1 - FIRST_FRAME)/float(STRIDE);

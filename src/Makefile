@@ -52,7 +52,7 @@ SOP_PARAMETRIZATION_0_SOURCES	:= \
   Util/wrapper.cpp \
   Util/mystl.cpp
 SOP_PARAMETRIZATION_1_SOURCES	:= \
-  TopologyCreators/SOPParametrization/src/main0.cpp \
+  TopologyCreators/SOPParametrization/src/main1.cpp \
   IO/configreader.cpp \
   IO/pdbio.cpp \
   IO/topio.cpp \
