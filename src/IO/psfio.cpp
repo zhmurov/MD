@@ -601,7 +601,7 @@ void writeDihedrals(FILE* psfFile, PSF* psfData){
  */
 void writeImpropers(FILE* psfFile, PSF* psfData){
 	int i;
-	fprintf(psfFile, "%8d !IMNPHI: impropers\n", psfData->nimphi);
+	fprintf(psfFile, "%8d !NIMPHI: impropers\n", psfData->nimphi);
 	for(i = 0; i < psfData->nimphi; i++){
 		fprintf(psfFile, "%8d%8d%8d%8d",
 				psfData->impropers[i].i,
