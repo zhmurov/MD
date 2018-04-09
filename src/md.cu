@@ -864,26 +864,27 @@ void MDGPU::init()
 			}
 		}
 
-		float* bondHarmonicKs;
-		bondHarmonicKs = (float*)calloc(bondHarmonicCount, sizeof(float));
 		int2* bondHarmonicBonds;
 		bondHarmonicBonds = (int2*)calloc(bondHarmonicCount, sizeof(int2));
 		float* bondHarmonicBondsR0;
 		bondHarmonicBondsR0 = (float*)calloc(bondHarmonicCount, sizeof(float));
+		float* bondHarmonicBondsKs;
+		bondHarmonicBondsKs = (float*)calloc(bondHarmonicCount, sizeof(float));
+
+		float ks = getFloatParameter(PARAMETER_BOND_HARMONIC_KS, DEFAULT_BOND_HARMONIC_KS);	 //spring constant			[kJ/(mol*nm^2)]
 
 		bondHarmonicCount = 0;
-		float ks = getFloatParameter(PARAMETER_BOND_HARMONIC_KS, DEFAULT_BOND_HARMONIC_KS);	 //spring constant			[kJ/(mol*nm^2)]
 		if(ks < 0.0f){
 			for(b = 0; b < top.bondCount; b++){
 				if(top.bonds[b].func == bondHarmonicFunc){
-					bondHarmonicKs[bondHarmonicCount] = top.bonds[b].c1;
+					bondHarmonicBondsKs[bondHarmonicCount] = top.bonds[b].c1;
 					bondHarmonicCount++;
 				}
 			}
 		}else{
 			for(b = 0; b < top.bondCount; b++){
 				if(top.bonds[b].func == bondHarmonicFunc){
-					bondHarmonicKs[bondHarmonicCount] = ks;
+					bondHarmonicBondsKs[bondHarmonicCount] = ks;
 					bondHarmonicCount++;
 				}
 			}
@@ -895,11 +896,12 @@ void MDGPU::init()
 				bondHarmonicBonds[bondHarmonicCount].x = getIndexInTOP(top.bonds[b].i, &top);
 				bondHarmonicBonds[bondHarmonicCount].y = getIndexInTOP(top.bonds[b].j, &top);
 				bondHarmonicBondsR0[bondHarmonicCount] = top.bonds[b].c0/10.0f; 			// [angstr]->[nm]
+				bondHarmonicCount++;
 			}
 		}
 
 		checkCUDAError("CUDA ERROR: before bondHarmonic potential\n");
-		potentials.push_back(new BondHarmonic(&mdd, bondHarmonicKs, bondHarmonicCount, bondHarmonicBonds, bondHarmonicBondsR0));
+		potentials.push_back(new BondHarmonic(&mdd, bondHarmonicCount, bondHarmonicBonds, bondHarmonicBondsR0, bondHarmonicBondsKs));
 		checkCUDAError("CUDA ERROR: after bondHarmonic potential\n");
 	}
 

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+NAME=("$1")
+ITER=("$2")
+PAIR=("$3")
+
+printf "name of structure: %s\n" "$NAME"
+printf "number of iterations: %s\n" "$ITER"
+
+if [ $PAIR == "B" ]
+then
+	printf "pairtype: bonds\n"
+elif [ $PAIR == "P" ]
+then
+	printf "pairtype: pairs\n"
+else
+	printf "ERROR: WRONG VALUE FOR PAIRTYPE\n"
+fi
+
+for param in "$@"
+do
+	if [ "$param" != "$NAME" ] && [ "$param" != "$ITER" ] && [ "$param" != "$PAIR" ];
+	then
+	count=$(( $count + 1 ))
+	echo "#$count: $param frames"
+	fi
+done
+
+printf "count = $count\n"
+
+CONF_EQUIL="${NAME}_equil.conf"
+CONF_MIN="${NAME}_min.conf"
+
+TOP="${NAME}_CG.top"
+NEWTOP="new${NAME}_CG.top"
+XYZMIN="${NAME}_CG.min.xyz"
+DCD="${NAME}_CG.dcd"
+
+#printf "names of config(equil, min) files: %s, %s\n" "$CONF_EQUIL" "$CONF_MIN"
+#printf "name of TOP file: %s\n" "$TOP"
+#printf "name of newTOP file: %s\n" "$NEWTOP"
+
+cd ../../
+make
+cd TopologyCreators/SOPParametrization/$NAME/
+
+
+	#finding initial approximation of parameters and creating newtop
+cp -f input/$TOP input/$NEWTOP
+
+
+first_frame=651
+last_frame=$first_frame
+
+for param in "$@"
+do
+	if [ "$param" != "$NAME" ] && [ "$param" != "$ITER" ] && [ "$param" != "$PAIR" ];
+	then
+		let last_frame=$first_frame+$param
+		./../../../../bin/sop_par0 $CONF_EQUIL 0 $PAIR $first_frame $last_frame
+		rm input/$NEWTOP
+		cp -f output/"new${NAME}_CG0.top" input/$NEWTOP
+		mv -f output/dev0.dat output/dev${param}.dat
+	fi
+done

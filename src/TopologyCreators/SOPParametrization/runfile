@@ -2,6 +2,7 @@
 
 NAME=("$1")
 ITER=("$2")
+PAIR=("$3")
 
 CONF_EQUIL="${NAME}_equil.conf"
 CONF_MIN="${NAME}_min.conf"
@@ -22,26 +23,26 @@ make
 cd TopologyCreators/SOPParametrization/$NAME/
 
 
+	#finding initial approximation of parameters and creating newtop
+cp -f input/$TOP input/$NEWTOP
+./../../../../bin/sop_par0 $CONF_EQUIL 0 $PAIR
+rm input/$NEWTOP
+cp -f output/"new${NAME}_CG0.top" input/$NEWTOP
+
 	#minimization of CG model
 ./../../../../bin/mrg-cg2 $CONF_MIN
 cp -f output/$XYZMIN input/
 
 
-	#finding initial approximation of parameters and creating newtop
-cp -f input/$TOP input/$NEWTOP
-./../../../../bin/sop_par0 $CONF_EQUIL 0
-rm input/$NEWTOP
-cp -f output/"new${NAME}_CG0.top" input/$NEWTOP
-
-
 for((i = 1; i <= $ITER; i++))
 do
+
 	#simulation with new parameters
 	./../../../../bin/mrg-cg2 $CONF_EQUIL
 	cp -f output/$DCD input/
 
 	#finding new parameters using last cg dcd
-	./../../../../bin/sop_par1 $CONF_EQUIL $i
+	./../../../../bin/sop_par1 $CONF_EQUIL $i $PAIR
 
 	#check if newtop was created (sop_par1 finished)
 	#if newtop wasn't created mrg-cg2 at the next iteration won't be executed 

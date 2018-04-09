@@ -30,9 +30,12 @@
 #define DEFAULT_KS					8370
 #define PARAMETER_USE_CHAINS		"use_chains"
 #define DEFAULT_USE_CHAINS			0
+#define PARAMETER_XRAY_PDB			"xraypdb"
 
 CGConfig conf;
 PDB pdb;
+
+PDB xraypdb;
 
 struct SOPBead {
 	char name[5], type[5], resname[5], segment[5];
@@ -186,6 +189,7 @@ void addNative(int i, int j, float eh, float r0);
 int checkBonded(int i, int j);
 int check13Bonded(int i, int j);
 int checkNatived(int i, int j);
+bool checkIfInXRay(int beadID);
 double getDistance(SOPBead bead1, SOPBead bead2);
 double getDistance(PDBAtom atom1, PDBAtom atom2);
 
@@ -486,6 +490,13 @@ int main(int argc, char* argv[]){
 
 	printf("Adding native contacts...\n");
 
+	getMaskedParameter(filename, PARAMETER_XRAY_PDB, "NONE");
+	if(strncmp(filename, "NONE", 4) != 0){
+		readPDB(filename, &xraypdb);
+	} else {
+		xraypdb.atomCount = -1;
+	}
+
 	float eh, cutoff, cutoffAtomistic;
 	char ehstring[1024];
 	getMaskedParameter(ehstring, PARAMETER_EH);
@@ -510,7 +521,7 @@ int main(int argc, char* argv[]){
 			}
 			bool added = false;
 			if(r0 < cutoff){
-				if((!checkBonded(j, k)) && (!check13Bonded(j, k))){
+				if((!checkBonded(j, k)) && (!check13Bonded(j, k)) && checkIfInXRay(j) && checkIfInXRay(k)){
 					addNative(j, k, eh, r0);
 					added = true;
 				}
@@ -520,7 +531,7 @@ int main(int argc, char* argv[]){
 					for(m = 0; m < beads.at(k).represents.size(); m++){
 						double r1 = getDistance(beads.at(j).represents.at(l), beads.at(k).represents.at(m));
 						if((!added) && r1 < cutoffAtomistic){
-							if((!checkBonded(j, k)) && (!check13Bonded(j, k))){
+							if((!checkBonded(j, k)) && (!check13Bonded(j, k)) && checkIfInXRay(j) && checkIfInXRay(k)){
 								addNative(j, k, eh, r0);
 								added = true;
 							}
@@ -877,6 +888,22 @@ int checkNatived(int i, int j){
 		}
 	}
 	return 0;
+}
+
+bool checkIfInXRay(int beadID){
+	if(xraypdb.atomCount == -1){
+		return true;
+	} else {
+		int i;
+		for(i = 0; i < xraypdb.atomCount; i++){
+			if(xraypdb.atoms[i].resid == beads.at(beadID).resid && 
+				xraypdb.atoms[i].chain == beads.at(beadID).segment[0]){
+					return true;
+			}
+		}
+		printf("NOT adding contact for residue %s%d (segment '%s') that is missing in XRay structure.\n", beads.at(beadID).resname, beads.at(beadID).resid, beads.at(beadID).segment);
+		return false;
+	} 
 }
 
 double getDistance(SOPBead bead1, SOPBead bead2){

@@ -1,8 +1,8 @@
-
-name 1tit						# Name, assigned to the protein
+name 3j6f						# Name, assigned to the protein
 
 # Input
 structure	structure/<name>.pdb			# Initial (all-atom) pdb
+xraypdb		structure/<name>_xray.pdb
 cgconfig	data/aa_to_cg_ca_v2.inp
 use_chains  yes
 

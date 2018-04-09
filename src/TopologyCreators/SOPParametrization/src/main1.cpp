@@ -13,7 +13,7 @@
 #include "../../../IO/topio.h"
 #include "../../../IO/dcdio.h"
 
-#define STRIDE			1
+#define STRIDE			10
 #define BUF_SIZE		256
 
 #define ALPHA			0.1
@@ -30,6 +30,9 @@ int main(int argc, char* argv[]){
 	int iteration = atoi(argv[2]);
 	printf("==========ITERATION %d==========\n", iteration);
 
+	char* pairType = argv[3];
+	printf("pairType = %c\n", pairType[0]);
+
 	char filename[BUF_SIZE];
 	// coarse-grain TOP
 	getMaskedParameter(filename, PARAMETER_INPUT_TOP);
@@ -38,7 +41,7 @@ int main(int argc, char* argv[]){
 	getMaskedParameter(filename, PARAMETER_INPUT_DCD);
 	dcdOpenRead(&dcd, filename);
 	dcdReadHeader(&dcd);
-	printf("I'm here; %s\n", filename);
+
 	// path output
 	char path_output[BUF_SIZE];
 	getMaskedParameter(path_output, PARAMETER_PATH_OUTPUT);
@@ -48,12 +51,26 @@ int main(int argc, char* argv[]){
 	int dcdCount = dcd.header.N;
 	dcd.frame.X = (float*)calloc(dcdCount, sizeof(float));
 	dcd.frame.Y = (float*)calloc(dcdCount, sizeof(float));
-	dcd.frame.Z = (float*)calloc(dcdCount, sizeof(float));	
+	dcd.frame.Z = (float*)calloc(dcdCount, sizeof(float));
+
+	int pairsCount = 0;								// total number of pairs
+	if(pairType[0] == 'P'){
+		pairsCount = top.pairsCount;
+	}
+	else if(pairType[0] == 'B'){
+		pairsCount = top.bondCount;
+	}
+	else{
+		printf("ERROR: pairType VALUE (argv[3]) IS WRONG");
+		exit(0);
+	}
 
 	// mean deviation
-	double* mean_dev = (double*)calloc(top.pairsCount, sizeof(double));
+	double* mean_dev = (double*)calloc(pairsCount, sizeof(double));
 	// dispersion (standard deviation squared)
-	double* disp = (double*)calloc(top.pairsCount, sizeof(double));
+	double* disp = (double*)calloc(pairsCount, sizeof(double));
+	// dispersion (another formula)
+	double* disp2 = (double*)calloc(pairsCount, sizeof(double));
 
 	// quantity of pairs for a bid
 	int* Npairs = (int*)calloc(top.atomCount, sizeof(int));
@@ -66,10 +83,16 @@ int main(int argc, char* argv[]){
 	while(dcdReadFrame(&dcd) == 0){
 		totalFrames++;
 		if((totalFrames % STRIDE) == 0){
-			for(p = 0; p < top.pairsCount; p++){
+			for(p = 0; p < pairsCount; p++){
 
-				i = top.pairs[p].i;
-				j = top.pairs[p].j;
+				if(pairType[0] == 'P'){
+					i = top.pairs[p].i;
+					j = top.pairs[p].j;
+				}
+				else if(pairType[0] == 'B'){
+					i = top.bonds[p].i;
+					j = top.bonds[p].j;
+				}
 
 				Npairs[i]++;
 				Npairs[j]++;
@@ -81,6 +104,8 @@ int main(int argc, char* argv[]){
 				double d = sqrt(x*x + y*y + z*z);
 				mean_dev[p] += d;
 				disp[p] += d*d;
+				if(pairType[0] == 'P') disp2[p] += (d - top.pairs[p].c0)*(d - top.pairs[p].c0);
+				else if(pairType[0] == 'B') disp2[p] += (d - top.bonds[p].c0)*(d - top.bonds[p].c0);
 
 				fprintf(dev, "%f\t", d);
 			}
@@ -92,13 +117,13 @@ int main(int argc, char* argv[]){
 	printf("totalFrames = %d\n", totalFrames);
 	printf("totalFrames/STRIDE = %d\n", stotalFrames);
 
-	for(p = 0; p < top.pairsCount; p++){
-		mean_dev[p] = mean_dev[p]/stotalFrames;
-		disp[p] = disp[p]/stotalFrames - mean_dev[p]*mean_dev[p];
+	for(p = 0; p < pairsCount; p++){
+		mean_dev[p] = mean_dev[p]/stotalFrames;							// [angstr]
+		disp[p] = disp[p]/stotalFrames - mean_dev[p]*mean_dev[p];		// [angstr^2]
+		disp2[p] = disp2[p]/stotalFrames;								// [angstr^2]
 	}
 	for(i = 0; i < top.atomCount; i++){
 		Npairs[i] /= stotalFrames;
-
 	}
 
 	//read file
@@ -115,22 +140,35 @@ int main(int argc, char* argv[]){
 	sprintf(filename, "%seh_average.dat", path_output);
 	FILE* eha_fwrite = fopen(filename, "a");
 
-	double* eh = (double*)calloc(top.pairsCount, sizeof(double));
-	double* eh_file = (double*)calloc(top.pairsCount, sizeof(double));	// eh from file
-	double* disp_file = (double*)calloc(top.pairsCount, sizeof(double));	// disp from file
+	sprintf(filename, "%salpha.dat", path_output);
+	FILE* alpha_fwrite = fopen(filename, "a");
+
+	double* eh = (double*)calloc(pairsCount, sizeof(double));
+	double* eh_file = (double*)calloc(pairsCount, sizeof(double));		// eh from file
+	double* disp_file = (double*)calloc(pairsCount, sizeof(double));	// disp from file
 	double eh_aver = 0.0;
 
 	char stringf[BUF_SIZE];	// string from file
 	char* pch;
 
-	for (p = 0; p < top.pairsCount; p++){
-		i = top.pairs[p].i;
-		j = top.pairs[p].j;
+	double alpha = 0.0;
 
-		fprintf(meandev_disp_fwrite, "%f\t", mean_dev[p]);		// [angstr]
-		fprintf(meandev_disp_fwrite, "%f\n", disp[p]);			// [angstr]^2
+	for (p = 0; p < pairsCount; p++){
+
+		if(pairType[0] == 'P'){
+			i = top.pairs[p].i;
+			j = top.pairs[p].j;
+		}
+		else if(pairType[0] == 'B'){
+			i = top.bonds[p].i;
+			j = top.bonds[p].j;
+		}
 
 		float N = (Npairs[i] + Npairs[j])/2.0f;
+
+		fprintf(meandev_disp_fwrite, "%f\t", mean_dev[p]);		// [angstr]
+		fprintf(meandev_disp_fwrite, "%f\t", disp[p]);			// [angstr^2]
+		fprintf(meandev_disp_fwrite, "%f\n", disp2[p]);			// [angstr^2]
 
 		if(fgets(stringf, BUF_SIZE, eh_fread) != NULL){
 			pch = strtok(stringf, " \t");
@@ -140,7 +178,7 @@ int main(int argc, char* argv[]){
 			int j_eh_file = atoi(pch);
 
 			if ((i != i_eh_file) || (j != j_eh_file)){
-				printf("WARNING;\titeration = %d;\tp = %d\n", iteration, p);
+				printf("WARNING;\titeration = %d;\tp = %d\ti = %d; j = %d; i_eh_file = %d; j_eh_file = %d\n", iteration, p, i, j, i_eh_file, j_eh_file);
 			}
 
 			pch = strtok(NULL, " \t");
@@ -160,20 +198,43 @@ int main(int argc, char* argv[]){
 			exit(0);
 		}
 
-		eh[p] = eh_file[p] + ALPHA*BOLTZMANN_CONSTANT*T*top.pairs[p].c0*top.pairs[p].c0*(1.0f/disp_file[p] - 1.0f/disp[p])/(72.0f*N);
+
+		if(pairType[0] == 'P'){
+			alpha = ALPHA;
+			while(fabs(alpha*BOLTZMANN_CONSTANT*T*top.pairs[p].c0*top.pairs[p].c0*(1.0f/disp_file[p] - 1.0f/disp[p])/(72.0f*N)) > 0.05){
+				alpha /= 2.0;
+				fprintf(alpha_fwrite, "ITER %5d\t p = %d\t i,j = %d,%d\tDecreasing alpha to %f\n", iteration, p, i, j, alpha);
+			}
+			eh[p] = eh_file[p] + alpha*BOLTZMANN_CONSTANT*T*top.pairs[p].c0*top.pairs[p].c0*(1.0f/disp_file[p] - 1.0f/disp[p])/(72.0f*N);		// // [KCal/mol]
+		}
+		else if(pairType[0] == 'B'){
+			//if(top.bonds[p].c1 != 8370.0f) eh[p] = eh_file[p] + ALPHA*BOLTZMANN_CONSTANT*T*(1.0f/disp_file[p] - 1.0f/disp[p]);
+			if(top.bonds[p].c1 != 8370.0f) {
+					alpha = ALPHA;
+					while(fabs(eh_file[p]*alpha*(disp[p]/100.0 - disp_file[p]/100.0)) > 0.05){
+						alpha /= 2.0;
+						fprintf(alpha_fwrite, "ITER %5d\t p = %d\t i,j = %d,%d\tDecreasing alpha to %f\n", iteration, p, i, j, alpha);
+					}
+					eh[p] = eh_file[p]/(1.0f - eh_file[p]*alpha*(disp[p]/100.0 - disp_file[p]/100.0)); 	// [kJ/(mol*nm^2)]
+			}
+			else eh[p] = top.bonds[p].c1;																// [kJ/(mol*nm^2)]
+		}
+
 		if(eh[p] < 0.0f){
 			eh[p] = 0.0f;
 		}
+
 		eh_aver += eh[p];
 		fprintf(eh_fwrite, "%3d\t%3d\t%f\n", i, j, eh[p]);
 	}
-	fprintf(eha_fwrite, "iteration%4d:\t%f\n", iteration, eh_aver/float(top.pairsCount));
+	fprintf(eha_fwrite, "iteration%4d:\t%f\n", iteration, eh_aver/pairsCount);
 
 	fclose(meandev_disp_fread);
-	fclose(eh_fread);
 	fclose(meandev_disp_fwrite);
+	fclose(eh_fread);
 	fclose(eh_fwrite);
 	fclose(eha_fwrite);
+	fclose(alpha_fwrite);
 
 	// newTOP
 	newtop.atoms = (TOPAtom*)calloc(top.atomCount, sizeof(TOPAtom));
@@ -199,27 +260,45 @@ int main(int argc, char* argv[]){
 		newtop.bonds[b].i = top.bonds[b].i;
 		newtop.bonds[b].j = top.bonds[b].j;
 		newtop.bonds[b].func = top.bonds[b].func;
-		newtop.bonds[b].c0 = top.bonds[b].c0;				// [angstr]
-		newtop.bonds[b].c1 = top.bonds[b].c1;				// [kJ/(mol*nm^2)]
+		// pairType[0] == 'P'
+		newtop.bonds[b].c0 = top.bonds[b].c0;					// [angstr]
+		newtop.bonds[b].c1 = top.bonds[b].c1;					// [kJ/(mol*nm^2)]
+		if(pairType[0] == 'B'){
+			newtop.bonds[b].c1 = eh[b];							// [kJ/(mol*nm^2)]
+		}
 	}
 	for(p = 0; p < newtop.pairsCount; p++){
 		newtop.pairs[p].i = top.pairs[p].i;
 		newtop.pairs[p].j = top.pairs[p].j;
 		newtop.pairs[p].func = top.pairs[p].func;
-		newtop.pairs[p].c0 = top.pairs[p].c0;				// [angstr]
-		newtop.pairs[p].c1 = eh[p];							// [KCal/mol]
+		newtop.pairs[p].c0 = top.pairs[p].c0;					// [angstr]
+		newtop.pairs[p].c1 = eh[p];								// [KCal/mol]
 	}
 	for(e = 0; e < newtop.exclusionCount; e++){
 		newtop.exclusions[e].i = top.exclusions[e].i;
 		newtop.exclusions[e].j = top.exclusions[e].j;
 		newtop.exclusions[e].func = top.exclusions[e].func;
 	}
-
 	// coarse-grain newTOP
 	char newtop_filename[BUF_SIZE];
 	getMaskedParameter(newtop_filename, PARAMETER_OUTPUT_NEWTOP_FILENAME);
 	sprintf(filename, "%s%d.top", newtop_filename, iteration);
 	writeTOP(filename, &newtop);
+
+	// cleaning memory
+	dcdClose(dcd);
+	free(mean_dev);
+	free(disp);
+	free(disp2);
+	free(Npairs);
+	free(eh);
+	free(eh_file);
+	free(disp_file);
+	// TODO
+	free(newtop.atoms);
+	free(newtop.bonds);
+	free(newtop.pairs);
+	free(newtop.exclusions);
 
 	printf("==========ITERATION %d SUCCESS ==========\n", iteration);
 	return 0;
