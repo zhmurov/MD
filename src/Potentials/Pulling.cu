@@ -114,7 +114,7 @@ void Pulling::compute(){
 			if(h_ks[i] > 0.0f){
 				fprintf(output, "%4.6f\t", baseDisplacement);
 				fprintf(output, "%4.6f\t", averFmod);
-				fprintf(output, "%4.6f", dr);
+				fprintf(output, "%4.6f\t", dr);
 			}
 		}
 		fprintf(output, "\n");
