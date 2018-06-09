@@ -24,5 +24,6 @@ private:
 	float gamma;
 	float T0;
 	float tau;
+    int Nfixed;
 	Reduction* reduction;
 };

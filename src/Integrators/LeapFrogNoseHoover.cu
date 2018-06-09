@@ -17,6 +17,14 @@ LeapFrogNoseHoover::LeapFrogNoseHoover(MDData *mdd, float tau, float T0, int* h_
 	cudaMalloc((void**)&d_fixAtoms, mdd->N*sizeof(int));
 	cudaMemcpy(d_fixAtoms, h_fixAtoms, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 
+    int i;
+    Nfixed = 0;
+    for(i = 0; i < mdd->N; i++){
+        if(h_fixAtoms[i] != 0){
+            Nfixed++;
+        }
+    }
+
 	h_T = (float*)calloc(mdd->N, sizeof(float));
 	cudaMalloc((void**)&d_T, mdd->N*sizeof(float));
 	gamma = 0.0f;
@@ -54,14 +62,16 @@ __global__ void integrateLeapFrogNoseHooverStepTwo_kernel(float gamma, float* d_
 		vel.y *= 0.9f;
 		vel.z *= 0.9f;*/
 		float temp = vel.x*vel.x + vel.y*vel.y + vel.z*vel.z;
-		d_T[d_i] = temp*m;
 		vel.w += temp;
 
 		if (d_fixAtoms[d_i] == 0){
 			coord.x += vel.x*c_mdd.dt;
 			coord.y += vel.y*c_mdd.dt;
 			coord.z += vel.z*c_mdd.dt;
-		}
+            d_T[d_i] = temp*m;
+		} else {
+            d_T[d_i] = 0.0;
+        }
 
 		if(coord.x > c_mdd.bc.rhi.x){
 			coord.x -= c_mdd.bc.len.x;
@@ -121,7 +131,8 @@ void LeapFrogNoseHoover::integrateStepTwo (){
 	}
 	temp /= ((float)mdd->N)*3.0f*BOLTZMANN_CONSTANT;*/
 	float temp = reduction->rsum(d_T);
-	temp /= ((float)mdd->N)*3.0f*BOLTZMANN_CONSTANT;
+	//temp /= ((float)mdd->N)*3.0f*BOLTZMANN_CONSTANT;
+    temp /= ((float)Nfixed)*3.0f*BOLTZMANN_CONSTANT;
 	//printf("T=%f\t%f\t%f\n", temp, temp2, temp-temp2);
 
 	gamma += mdd->dt*(1.0f/tau)*(1.0f - T0/temp);
