@@ -8,7 +8,7 @@
 #include "LeapFrogOverdamped.cuh"
 #include "../md.cuh"
 
-LeapFrogOverdamped::LeapFrogOverdamped(MDData *mdd, float temperature, float gamma, float seed, int* fixAtoms){
+LeapFrogOverdamped::LeapFrogOverdamped(MDData *mdd, float temperature, float gamma, float seed, int* h_fixAtoms){
 	this->mdd = mdd;
 	this->gamma = gamma;
 
@@ -17,8 +17,6 @@ LeapFrogOverdamped::LeapFrogOverdamped(MDData *mdd, float temperature, float gam
 
 	initRand(seed, mdd->N);
 
-	h_fixAtoms = (int*)calloc(mdd->N, sizeof(int));
-	memcpy(fixAtoms, h_fixAtoms, mdd->N*sizeof(int));
 	cudaMalloc((void**)&d_fixAtoms, mdd->N*sizeof(int));
 	cudaMemcpy(d_fixAtoms, h_fixAtoms, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
 
@@ -26,7 +24,6 @@ LeapFrogOverdamped::LeapFrogOverdamped(MDData *mdd, float temperature, float gam
 }
 
 LeapFrogOverdamped::~LeapFrogOverdamped(){
-	free(h_fixAtoms);
 	cudaFree(d_fixAtoms);
 }
 
