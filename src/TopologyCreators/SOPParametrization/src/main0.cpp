@@ -13,8 +13,8 @@
 #include "../../../IO/topio.h"
 #include "../../../IO/dcdio.h"
 
-#define FIRST_FRAME				1
-#define LAST_FRAME				300
+#define FIRST_FRAME				1401
+#define LAST_FRAME				2001
 #define STRIDE					1
 #define BUF_SIZE 				256
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]){
 	printf("pairType = %c\n", pairType[0]);
 
 	int first_frame, last_frame;
-	((argv[1] == NULL) || (argv[2] == NULL)) ? (first_frame = FIRST_FRAME, last_frame = LAST_FRAME) :
+	((argv[4] == NULL) || (argv[5] == NULL)) ? (first_frame = FIRST_FRAME, last_frame = LAST_FRAME) :
 												(first_frame = atoi(argv[4]), last_frame = atoi(argv[5]));
 
 	printf("first_frame = %d\n", first_frame);
@@ -216,6 +216,7 @@ int main(int argc, char* argv[]){
 	fclose(eh_fwrite);
 	fclose(eha_fwrite);
 	fclose(alpha_fwrite);
+	fclose(dev);
 
 	// newTOP
 	newtop.atoms = (TOPAtom*)calloc(top.atomCount, sizeof(TOPAtom));
