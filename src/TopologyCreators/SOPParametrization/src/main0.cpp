@@ -13,8 +13,8 @@
 #include "../../../IO/topio.h"
 #include "../../../IO/dcdio.h"
 
-#define FIRST_FRAME				1401
-#define LAST_FRAME				2001
+#define FIRST_FRAME				1
+#define LAST_FRAME				10001
 #define STRIDE					1
 #define BUF_SIZE 				256
 
