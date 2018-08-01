@@ -1,8 +1,9 @@
 #!/bin/bash
 
 NAME=("$1")
-START=("$2")
-END=("$3")
+PAIR=("$2")
+START=("$3")
+END=("$4")
 
 CONF_EQUIL="${NAME}_equil.conf"
 CONF_MIN="${NAME}_min.conf"
@@ -27,7 +28,7 @@ do
 	cp -f output/$DCD input/
 
 	#finding new parameters using last cg dcd
-	./../../../../bin/sop_par1 $CONF_EQUIL $i
+	./../../../../bin/sop_par1 $CONF_EQUIL $i $PAIR
 
 	#check if newtop was created (sop_par1 finished)
 	#if newtop wasn't created mrg-cg2 at the next iteration won't be executed 

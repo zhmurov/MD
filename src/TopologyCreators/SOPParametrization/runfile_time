@@ -1,11 +1,9 @@
 #!/bin/bash
 
 NAME=("$1")
-ITER=("$2")
-PAIR=("$3")
+PAIR=("$2")
 
 printf "name of structure: %s\n" "$NAME"
-printf "number of iterations: %s\n" "$ITER"
 
 if [ $PAIR == "B" ]
 then
@@ -19,7 +17,7 @@ fi
 
 for param in "$@"
 do
-	if [ "$param" != "$NAME" ] && [ "$param" != "$ITER" ] && [ "$param" != "$PAIR" ];
+	if [ "$param" != "$NAME" ] && [ "$param" != "$PAIR" ];
 	then
 	count=$(( $count + 1 ))
 	echo "#$count: $param frames"
@@ -34,7 +32,6 @@ CONF_MIN="${NAME}_min.conf"
 TOP="${NAME}_CG.top"
 NEWTOP="new${NAME}_CG.top"
 XYZMIN="${NAME}_CG.min.xyz"
-DCD="${NAME}_CG.dcd"
 
 #printf "names of config(equil, min) files: %s, %s\n" "$CONF_EQUIL" "$CONF_MIN"
 #printf "name of TOP file: %s\n" "$TOP"
@@ -49,17 +46,18 @@ cd TopologyCreators/SOPParametrization/$NAME/
 cp -f input/$TOP input/$NEWTOP
 
 
-first_frame=651
+first_frame=0
 last_frame=$first_frame
 
 for param in "$@"
 do
-	if [ "$param" != "$NAME" ] && [ "$param" != "$ITER" ] && [ "$param" != "$PAIR" ];
+	if [ "$param" != "$NAME" ] && [ "$param" != "$PAIR" ];
 	then
 		let last_frame=$first_frame+$param
-		./../../../../bin/sop_par0 $CONF_EQUIL 0 $PAIR $first_frame $last_frame
+		./../../../../bin/sop_par0 $CONF_EQUIL 0 $PAIR $((first_frame + 1)) $last_frame
 		rm input/$NEWTOP
 		cp -f output/"new${NAME}_CG0.top" input/$NEWTOP
 		mv -f output/dev0.dat output/dev${param}.dat
+		mv -f output/meandev_disp0.dat output/meandev_disp${param}.dat
 	fi
 done
