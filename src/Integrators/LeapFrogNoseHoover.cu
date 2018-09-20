@@ -132,7 +132,7 @@ void LeapFrogNoseHoover::integrateStepTwo (){
 	temp /= ((float)mdd->N)*3.0f*BOLTZMANN_CONSTANT;*/
 	float temp = reduction->rsum(d_T);
 	//temp /= ((float)mdd->N)*3.0f*BOLTZMANN_CONSTANT;
-    temp /= ((float)Nfixed)*3.0f*BOLTZMANN_CONSTANT;
+    temp /= ((float)(mdd->N - Nfixed))*3.0f*BOLTZMANN_CONSTANT;
 	//printf("T=%f\t%f\t%f\n", temp, temp2, temp-temp2);
 
 	gamma += mdd->dt*(1.0f/tau)*(1.0f - T0/temp);
