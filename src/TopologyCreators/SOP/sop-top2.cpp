@@ -31,11 +31,14 @@
 #define PARAMETER_USE_CHAINS		"use_chains"
 #define DEFAULT_USE_CHAINS			0
 #define PARAMETER_XRAY_PDB			"xraypdb"
+#define PARAMETER_ELASTIC_NETWORK	"elastic_network"
+#define DEFAULT_ELASTIC_NETWORK		0
 
 CGConfig conf;
 PDB pdb;
 
 PDB xraypdb;
+bool elastic_network;
 
 struct SOPBead {
 	char name[5], type[5], resname[5], segment[5];
@@ -253,6 +256,21 @@ int main(int argc, char* argv[]){
 		}
 	}
 
+	if(getYesNoParameter(PARAMETER_ELASTIC_NETWORK, DEFAULT_ELASTIC_NETWORK)){
+		printf("Elastic network model will be created.\n");
+		elastic_network = true;
+	} else {
+		printf("SOP model will be created.\n");
+		elastic_network = false;
+	}
+
+	getMaskedParameter(filename, PARAMETER_XRAY_PDB, "NONE");
+	if(strncmp(filename, "NONE", 4) != 0){
+		readPDB(filename, &xraypdb);
+	} else {
+		xraypdb.atomCount = -1;
+	}
+
 	printf("Building PDB tree...\n");
 
 	if(getYesNoParameter(PARAMETER_USE_CHAINS, DEFAULT_USE_CHAINS)){
@@ -411,167 +429,182 @@ int main(int argc, char* argv[]){
 
 	printf("Coarse-grained beads are added.\n");
 
-	printf("Adding covalent bonds...\n");
+	if(!elastic_network){
+		printf("Adding covalent bonds...\n");
 
-	for(j = 0; j < beads.size(); j++){
-		SOPBead bead = beads.at(j);
-		for(k = 0; k < bead.connectedTo.size(); k++){
-			Atom conn = bead.connectedTo.at(k);
-			addConnection(bead, conn, j);
+		for(j = 0; j < beads.size(); j++){
+			SOPBead bead = beads.at(j);
+			for(k = 0; k < bead.connectedTo.size(); k++){
+				Atom conn = bead.connectedTo.at(k);
+				addConnection(bead, conn, j);
+			}
 		}
-	}
 
-	getMaskedParameter(filename, PARAMETER_ADDITIONAL_BONDS, "NONE");
-	if(strncmp(filename, "NONE", 4) != 0){
-		FILE* file = fopen(filename, "r");
-		char* segment1;
-		int resid1;
-		char* bead1;
-		char* segment2;
-		int resid2;
-		char* bead2;
-		if(file != NULL){
-			char* pch;
-			char buffer[BUF_SIZE];
-			while(fgets(buffer, BUF_SIZE, file) != NULL){
-				if(strncmp(buffer, "CONN", 4) == 0){
-					pch = strtok(buffer, " \t\n\r");
-					pch = strtok(NULL, " \t\n\r");
-					segment1 = pch;
-					pch = strtok(NULL, " \t\n\r");
-					resid1 = atoi(pch);
-					pch = strtok(NULL, " \t\n\r");
-					bead1 = pch;
-					pch = strtok(NULL, " \t\n\r");
-					segment2 = pch;
-					pch = strtok(NULL, " \t\n\r");
-					resid2 = atoi(pch);
-					pch = strtok(NULL, " \t\n\r");
-					bead2 = pch;
-					trimString(segment1);
-					trimString(bead1);
-					trimString(segment2);
-					trimString(bead2);
-					addConnection(segment1, resid1, bead1, segment2, resid2, bead2);
+		getMaskedParameter(filename, PARAMETER_ADDITIONAL_BONDS, "NONE");
+		if(strncmp(filename, "NONE", 4) != 0){
+			FILE* file = fopen(filename, "r");
+			char* segment1;
+			int resid1;
+			char* bead1;
+			char* segment2;
+			int resid2;
+			char* bead2;
+			if(file != NULL){
+				char* pch;
+				char buffer[BUF_SIZE];
+				while(fgets(buffer, BUF_SIZE, file) != NULL){
+					if(strncmp(buffer, "CONN", 4) == 0){
+						pch = strtok(buffer, " \t\n\r");
+						pch = strtok(NULL, " \t\n\r");
+						segment1 = pch;
+						pch = strtok(NULL, " \t\n\r");
+						resid1 = atoi(pch);
+						pch = strtok(NULL, " \t\n\r");
+						bead1 = pch;
+						pch = strtok(NULL, " \t\n\r");
+						segment2 = pch;
+						pch = strtok(NULL, " \t\n\r");
+						resid2 = atoi(pch);
+						pch = strtok(NULL, " \t\n\r");
+						bead2 = pch;
+						trimString(segment1);
+						trimString(bead1);
+						trimString(segment2);
+						trimString(bead2);
+						addConnection(segment1, resid1, bead1, segment2, resid2, bead2);
+					}
+				}
+			}
+			fclose(file);
+		} else {
+			printf("No additional covalent bonds (S-S, crosslinks, etc.) have been specified.\n");
+		}
+
+		std::sort(bonds.begin(), bonds.end(), bond_comparator);
+
+		createBondsList(beads.size());
+
+		int b1, b2;
+		for(i = 0; i < beads.size(); i++){
+			for(b1 = 0; b1 < bondCount[i]; b1++){
+				j = bondsList[i][b1];
+				for(b2 = 0; b2 < bondCount[j]; b2++){
+					k = bondsList[j][b2];
+					if(i < k){
+						SOPPair bond13;
+						bond13.i = i;
+						bond13.j = k;
+						bonds13.push_back(bond13);
+						//printf("%d-%d-%d\n", i, j, k);
+					}
 				}
 			}
 		}
-		fclose(file);
-	} else {
-		printf("No additional covalent bonds (S-S, crosslinks, etc.) have been specified.\n");
-	}
 
-	std::sort(bonds.begin(), bonds.end(), bond_comparator);
+		std::sort(bonds13.begin(), bonds13.end(), pairs_comparator);
 
-	createBondsList(beads.size());
+		createBonds13List(beads.size());
 
-	int b1, b2;
-	for(i = 0; i < beads.size(); i++){
-		for(b1 = 0; b1 < bondCount[i]; b1++){
-			j = bondsList[i][b1];
-			for(b2 = 0; b2 < bondCount[j]; b2++){
-				k = bondsList[j][b2];
-				if(i < k){
-					SOPPair bond13;
-					bond13.i = i;
-					bond13.j = k;
-					bonds13.push_back(bond13);
-					//printf("%d-%d-%d\n", i, j, k);
+		printf("Covalent bonds are added.\n");
+
+		printf("Adding native contacts...\n");
+
+		
+
+		float eh, cutoff, cutoffAtomistic;
+		char ehstring[1024];
+		getMaskedParameter(ehstring, PARAMETER_EH);
+		cutoff = getFloatParameter(PARAMETER_R_LIMIT_BOND);
+		cutoffAtomistic = getFloatParameter(PARAMETER_SC_LIMIT_BOND);
+		for(j = 0; j < beads.size(); j++){
+			if(j % 100 == 0){
+				printf("Bead %d out of %ld\n", j, beads.size());
+			}
+			for(k = j + 1; k < beads.size(); k++){
+				double r0 = getDistance(beads.at(j), beads.at(k));
+
+				if(strcmp(ehstring, "O") == 0){
+					eh = sqrt(beads.at(j).occupancy*beads.at(k).occupancy);
+				} else if(strcmp(ehstring, "B") == 0){
+					eh = sqrt(beads.at(j).beta*beads.at(k).beta);
+				} else if(atof(ehstring) != 0){
+					eh = atof(ehstring);
+					//printf("%f\n", eh);
+				} else {
+					exit(0);
 				}
-			}
-		}
-	}
-
-	std::sort(bonds13.begin(), bonds13.end(), pairs_comparator);
-
-	createBonds13List(beads.size());
-
-	printf("Covalent bonds are added.\n");
-
-	printf("Adding native contacts...\n");
-
-	getMaskedParameter(filename, PARAMETER_XRAY_PDB, "NONE");
-	if(strncmp(filename, "NONE", 4) != 0){
-		readPDB(filename, &xraypdb);
-	} else {
-		xraypdb.atomCount = -1;
-	}
-
-	float eh, cutoff, cutoffAtomistic;
-	char ehstring[1024];
-	getMaskedParameter(ehstring, PARAMETER_EH);
-	cutoff = getFloatParameter(PARAMETER_R_LIMIT_BOND);
-	cutoffAtomistic = getFloatParameter(PARAMETER_SC_LIMIT_BOND);
-	for(j = 0; j < beads.size(); j++){
-		if(j % 100 == 0){
-			printf("Bead %d out of %ld\n", j, beads.size());
-		}
-		for(k = j + 1; k < beads.size(); k++){
-			double r0 = getDistance(beads.at(j), beads.at(k));
-
-			if(strcmp(ehstring, "O") == 0){
-				eh = sqrt(beads.at(j).occupancy*beads.at(k).occupancy);
-			} else if(strcmp(ehstring, "B") == 0){
-				eh = sqrt(beads.at(j).beta*beads.at(k).beta);
-			} else if(atof(ehstring) != 0){
-				eh = atof(ehstring);
-				//printf("%f\n", eh);
-			} else {
-				exit(0);
-			}
-			bool added = false;
-			if(r0 < cutoff){
-				if((!checkBonded(j, k)) && (!check13Bonded(j, k)) && checkIfInXRay(j) && checkIfInXRay(k)){
-					addNative(j, k, eh, r0);
-					added = true;
+				bool added = false;
+				if(r0 < cutoff){
+					if((!checkBonded(j, k)) && (!check13Bonded(j, k)) && checkIfInXRay(j) && checkIfInXRay(k)){
+						addNative(j, k, eh, r0);
+						added = true;
+					}
 				}
-			}
-			if(!added && cutoffAtomistic > 0){
-				for(l = 0; l < beads.at(j).represents.size(); l++){
-					for(m = 0; m < beads.at(k).represents.size(); m++){
-						double r1 = getDistance(beads.at(j).represents.at(l), beads.at(k).represents.at(m));
-						if((!added) && r1 < cutoffAtomistic){
-							if((!checkBonded(j, k)) && (!check13Bonded(j, k)) && checkIfInXRay(j) && checkIfInXRay(k)){
-								addNative(j, k, eh, r0);
-								added = true;
+				if(!added && cutoffAtomistic > 0){
+					for(l = 0; l < beads.at(j).represents.size(); l++){
+						for(m = 0; m < beads.at(k).represents.size(); m++){
+							double r1 = getDistance(beads.at(j).represents.at(l), beads.at(k).represents.at(m));
+							if((!added) && r1 < cutoffAtomistic){
+								if((!checkBonded(j, k)) && (!check13Bonded(j, k)) && checkIfInXRay(j) && checkIfInXRay(k)){
+									addNative(j, k, eh, r0);
+									added = true;
+								}
 							}
 						}
 					}
 				}
 			}
 		}
+
+		printf("Native contacts are added.\n");
+
+		std::sort(natives.begin(), natives.end(), native_comparator);
+
+
+		printf("Creating exclusions list.\n");
+
+		for(b = 0; b < bonds.size(); b++){
+			SOPPair pair;
+			pair.i = bonds.at(b).i;
+			pair.j = bonds.at(b).j;
+			exclusions.push_back(pair);
+		}
+
+		for(n = 0; n < natives.size(); n++){
+			SOPPair pair;
+			pair.i = natives.at(n).i;
+			pair.j = natives.at(n).j;
+			exclusions.push_back(pair);
+		}
+
+		std::sort(exclusions.begin(), exclusions.end(), pairs_comparator);
+
+
+		double pot = 0.0;
+		for(j = 0; j < natives.size(); j++){
+			SOPNative native = natives.at(j);
+			pot += native.eh;
+		}
+		printf("Total energy: %f\n", pot);
+	} else {
+		printf("Creating elastic network\n");
+
+		float cutoff = getFloatParameter(PARAMETER_R_LIMIT_BOND);
+		float ks = getFloatParameter(PARAMETER_KS, DEFAULT_KS);
+
+		for(j = 0; j < beads.size(); j++){
+			if(j % 100 == 0){
+				printf("Bead %d out of %ld\n", j, beads.size());
+			}
+			for(k = j + 1; k < beads.size(); k++){
+				double r0 = getDistance(beads.at(j), beads.at(k));
+				if(r0 < cutoff){
+					addBond(j, k, ks, r0);
+				}
+			}
+		}
+		std::sort(bonds.begin(), bonds.end(), bond_comparator);
 	}
-
-	printf("Native contacts are added.\n");
-
-	std::sort(natives.begin(), natives.end(), native_comparator);
-
-
-	printf("Creating exclusions list.\n");
-
-	for(b = 0; b < bonds.size(); b++){
-		SOPPair pair;
-		pair.i = bonds.at(b).i;
-		pair.j = bonds.at(b).j;
-		exclusions.push_back(pair);
-	}
-
-	for(n = 0; n < natives.size(); n++){
-		SOPPair pair;
-		pair.i = natives.at(n).i;
-		pair.j = natives.at(n).j;
-		exclusions.push_back(pair);
-	}
-
-	std::sort(exclusions.begin(), exclusions.end(), pairs_comparator);
-
-
-	double pot = 0.0;
-	for(j = 0; j < natives.size(); j++){
-		SOPNative native = natives.at(j);
-		pot += native.eh;
-	}
-	printf("Total energy: %f\n", pot);
 
 	printf("Saving PDB, PSF and TOP files for coarse-grained system...\n");
 
