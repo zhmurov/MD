@@ -12,17 +12,6 @@
 
 #define PARAMETER_GPU_DEVICE								"device"
 
-//parametrization
-#define PARAMETER_ITERATION									"iteration"
-#define DEFAULT_ITERATION									0
-#define PARAMETER_INPUT_NEWTOP								"input_newtop"
-#define PARAMETER_INPUT_DCD									"input_dcd"
-#define PARAMETER_INPUT_FULLATOM_PDB						"input_fullatom_pdb"
-#define PARAMETER_INPUT_FULLATOM_DCD						"input_fullatom_dcd"
-
-#define PARAMETER_OUTPUT_NEWTOP_FILENAME					"output_newtop_filename"
-#define PARAMETER_PATH_OUTPUT								"path_output"
-
 //input
 #define PARAMETER_INPUT_TOP									"input_top"
 #define PARAMETER_INPUT_XYZ									"input_xyz"

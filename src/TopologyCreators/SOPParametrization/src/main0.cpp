@@ -6,16 +6,24 @@
 #include <cstdlib>
 #include <cmath>
 
-#include "../../../parameters.h"
 #include "../../../IO/configreader.h"
 
 #include "../../../IO/pdbio.h"
 #include "../../../IO/topio.h"
 #include "../../../IO/dcdio.h"
 
-#define FIRST_FRAME				1
-#define LAST_FRAME				10001
-#define STRIDE					1
+#define PARAMETER_FIRST_FRAME								"first_frame"
+#define PARAMETER_LAST_FRAME								"last_frame"
+#define PARAMETER_STRIDE									"stride"
+#define PARAMETER_PAIRTYPE									"pair_type"
+
+#define PARAMETER_INPUT_TOP									"input_top"
+#define PARAMETER_INPUT_FULLATOM_PDB						"input_fullatom_pdb"
+#define PARAMETER_INPUT_FULLATOM_DCD						"input_fullatom_dcd"
+
+#define PARAMETER_OUTPUT_NEWTOP_FILENAME					"output_newtop_filename"
+#define PARAMETER_PATH_OUTPUT								"path_output"
+
 #define BUF_SIZE 				256
 
 #define T						300
@@ -26,24 +34,15 @@ TOPData top;
 TOPData newtop;
 DCD dcd;
 
-// argv[1] - name of structure
-// argv[2] - number of iterations
-// argv[3] - pairType ('B' - bonds; 'P' - pairs)
-// argv[4] - first frame (for dcd)
-// argv[5] - last frame (for dcd)
-
 int main(int argc, char* argv[]){
 	parseParametersFile(argv[1], argc, argv);
 
-	int iteration = atoi(argv[2]);
-	printf("\n==========ITERATION %d==========\n", iteration);
+	char pairType[1024];
+	getMaskedParameter(pairType, PARAMETER_PAIRTYPE);
 
-	char* pairType = argv[3];
-	printf("pairType = %c\n", pairType[0]);
-
-	int first_frame, last_frame;
-	((argv[4] == NULL) || (argv[5] == NULL)) ? (first_frame = FIRST_FRAME, last_frame = LAST_FRAME) :
-												(first_frame = atoi(argv[4]), last_frame = atoi(argv[5]));
+	int first_frame = getIntegerParameter(PARAMETER_FIRST_FRAME, 0);
+	int last_frame = getIntegerParameter(PARAMETER_LAST_FRAME, -1);
+	int stride = getIntegerParameter(PARAMETER_STRIDE, 1);
 
 	printf("first_frame = %d\n", first_frame);
 	printf("last_frame = %d\n", last_frame);
@@ -79,7 +78,7 @@ int main(int argc, char* argv[]){
 		pairsCount = top.bondCount;
 	}
 	else{
-		printf("ERROR: pairType VALUE (argv[3]) IS WRONG");
+		printf("ERROR: pairType VALUE IS WRONG");
 		exit(0);
 	}
 
@@ -114,13 +113,13 @@ int main(int argc, char* argv[]){
 		}
 	}
 
-	sprintf(filename, "%sdev%d.dat", path_output, iteration);
+	sprintf(filename, "%s/dev%d.dat", path_output, 0);
 	FILE* dev = fopen(filename, "w");
 
 	while(dcdReadFrame(&dcd) == 0){
 		totalFrames++;
 		if(totalFrames >= first_frame){
-			if((totalFrames % STRIDE) == 0){
+			if((totalFrames % stride) == 0){
 				for(p = 0; p < pairsCount; p++){
 
 					if(pairType[0] == 'P'){
@@ -150,13 +149,16 @@ int main(int argc, char* argv[]){
 				}
 				fprintf(dev, "\n");
 			}
+			if((100*(totalFrames-first_frame)) % (last_frame - first_frame) == 0){
+				printf("%d%% completed\n", (int)((100*(totalFrames-first_frame)) / (last_frame - first_frame)));
+			}
 		}
-		if(totalFrames == last_frame){
+		if(last_frame != -1 && totalFrames >= last_frame){
 			break;
 		}
 	}
 
-	stotalFrames = float(totalFrames+1 - first_frame)/float(STRIDE);
+	stotalFrames = float(totalFrames+1 - first_frame)/float(stride);
 	printf("totalFrames = %d\n", totalFrames);
 	printf("Number of frames used for data collection = %d\n", stotalFrames);
 
@@ -170,14 +172,14 @@ int main(int argc, char* argv[]){
 	}
 
 	//write file
-	sprintf(filename, "%smeandev_disp%d.dat", path_output, iteration);
+	sprintf(filename, "%s/meandev_disp%d.dat", path_output, 0);
 	FILE* meandev_disp_fwrite = fopen(filename, "w");
-	sprintf(filename, "%seh%d.dat", path_output, iteration);
+	sprintf(filename, "%s/eh%d.dat", path_output, 0);
 	FILE* eh_fwrite = fopen(filename, "w"); // eh is the strength of the non-bonded interactions
-	sprintf(filename, "%seh_average.dat", path_output);
+	sprintf(filename, "%s/eh_average.dat", path_output);
 	FILE* eha_fwrite = fopen(filename, "w");
 
-	sprintf(filename, "%salpha.dat", path_output);
+	sprintf(filename, "%s/alpha.dat", path_output);
 	FILE* alpha_fwrite = fopen(filename, "w");
 
 	double* eh = (double*)calloc(pairsCount, sizeof(double));
@@ -210,7 +212,7 @@ int main(int argc, char* argv[]){
 		eh_aver += eh[p];
 		fprintf(eh_fwrite, "%3d\t%3d\t%f\n", i, j, eh[p]);
 	}
-	fprintf(eha_fwrite, "iteration%4d:\t%f\n", iteration, eh_aver/float(pairsCount));
+	fprintf(eha_fwrite, "iteration%4d:\t%f\n", 0, eh_aver/float(pairsCount));
 
 	fclose(meandev_disp_fwrite);
 	fclose(eh_fwrite);
@@ -266,7 +268,7 @@ int main(int argc, char* argv[]){
 	// coarse-grain newTOP
 	char newtop_filename[BUF_SIZE];
 	getMaskedParameter(newtop_filename, PARAMETER_OUTPUT_NEWTOP_FILENAME);
-	sprintf(filename, "%s%d.top", newtop_filename, iteration);
+	sprintf(filename, "%s_%d.top", newtop_filename, 0);
 	writeTOP(filename, &newtop);
 
 	// cleaning memory

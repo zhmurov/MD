@@ -598,7 +598,7 @@ int main(int argc, char* argv[]){
 			}
 			for(k = j + 1; k < beads.size(); k++){
 				double r0 = getDistance(beads.at(j), beads.at(k));
-				if(r0 < cutoff){
+				if(r0 < cutoff && checkIfInXRay(j) && checkIfInXRay(k)){
 					addBond(j, k, ks, r0);
 				}
 			}
