@@ -62,7 +62,6 @@ __global__ void integrateLeapFrogNoseHooverStepTwo_kernel(float gamma, float* d_
 		vel.y *= 0.9f;
 		vel.z *= 0.9f;*/
 		float temp = vel.x*vel.x + vel.y*vel.y + vel.z*vel.z;
-		vel.w += temp;
 
 		if (d_fixAtoms[d_i] == 0){
 			coord.x += vel.x*c_mdd.dt;
@@ -71,7 +70,10 @@ __global__ void integrateLeapFrogNoseHooverStepTwo_kernel(float gamma, float* d_
             d_T[d_i] = temp*m;
 		} else {
             d_T[d_i] = 0.0;
+            temp = 0.0;
         }
+
+		vel.w += temp;
 
 		if(coord.x > c_mdd.bc.rhi.x){
 			coord.x -= c_mdd.bc.len.x;

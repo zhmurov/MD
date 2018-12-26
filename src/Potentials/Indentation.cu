@@ -1,8 +1,8 @@
 #include "Indentation.cuh"
 
-Indentation::Indentation(MDData *mdd, int atomCount, int tipRadius, float3 tipCoord, float tipFriction, float3 baseCoord, int baseFreq, float3 baseDir, float baseVel, float ks, float eps, float sigm, float3 sfCoord, float3 sfN, float sfEps, float sfSigm, int dcdFreq, char* dcdCantFilename, char* indOutputFilename){
+Indentation::Indentation(MDData *mdd, int* indentationAtomsMask, int tipRadius, float3 tipCoord, float tipFriction, float3 baseCoord, int baseFreq, float3 baseDir, float baseVel, float ks, float eps, float sigm, float3 sfCoord, float3 sfN, float sfEps, float sfSigm, int dcdFreq, char* dcdCantFilename, char* indOutputFilename){
 	this->mdd = mdd;
-	this->atomCount = atomCount;
+
 	this->tipRadius = tipRadius;
 	this->tipCoord = tipCoord;
 	this->tipFriction = tipFriction;
@@ -37,18 +37,21 @@ Indentation::Indentation(MDData *mdd, int atomCount, int tipRadius, float3 tipCo
 	dcdOpenWrite(&dcd_cant, dcdCantFilename);
 	dcdWriteHeader(dcd_cant);
 
-	this->blockCount = (atomCount-1)/DEFAULT_BLOCK_SIZE + 1;
+	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 
+	cudaMalloc((void**)&d_mask, mdd->N*sizeof(int));
+	cudaMemcpy(d_mask, indentationAtomsMask, mdd->N*sizeof(int), cudaMemcpyHostToDevice);
+
 	// force
-	h_tipForce = (float3*)calloc(atomCount, sizeof(float3));
-	cudaMalloc((void**)&d_tipForce, atomCount*sizeof(float3));
-	cudaMemcpy(d_tipForce, h_tipForce, atomCount*sizeof(float3), cudaMemcpyHostToDevice);
+	h_tipForce = (float3*)calloc(mdd->N, sizeof(float3));
+	cudaMalloc((void**)&d_tipForce, mdd->N*sizeof(float3));
+	cudaMemcpy(d_tipForce, h_tipForce, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
 
 	// energy
-	h_energy = (float*)calloc(atomCount, sizeof(float));
-	cudaMalloc((void**)&d_energy, atomCount*sizeof(float));
-	cudaMemcpy(d_energy, h_energy, atomCount*sizeof(float), cudaMemcpyHostToDevice);
+	h_energy = (float*)calloc(mdd->N, sizeof(float));
+	cudaMalloc((void**)&d_energy, mdd->N*sizeof(float));
+	cudaMemcpy(d_energy, h_energy, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 }
 
 Indentation::~Indentation(){
@@ -59,9 +62,9 @@ Indentation::~Indentation(){
 	cudaFree(d_energy);
 }
 
-__global__ void indentation_kernel(int atomCount, float tipRadius, float3 tipCurrentCoord, float eps, float sigm, float3 sfN, float sfEps, float sfSigm, float const1, float const2, float3* d_tipForce){
+__global__ void indentation_kernel(int* d_mask, float tipRadius, float3 tipCurrentCoord, float eps, float sigm, float3 sfN, float sfEps, float sfSigm, float const1, float const2, float3* d_tipForce){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
-	if (i < atomCount){
+	if (i < c_mdd.N && d_mask[i]){
 
 		float rij_mod, df;
 		float3 rij, rj;
@@ -111,49 +114,43 @@ __global__ void indentation_kernel(int atomCount, float tipRadius, float3 tipCur
 }
 
 void Indentation::compute(){
-	if(mdd->step % baseFreq == 0){
-		baseDisplacement = baseVel*mdd->dt*mdd->step;
-	}
-
+	//if(mdd->step % baseFreq == 0){
+	baseDisplacement = baseVel*mdd->dt*mdd->step;
 	tipCurrentCoord.x = tipCoord.x + tipDisplacement*baseDir.x;
 	tipCurrentCoord.y = tipCoord.y + tipDisplacement*baseDir.y;
 	tipCurrentCoord.z = tipCoord.z + tipDisplacement*baseDir.z;
+	//}
 
-	indentation_kernel<<<this->blockCount, this->blockSize>>>(atomCount, tipRadius, tipCurrentCoord, eps, sigm, sfN, sfEps, sfSigm, const1, const2, d_tipForce);
+	indentation_kernel<<<this->blockCount, this->blockSize>>>(d_mask, tipRadius, tipCurrentCoord, eps, sigm, sfN, sfEps, sfSigm, const1, const2, d_tipForce);
 
+	//if(mdd->step % baseFreq == 0){
 	float mult = 0.0f;
-	float3 resForce = make_float3(0.0f, 0.0f, 0.0f);
-	float3 atomForce;
+	float3 atomForce = make_float3(0.0f, 0.0f, 0.0f);
 	float3 cantForce;
-//	if(mdd->step % baseFreq == 0){
-		cudaMemcpy(h_tipForce, d_tipForce, atomCount*sizeof(float3), cudaMemcpyDeviceToHost);
-		for(int i = 0; i < atomCount; i++){
-			resForce.x += h_tipForce[i].x;
-			resForce.y += h_tipForce[i].y;
-			resForce.z += h_tipForce[i].z;
-		}
-		atomForce.x = resForce.x;
-		atomForce.y = resForce.y;
-		atomForce.z = resForce.z;
+	cudaMemcpy(h_tipForce, d_tipForce, mdd->N*sizeof(float3), cudaMemcpyDeviceToHost);
+	for(int i = 0; i < mdd->N; i++){
+		atomForce.x += h_tipForce[i].x;
+		atomForce.y += h_tipForce[i].y;
+		atomForce.z += h_tipForce[i].z;
+	}
 
-		mult = -ks*(tipDisplacement - baseDisplacement);
+	float f = atomForce.x*baseDir.x + atomForce.y*baseDir.y + atomForce.z*baseDir.z;
 
-		cantForce.x = baseDir.x*mult;
-		cantForce.y = baseDir.y*mult;
-		cantForce.z = baseDir.z*mult;
+	mult = -ks*(tipDisplacement - baseDisplacement);
 
-		resForce.x += cantForce.x;
-		resForce.y += cantForce.y;
-		resForce.z += cantForce.z;
+	cantForce.x = baseDir.x*mult;
+	cantForce.y = baseDir.y*mult;
+	cantForce.z = baseDir.z*mult;
 
-		// FRICTION COEFFICIENT
-		// ksi = 6*pi*nu*r = 5.655E+4
-		// 1/ksi = 1.77E-5 = 0.0000029
-		tipDisplacement += tipFriction*mdd->dt*(resForce.x*baseDir.x + resForce.y*baseDir.y + resForce.z*baseDir.z);
-//	}
+	f += mult;
+
+	// FRICTION COEFFICIENT
+	// ksi = 6*pi*nu*r [g/(mol*ps)]
+	tipDisplacement += 1.0/tipFriction*mdd->dt*baseFreq*f;
 
 	if (mdd->step % dcdFreq == 0){
 		FILE* output = fopen(outputFilename, "a");
+		fprintf(output, "%d\t", mdd->step);
 		fprintf(output, "%f\t", baseDisplacement);
 		fprintf(output, "%f\t", tipDisplacement);
 		fprintf(output, "%f\t", cantForce.x);
@@ -176,11 +173,12 @@ void Indentation::compute(){
 		dcd_cant.frame.Z[1] = (tipCoord.z + tipDisplacement*baseDir.z)*10.0f;		// [nm]->[angstr]
 		dcdWriteFrame(dcd_cant);
 	}
+	//}
 }
 
-__global__ void indentationEnergy_kernel(int N, float tipRadius, float3 tipCurrentCoord, float eps, float sigm, float* d_energy){
+__global__ void indentationEnergy_kernel(int* d_mask, float tipRadius, float3 tipCurrentCoord, float eps, float sigm, float* d_energy){
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
-	if (i < N){
+	if (i < c_mdd.N && d_mask[i]){
 
 		float rij_mod, energy;
 		float3 rij, rj;
@@ -203,12 +201,12 @@ __global__ void indentationEnergy_kernel(int N, float tipRadius, float3 tipCurre
 
 
 float Indentation::getEnergies(int energyId, int Nstep){
-	indentationEnergy_kernel<<<this->blockCount, this->blockSize>>>(atomCount, tipRadius, tipCurrentCoord, eps, sigm, d_energy);
+	indentationEnergy_kernel<<<this->blockCount, this->blockSize>>>(d_mask, tipRadius, tipCurrentCoord, eps, sigm, d_energy);
 
-	cudaMemcpy(h_energy, d_energy, atomCount*sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_energy, d_energy, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 	float energy_sum = 0.0;
 
-	for (int i = 0; i < atomCount; i++){
+	for (int i = 0; i < mdd->N; i++){
 		energy_sum += h_energy[i];
 	}
 	return energy_sum;

@@ -7,7 +7,7 @@
 
 class Indentation : public IPotential {
 public:
-	Indentation(MDData *mdd, int atomCount, int tipRadius, float3 tipCoord, float tipFriction, float3 baseCoord, int baseFreq, float3 baseDir, float baseVel, float ks, float eps, float sigm, float3 sfCoord, float3 sfN, float sfEps, float sfSigm, int dcdFreq, char* dcdCantFilename, char* indOutputFilename);
+	Indentation(MDData *mdd, int* indentationAtomsMask, int tipRadius, float3 tipCoord, float tipFriction, float3 baseCoord, int baseFreq, float3 baseDir, float baseVel, float ks, float eps, float sigm, float3 sfCoord, float3 sfN, float sfEps, float sfSigm, int dcdFreq, char* dcdCantFilename, char* indOutputFilename);
 	~Indentation();
 	void compute();
 	int getEnergyCount(){return 0;}
@@ -15,7 +15,6 @@ public:
 	float getEnergies(int energyId, int timestep);
 private:
 	MDData* mdd;
-	int atomCount;
 	float tipRadius;
 	float3 tipCoord;
 	float tipFriction;
@@ -31,7 +30,7 @@ private:
 	float sfEps;
 	float sfSigm;
 	int dcdFreq;
-	char* dcdCantFilename;
+	char dcdCantFilename[FILENAME_LENGTH];
 
 	char outputFilename[FILENAME_LENGTH];
 
@@ -47,6 +46,8 @@ private:
 
 	float* h_energy;
 	float* d_energy;
+
+	int* d_mask;
 
 	DCD dcd_cant;
 };

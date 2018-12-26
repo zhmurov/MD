@@ -91,6 +91,8 @@
 
 #define PARAMETER_FIX										"fixation"
 #define DEFAULT_FIX											0
+#define PARAMETER_HARMONIC_FIX								"harmonic_fixation"
+#define DEFAULT_HARMONIC_FIX								0
 
 #define PARAMETER_NOSE_HOOVER_TAU							"nose-hoover-tau"
 #define PARAMETER_NOSE_HOOVER_T0							"nose-hoover-T0"
@@ -146,7 +148,7 @@
 
 #define PARAMETER_INDENTATION								"indentation"
 #define DEFAULT_INDENTATION									0
-#define PARAMETER_INDENTATION_ATOMTYPE						"ind_atomtype"
+#define PARAMETER_INDENTATION_PDB_REFERENCE					"ind_pdbref"
 #define PARAMETER_INDENTATION_TIP_RADIUS					"ind_tip_radius"
 #define PARAMETER_INDENTATION_TIP_FRICTION					"ind_tip_friction"
 #define PARAMETER_INDENTATION_TIP_COORD						"ind_tip_coord"

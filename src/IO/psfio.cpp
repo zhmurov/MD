@@ -322,7 +322,7 @@ void readImpropers(FILE* psfFile, PSF* psfData){
 	char buffer[BUF_SIZE];
 	do{
 		safe_fgets(buffer, BUF_SIZE, psfFile);
-	} while (strstr(buffer, "!NIMPHI") == NULL);
+	} while (strstr(buffer, "!IMNPHI") == NULL);
 	pch = strtok(buffer, " ");
 	psfData->nimphi = atoi(pch);
 
@@ -601,7 +601,7 @@ void writeDihedrals(FILE* psfFile, PSF* psfData){
  */
 void writeImpropers(FILE* psfFile, PSF* psfData){
 	int i;
-	fprintf(psfFile, "%8d !NIMPHI: impropers\n", psfData->nimphi);
+	fprintf(psfFile, "%8d !IMNPHI: impropers\n", psfData->nimphi);
 	for(i = 0; i < psfData->nimphi; i++){
 		fprintf(psfFile, "%8d%8d%8d%8d",
 				psfData->impropers[i].i,

@@ -16,8 +16,6 @@ HarmonicFixation::HarmonicFixation(MDData* mdd, float3* fixedAtomsR0, float* ks)
 	cudaMemcpy(d_fixedAtomsR0, h_fixedAtomsR0, mdd->N*sizeof(float3), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_ks, h_ks, mdd->N*sizeof(float), cudaMemcpyHostToDevice);
 
-	averFmod = 0.0f;		// average Fmod
-
 	this->blockCount = (mdd->N-1)/DEFAULT_BLOCK_SIZE + 1;
 	this->blockSize = DEFAULT_BLOCK_SIZE;
 
@@ -54,9 +52,9 @@ __global__ void harmonic_fixation_kernel(float3* d_fixedAtomsR0, float* d_ks, fl
 
 		float4 dr;
 
-		dr.x = ri.x - r0.x;
-		dr.y = ri.y - r0.y;
-		dr.z = ri.z - r0.z;
+		dr.x = r0.x - ri.x;
+		dr.y = r0.y - ri.y;
+		dr.z = r0.z - ri.z;
 		
 		f.x += ks*dr.x;
 		f.y += ks*dr.y;
@@ -74,9 +72,6 @@ void HarmonicFixation::compute(){
 	harmonic_fixation_kernel<<<this->blockCount, this->blockSize>>>(d_fixedAtomsR0, d_ks, d_fmod);
 
 	cudaMemcpy(h_fmod, d_fmod, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
-	for(int i = 0; i < mdd->N; i++){
-		averFmod += h_fmod[i];
-	}
 }
 
 __global__ void HarmonicFixationEnergykernel(float3* d_fixedAtomsR0, float* d_ks, float* d_energy){
@@ -92,9 +87,9 @@ __global__ void HarmonicFixationEnergykernel(float3* d_fixedAtomsR0, float* d_ks
 		// ri - current coordinates of 'i' atom
 		// r0 - fixef coordinate of 'i' atom
 		// rij - distance between ri and r0
-		rij.x = ri.x - r0.x;
-		rij.y = ri.y - r0.y;
-		rij.z = ri.z - r0.z;
+		rij.x = r0.x - ri.x;
+		rij.y = r0.y - ri.y;
+		rij.z = r0.z - ri.z;
 
 		rij.w = sqrtf(rij.x*rij.x + rij.y*rij.y + rij.z*rij.z);
 

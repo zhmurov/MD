@@ -32,6 +32,7 @@
 #include "Potentials/BondHarmonic.cu"
 #include "Potentials/AngleHarmonic.cu"
 #include "Potentials/Dihedral.cu"
+#include "Potentials/HarmonicFixation.cu"
 
 // Updaters
 #include "Updaters/CoordinatesOutputDCD.cu"
@@ -243,7 +244,7 @@ void MDGPU::init()
 		fixedAtomsMask[i] = 0;
 	}
 
-	if(getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX) || getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING)){
+	if(getYesNoParameter(PARAMETER_FIX, DEFAULT_FIX) || getYesNoParameter(PARAMETER_PULLING, DEFAULT_PULLING) || getYesNoParameter(PARAMETER_HARMONIC_FIX, DEFAULT_HARMONIC_FIX)){
 
 		getMaskedParameter(filename, PARAMETER_INPUT_PDB_REFERENCE);
 		readPDB(filename, &pdbref);
@@ -254,6 +255,7 @@ void MDGPU::init()
 			}
 		}
 	}
+
 
 	char integ_str[PARAMETER_MAX_LENGTH];
 	getMaskedParameter(integ_str, PARAMETER_INTEGRATOR);
@@ -636,6 +638,38 @@ void MDGPU::init()
 //OTHER POTENTIALS (NO DNA, NO PROTEIN)
 //=====================================================================
 
+
+	//HarmonicFixation potential
+	if(getYesNoParameter(PARAMETER_HARMONIC_FIX, DEFAULT_HARMONIC_FIX)){
+		if(mdd.N != pdbref.atomCount){
+			printf("Error: number of atoms in top is not equal the number of atoms in pdbref\n");
+		}
+
+		float* fixedAtomsKs;
+		fixedAtomsKs = (float*)calloc(pdbref.atomCount, sizeof(float));
+		
+		float3* fixedAtomsR0;
+		fixedAtomsR0 = (float3*)calloc(pdbref.atomCount, sizeof(float3));
+
+		//pdbref.atoms.beta - spring constant
+		//pdbref.atoms.x(y,z) - force vector
+
+		for(i = 0; i < pdbref.atomCount; i++){
+			if(pdbref.atoms[i].beta != 0.0f){
+
+				fixedAtomsR0[i].x = pdbref.atoms[i].x;
+				fixedAtomsR0[i].y = pdbref.atoms[i].y;
+				fixedAtomsR0[i].z = pdbref.atoms[i].z;
+
+				fixedAtomsKs[i] = pdbref.atoms[i].beta;	
+			}
+		}
+
+		checkCUDAError("CUDA ERROR: before HarmonicFixation potential\n");
+		potentials.push_back(new HarmonicFixation(&mdd, fixedAtomsR0, fixedAtomsKs));
+		checkCUDAError("CUDA ERROR: after HarmonicFixation potential\n");
+	}
+
 	//PushingSphere potential
 	if(getYesNoParameter(PARAMETER_PUSHING_SPHERE, DEFAULT_PUSHING_SPHERE)){
 
@@ -772,17 +806,15 @@ void MDGPU::init()
 
 	//Indentation potential
 	if(getYesNoParameter(PARAMETER_INDENTATION, DEFAULT_INDENTATION)){
+		int* indentationAtomsMask;
+		indentationAtomsMask = (int*)calloc(mdd.N, sizeof(int));
 
-		int indAtomCount = 0; 	// quantity of pushed atoms
-		char indAtomType[TOP_ATOMTYPE_LENGTH];
-		getMaskedParameter(indAtomType, PARAMETER_INDENTATION_ATOMTYPE);
+		getMaskedParameter(filename, PARAMETER_INDENTATION_PDB_REFERENCE);
+		readPDB(filename, &pdbref);
 
-		for(i = 0; i < top.atomCount; i++){
-			if(strcmp(top.atoms[i].type, indAtomType) == 0){
-				indAtomCount++;
-			}
+		for(i = 0; i < mdd.N; i++){
+				indentationAtomsMask[i] = int(pdbref.atoms[i].beta);
 		}
-		printf("Quantity of pushed atoms(indentation): %d\n", indAtomCount);
 
 		float indTipRadius = getFloatParameter(PARAMETER_INDENTATION_TIP_RADIUS);
 		float3 indTipCoord;
@@ -849,7 +881,7 @@ void MDGPU::init()
 		writePDB(pdbCantFilename, &pdb_cant);
 
 		checkCUDAError("CUDA ERROR: before Indentation potential\n");
-		potentials.push_back(new Indentation(&mdd, indAtomCount, indTipRadius, indTipCoord, indTipFriction, indBaseCoord, indBaseFreq, indBaseDir, indBaseVel, indKs, indEps, indSigm, sfCoord, sfN, sfEps, sfSigm, dcdFreq, dcdCantFilename, indOutputFilename));
+		potentials.push_back(new Indentation(&mdd, indentationAtomsMask, indTipRadius, indTipCoord, indTipFriction, indBaseCoord, indBaseFreq, indBaseDir, indBaseVel, indKs, indEps, indSigm, sfCoord, sfN, sfEps, sfSigm, dcdFreq, dcdCantFilename, indOutputFilename));
 		checkCUDAError("CUDA ERROR: after Indentation potential\n");
 	}
 

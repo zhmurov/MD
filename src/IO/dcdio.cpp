@@ -151,6 +151,7 @@ void dcdWriteHeader( DCD dcd){
 	fwrite(&iout, 4, 1, dcd_file);
 	iout = 4;
 	fwrite(&iout, 4, 1, dcd_file);
+	fflush(dcd_file);
 }
 
 /*
@@ -204,6 +205,7 @@ void dcdWriteFrame(DCD dcd){
 	fwrite(&iout, 4, 1, dcd_file);
 	fwrite(dcd.frame.Z, 4*dcd.header.N, 1, dcd_file);
 	fwrite(&iout, 4, 1, dcd_file);
+	fflush(dcd_file);
 }
 
 /*
