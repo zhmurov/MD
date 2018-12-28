@@ -657,9 +657,9 @@ void MDGPU::init()
 		for(i = 0; i < pdbref.atomCount; i++){
 			if(pdbref.atoms[i].beta != 0.0f){
 
-				fixedAtomsR0[i].x = pdbref.atoms[i].x;
-				fixedAtomsR0[i].y = pdbref.atoms[i].y;
-				fixedAtomsR0[i].z = pdbref.atoms[i].z;
+				fixedAtomsR0[i].x = pdbref.atoms[i].x/10.0;		// [angstr] -> [nm]
+				fixedAtomsR0[i].y = pdbref.atoms[i].y/10.0;		// [angstr] -> [nm]
+				fixedAtomsR0[i].z = pdbref.atoms[i].z/10.0;		// [angstr] -> [nm]
 
 				fixedAtomsKs[i] = pdbref.atoms[i].beta;	
 			}
