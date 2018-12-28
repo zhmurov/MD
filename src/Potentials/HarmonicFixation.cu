@@ -71,7 +71,7 @@ void HarmonicFixation::compute(){
 
 	harmonic_fixation_kernel<<<this->blockCount, this->blockSize>>>(d_fixedAtomsR0, d_ks, d_fmod);
 
-	cudaMemcpy(h_fmod, d_fmod, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
+	// cudaMemcpy(h_fmod, d_fmod, mdd->N*sizeof(float), cudaMemcpyDeviceToHost);
 }
 
 __global__ void HarmonicFixationEnergykernel(float3* d_fixedAtomsR0, float* d_ks, float* d_energy){
